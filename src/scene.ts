@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { loadGLBModel, addGLBModelToScene } from "./utils/glbLoader";
+import { addFloatingAnimation } from "./animation";
 
 export function createScene(): THREE.Scene {
   const scene = new THREE.Scene();
 
-  // 그라데이션 배경 설정
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
   canvas.width = 2;
@@ -33,8 +33,7 @@ export function createCamera(): THREE.PerspectiveCamera {
     0.1,
     500000
   );
-
-  camera.position.set(332.99, 92.09, 377.12);
+  camera.position.set(456, 249, 462);
   camera.lookAt(0, 0, 0);
 
   console.log("Camera created:", camera);
@@ -66,8 +65,11 @@ export function createRenderer(): THREE.WebGLRenderer {
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
+
+  // 그림자 설정 개선
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = false; // 성능 최적화를 위해 자동 업데이트 비활성화
 
   // 톤 매핑 설정으로 밝기 조정
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -79,40 +81,42 @@ export function createRenderer(): THREE.WebGLRenderer {
 
 // 조명 설정
 export function setupLighting(scene: THREE.Scene): void {
-  // 환경광 (자연스러운 밝기로 조정)
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
   scene.add(ambientLight);
 
-  // 방향성 조명 (자연스러운 밝기로 조정)
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  directionalLight.position.set(5, 10, 2);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
+  directionalLight.position.set(30, 120, 0);
   directionalLight.castShadow = true;
+
+  // 그림자 맵 품질 향상 - 떠다니는 모델들을 위해 최적화
   directionalLight.shadow.mapSize.width = 2048;
   directionalLight.shadow.mapSize.height = 2048;
-  directionalLight.shadow.camera.near = 0.5;
-  directionalLight.shadow.camera.far = 100;
-  directionalLight.shadow.camera.left = 100;
-  directionalLight.shadow.camera.right = 100;
-  directionalLight.shadow.camera.top = 100;
-  directionalLight.shadow.camera.bottom = -100;
+  directionalLight.shadow.camera.near = 0.1;
+  directionalLight.shadow.camera.far = 5000;
+  directionalLight.shadow.camera.left = -1000;
+  directionalLight.shadow.camera.right = 1000;
+  directionalLight.shadow.camera.top = 1000;
+  directionalLight.shadow.camera.bottom = -1000;
+
+  // 그림자 품질 설정 - 떠다니는 모델들을 위해 최적화
+  directionalLight.shadow.bias = -0.0002;
+  directionalLight.shadow.normalBias = 0.003;
+  directionalLight.shadow.radius = 0.3;
+
   scene.add(directionalLight);
 
-  // 추가 보조 조명 (자연스러운 밝기로 조정)
-  const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
-  fillLight.position.set(-5, 8, -5);
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.05);
+  fillLight.position.set(-20, 100, -20);
   scene.add(fillLight);
 }
 
-// 원형 그라데이션 지면 생성 (Canvas 텍스처 사용)
 export function createCircularGradientGround(scene: THREE.Scene): void {
   // 원형 지면의 반지름과 세그먼트 수
-  const radius = 425;
+  const radius = 500;
   const segments = 128;
 
-  // 원형 지오메트리 생성
   const groundGeometry = new THREE.CircleGeometry(radius, segments);
 
-  // Canvas를 사용한 그라데이션 텍스처 생성
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
   canvas.width = 1024;
@@ -128,7 +132,6 @@ export function createCircularGradientGround(scene: THREE.Scene): void {
     canvas.width / 2
   );
 
-  // 간단하고 선명한 3단계 그라데이션
   gradient.addColorStop(0, "#0dd8fc"); // 밝은 하늘색 (중앙)
   gradient.addColorStop(0.5, "#0d94fc"); // 중간 파란색
   gradient.addColorStop(1, "#0329ff"); // 진한 파란색 (가장자리)
@@ -136,41 +139,61 @@ export function createCircularGradientGround(scene: THREE.Scene): void {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 텍스처 생성
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.ClampToEdgeWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
 
-  // 머티리얼 생성
-  const groundMaterial = new THREE.MeshBasicMaterial({
+  // 그림자를 더 잘 받을 수 있도록 MeshStandardMaterial 사용
+  const groundMaterial = new THREE.MeshStandardMaterial({
     map: texture,
     transparent: true,
     side: THREE.DoubleSide,
+    roughness: 0.8,
+    metalness: 0.0,
   });
 
-  // 메시 생성
   const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-  ground.rotation.x = -Math.PI / 2; // 수평으로 회전
-  ground.position.y = -1; // 배경과 자연스럽게 연결
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -1;
   ground.receiveShadow = true;
 
   scene.add(ground);
+
+  // 추가 그림자 평면 생성 (더 나은 그림자 품질을 위해)
+  createShadowPlane(scene);
 }
 
-// OrbitControls 설정
+// 그림자 품질 향상을 위한 추가 그림자 평면
+function createShadowPlane(scene: THREE.Scene): void {
+  const shadowPlaneGeometry = new THREE.PlaneGeometry(2000, 2000);
+  const shadowMaterial = new THREE.ShadowMaterial({
+    transparent: true,
+    opacity: 0.2, // 떠다니는 모델들의 그림자를 위해 투명도 증가
+  });
+
+  const shadowPlane = new THREE.Mesh(shadowPlaneGeometry, shadowMaterial);
+  shadowPlane.rotation.x = -Math.PI / 2;
+  shadowPlane.position.y = -0.3; // 바닥에 더 가깝게 배치
+  shadowPlane.receiveShadow = true;
+
+  scene.add(shadowPlane);
+}
+
 export function setupOrbitControls(
   camera: THREE.PerspectiveCamera,
   renderer: THREE.WebGLRenderer
 ): OrbitControls {
   const controls = new OrbitControls(camera, renderer.domElement);
 
-  // 컨트롤 설정
-  // controls.enableDamping = true; // 부드러운 움직임
+  controls.enableDamping = true; // 부드러운 움직임
   controls.dampingFactor = 0.05;
   controls.screenSpacePanning = false;
-  // controls.minDistance = 100; // 최소 거리
-  // controls.maxDistance = 5000; // 최대 거리
-  // controls.maxPolarAngle = Math.PI / 2; // 수평선 아래로 내려가지 않도록
+  controls.minDistance = 500; // 최소 거리
+  controls.maxDistance = 740; // 최대 거리
+
+  controls.minPolarAngle = Math.PI / 3; //위로 올라가는거 제한
+  controls.maxPolarAngle = Math.PI / 2.5; // 수평선 아래로 내려가지 않도록
+  controls.enableZoom = false;
 
   controls.addEventListener("change", () => {
     console.log("카메라 위치:", {
@@ -227,24 +250,48 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
 
     await loadModel(
       scene,
-      "/models/low_poly_nature_scene.glb",
-      new THREE.Vector3(0, 26, 0),
-      new THREE.Vector3(4, 4, 4),
+      "/models/low_poly_game_forest.glb",
+      new THREE.Vector3(70, 0, 100),
+      new THREE.Vector3(22, 22, 22),
+      new THREE.Euler(0, 0, 0)
+    );
+
+    await loadModel(
+      scene,
+      "/models/low_poly_game_forest_ground.glb",
+      new THREE.Vector3(70, 0, 100),
+      new THREE.Vector3(22, 22, 22),
+      new THREE.Euler(0, 0, 0)
+    );
+
+    const floatingIsland = await loadModel(
+      scene,
+      "/models/low_poly_floating_island.glb",
+      new THREE.Vector3(-100, 90, 330),
+      new THREE.Vector3(3, 3, 3),
       new THREE.Euler(0, 2, 0)
     );
 
-    await loadModel(
+    if (floatingIsland) {
+      addFloatingAnimation(floatingIsland, 8, 0.4, 0);
+    }
+
+    const floatingTrees = await loadModel(
       scene,
       "/models/low_poly_trees.glb",
-      new THREE.Vector3(300, 80, 0),
-      new THREE.Vector3(0.04, 0.04, 0.04),
+      new THREE.Vector3(320, 80, 0),
+      new THREE.Vector3(0.05, 0.05, 0.05),
       new THREE.Euler(0, 5, 0)
     );
 
-    await loadModel(
+    if (floatingTrees) {
+      addFloatingAnimation(floatingTrees, 6, 0.6, Math.PI / 3);
+    }
+
+    const tripleTrees = await loadModel(
       scene,
       "/models/low_poly_triple_trees.glb",
-      new THREE.Vector3(-100, 110, 300),
+      new THREE.Vector3(-400, 60, 100),
       new THREE.Vector3(4, 4, 4),
       new THREE.Euler(0, 4, 0)
     );
@@ -252,7 +299,7 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
     await loadModel(
       scene,
       "/models/lighthouse.glb",
-      new THREE.Vector3(0, 65, -300),
+      new THREE.Vector3(0, 57, -300),
       new THREE.Vector3(100, 100, 100),
       new THREE.Euler(0, 0, 0)
     );
