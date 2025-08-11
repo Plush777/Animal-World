@@ -2,7 +2,8 @@
 
 ## Todo
 
-- Three js editor에서 광장 배경 만든 뒤 glb로 export하여 Three js로 브라우저에 똑같이 렌더링하기.
+~~- Three js editor에서 광장 배경 만든 뒤 glb로 export하여 Three js로 브라우저에 똑같이 렌더링하기.~~
+
 - 광장 배경 완료 후 반응형에서는 어떻게 보여줄지 고민 후 작업
 - 강아지, 고양이, 여우 등의 동물 아바타 정하기
 
