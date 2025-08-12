@@ -1,4 +1,4 @@
-<img src="/images/logo/logo-intro.svg" alt="logo" />
+<img src="/public/images/logo/logo-intro.svg" alt="logo" />
 
 <h1 align="center">🐱 Animal World! 🐱</h1>
 <div align="center">description....</div>
