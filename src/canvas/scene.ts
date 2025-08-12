@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { loadGLBModel, addGLBModelToScene } from "./utils/glbLoader";
-import { addFloatingAnimation } from "./animation";
+import { loadGLBModel, addGLBModelToScene } from "../utils/glbLoader";
+import { addFloatingAnimation, addWaterWaveAnimation } from "./animation";
 
 export function createScene(): THREE.Scene {
   const scene = new THREE.Scene();
@@ -296,13 +296,34 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
       new THREE.Euler(0, 4, 0)
     );
 
+    if (tripleTrees) {
+      addFloatingAnimation(tripleTrees, 7, 0.4, Math.PI / 4);
+    }
+
     await loadModel(
       scene,
       "/models/lighthouse.glb",
-      new THREE.Vector3(0, 57, -300),
+      new THREE.Vector3(0, 70, -300),
       new THREE.Vector3(100, 100, 100),
       new THREE.Euler(0, 0, 0)
     );
+
+    const waterModel = await loadModel(
+      scene,
+      "/models/water.glb",
+      new THREE.Vector3(0, -70, 0),
+      new THREE.Vector3(40, 40, 40),
+      new THREE.Euler(0, 0, 0)
+    );
+
+    // water.glb 모델에서 pSic1_WaterL_0 오브젝트를 찾아 물결 애니메이션 적용
+    if (waterModel) {
+      waterModel.traverse((child) => {
+        if (child.name === "pDisc1_WaterL_0") {
+          addWaterWaveAnimation(child, 0.5, 1.5, 1.2, 0);
+        }
+      });
+    }
 
     console.log("모든 모델이 성공적으로 로드되었습니다.");
   } catch (error) {

@@ -1,26 +1,40 @@
-<img src="/preview.png" alt="preview" />
+<img src="images/logo/logo-intro.svg" alt="logo" />
 
-## Todo
+<h1 align="center">🐱 Animal World! 🐱</h1>
+<div align="center">description....</div>
 
-~~- Three js editor에서 광장 배경 만든 뒤 glb로 export하여 Three js로 브라우저에 똑같이 렌더링하기.~~
+## 📝 Reference
 
-- 광장 배경 완료 후 반응형에서는 어떻게 보여줄지 고민 후 작업
-- 강아지, 고양이, 여우 등의 동물 아바타 정하기
+### 🎨 color
 
-- username 정하는 ui, 사용할 아바타 정하는 ui 간단하게 만들기. (데이터 저장공간으로는 로컬스토리지쓰면 될듯.)
+- https://tailwindcss.com/docs/colors
 
-- 키보드 조작 / 드래그나 터치 등으로 동물 아바타를 움직이게 하기 (애니메이션)
+### 🌏 Models
 
-- 좌측 하단에 채팅 ui를 추가하여 채팅 기능 추가
+#### 🖼️ background object
 
-- 텍스트 입력 후 Enter를 누르면 플레이어 아바타 바로 위에 말풍선과 함께 채팅 내용 보여주기
+- https://skfb.ly/oJYSS (Starry night sky HDRi background photosphere)
+- https://skfb.ly/oIINq (FREE - SkyBox In The Cloud)
+- https://skfb.ly/6uNHF (Low Poly Medieval Island)
+- https://skfb.ly/oAJJu (Low-Poly Floating Island)
+- https://skfb.ly/o78uK (Floating Fox)
+- https://skfb.ly/oDSIM ((FREE) Low Poly Game Assets)
+- https://skfb.ly/HIBy (Low Poly Trees)
+- https://skfb.ly/6VnJ9 (Lowpoly Trees)
+- Lighthouse by Jarlan Perez [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/d4j9R8L8xpE)
 
-  - 이 때, 채팅 내용은 브라우저를 닫는 순간 지워지도록 구현 (세션 스토리지?)
+#### 🐶 avatar
 
-- Websocket, WebRTC 등의 기술을 통하여 누구나 광장에 접속 후 상대방과 실시간 대화할 수 있는 시스템 구축
+- https://skfb.ly/oFEPp (Cat - PS1 Low Poly (Rigged))
+- Hamster by Poly by Google [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/3YtzEQ5TVUP)
+- https://skfb.ly/6UnCF (Low Poly Dog)
+- https://skfb.ly/opQpx (low poly fox)
+- Wolf by jeremy [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/2PDe5PSncTC)
 
-## 나중에 추가하면 재밌을 것들
+#### 🔗 site
 
-- 언어를 한국어뿐만 아니라 일본어, 중국어 등도 지원하기
-- 한국시간 기준에 맞춰서 낮 시간대면 배경을 밝게, 밤 시간대면 배경을 어둡게 하기
-- 접속 시간이나 채팅 횟수 등을 체크하여 점수를 매긴 뒤 랭킹으로 보여주기 (사용자가 자주 방문하기 위한 동기부여)
+- https://choochooworld.com/
+- https://madbox.io/
+- https://www.kodeclubs.com/
+- https://coastalworld.com/
+- https://www.choonsikdiary.com/

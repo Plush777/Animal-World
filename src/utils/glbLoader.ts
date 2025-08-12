@@ -84,6 +84,15 @@ export function loadGLBModel(
                 }
               }
             }
+            // water 모델의 재질 조정 (물 효과를 위한 투명도와 반사 설정)
+            else if (path.includes("water")) {
+              console.log(`Water 모델 발견: ${child.name}`);
+              adjustWaterMaterial(child.material, child.name);
+
+              // 물 모델에 대해 그림자 설정
+              child.castShadow = false; // 물은 그림자를 드리지 않음
+              child.receiveShadow = true; // 물은 그림자를 받음
+            }
           }
 
           // GLB 내부 조명 강도 조정
@@ -334,6 +343,108 @@ function adjustSingleFloatingIslandMaterial(
           Math.min(originalR * 1.5, 1.0),
           Math.min(originalG * 1.5, 1.0),
           Math.min(originalB * 1.5, 1.0)
+        );
+      }
+    }
+  }
+}
+
+// Water 재질을 조정하는 함수
+function adjustWaterMaterial(
+  material: THREE.Material | THREE.Material[],
+  meshName: string
+): void {
+  if (Array.isArray(material)) {
+    material.forEach((mat) => {
+      adjustSingleWaterMaterial(mat, meshName);
+    });
+  } else {
+    adjustSingleWaterMaterial(material, meshName);
+  }
+}
+
+// 단일 Water 재질 조정 함수
+function adjustSingleWaterMaterial(
+  material: THREE.Material,
+  meshName: string
+): void {
+  // MeshStandardMaterial 또는 MeshPhysicalMaterial인 경우
+  if (
+    material instanceof THREE.MeshStandardMaterial ||
+    material instanceof THREE.MeshPhysicalMaterial
+  ) {
+    // 물 효과를 위한 재질 설정
+    material.metalness = 0.0; // 메탈릭 효과 제거
+    material.roughness = 0.8; // 거친 표면으로 반사 감소
+    material.transparent = true;
+    material.opacity = 0.5; // 더 투명하게
+    material.side = THREE.DoubleSide; // 양면 렌더링
+    material.emissive = new THREE.Color(0x000000); // 발광 효과 제거
+    material.envMapIntensity = 0.0; // 환경 반사 제거
+
+    // 물 색상 설정 (파란색 계열)
+    if (material.color) {
+      // 기존 색상이 너무 어두운 경우 밝은 파란색으로 조정
+      if (
+        material.color.r < 0.2 &&
+        material.color.g < 0.2 &&
+        material.color.b < 0.2
+      ) {
+        material.color.setRGB(0.2, 0.6, 0.9); // 밝은 파란색
+      } else {
+        // 기존 색상을 보존하면서 약간 밝게 조정
+        material.color.setRGB(
+          Math.min(material.color.r * 1.2, 1.0),
+          Math.min(material.color.g * 1.2, 1.0),
+          Math.min(material.color.b * 1.2, 1.0)
+        );
+      }
+    }
+  }
+
+  // MeshLambertMaterial인 경우
+  else if (material instanceof THREE.MeshLambertMaterial) {
+    material.transparent = true;
+    material.opacity = 0.5;
+    material.side = THREE.DoubleSide;
+    material.emissive = new THREE.Color(0x000000); // 발광 효과 제거
+
+    if (material.color) {
+      if (
+        material.color.r < 0.2 &&
+        material.color.g < 0.2 &&
+        material.color.b < 0.2
+      ) {
+        material.color.setRGB(0.2, 0.6, 0.9);
+      } else {
+        material.color.setRGB(
+          Math.min(material.color.r * 1.2, 1.0),
+          Math.min(material.color.g * 1.2, 1.0),
+          Math.min(material.color.b * 1.2, 1.0)
+        );
+      }
+    }
+  }
+
+  // MeshBasicMaterial인 경우
+  else if (material instanceof THREE.MeshBasicMaterial) {
+    material.transparent = true;
+    material.opacity = 0.5;
+    material.side = THREE.DoubleSide;
+    material.lights = false; // 조명 반응 비활성화
+
+    if (material.color) {
+      if (
+        material.color.r < 0.2 &&
+        material.color.g < 0.2 &&
+        material.color.b < 0.2
+      ) {
+        material.color.setRGB(0.2, 0.6, 0.9);
+      } else {
+        material.color.setRGB(
+          Math.min(material.color.r * 1.2, 1.0),
+          Math.min(material.color.g * 1.2, 1.0),
+          Math.min(material.color.b * 1.2, 1.0)
         );
       }
     }

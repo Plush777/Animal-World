@@ -1,0 +1,15 @@
+@font-face {
+  font-family: "PretendardVariable";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url(fonts/PretendardVariable.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Recipekorea";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url(fonts/Recipekorea.woff2) format("woff2");
+}

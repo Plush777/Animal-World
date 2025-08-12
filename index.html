@@ -1,25 +1,47 @@
 <!DOCTYPE html>
-<html lang="en" translate="no">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/src/styles/font.css" />
+    <link rel="stylesheet" href="/src/styles/reset.css" />
+    <link rel="stylesheet" href="/src/styles/ui.css" />
+    <link rel="stylesheet" href="/src/styles/button.css" />
+    <link rel="stylesheet" href="/src/styles/variables.css" />
+    <link rel="stylesheet" href="/src/styles/style.css" />
+    <script defer src="/src/ui/ui.ts"></script>
     <title>Animal World!</title>
-    <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-        background-color: #87ceeb;
-      }
-
-      canvas {
-        display: block;
-      }
-    </style>
   </head>
   <body>
+    <noscript
+      >컨텐츠를 표시하기 위해서는 자바스크립트를 활성화해주세요.</noscript
+    >
     <div id="app">
+      <main>
+        <div class="intro-wrapper">
+          <div class="intro-box">
+            <div class="intro-logo-area">
+              <h1 class="intro-logo">
+                <span class="hidden">Animal World! 로고</span>
+              </h1>
+            </div>
+            <div class="intro-bottom">
+              <div class="intro-description">
+                <p class="intro-description-text">description</p>
+              </div>
+              <button
+                type="button"
+                class="button-3d button-3d-blue button-3d-blue-shadow button-size-lg"
+              >
+                참여하기
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+
       <canvas id="scene"></canvas>
-      <script type="module" src="/src/main.ts"></script>
+      <script type="module" src="/src/canvas/main.ts"></script>
     </div>
   </body>
 </html>
