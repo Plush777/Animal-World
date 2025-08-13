@@ -7,6 +7,7 @@ import {
   setupOrbitControls,
   loadMultipleModels,
   createCircularGradientGround,
+  setupCameraEventListeners,
 } from "./scene";
 
 import { createAnimationLoop } from "./animation";
@@ -25,6 +26,8 @@ async function init(): Promise<void> {
   await loadMultipleModels(scene);
 
   const controls = setupOrbitControls(camera, renderer);
+
+  setupCameraEventListeners(camera, controls);
 
   setupResizeHandler(camera, renderer);
 

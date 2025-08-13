@@ -20,8 +20,19 @@ interface WaterWaveAnimation {
   phase: number;
 }
 
+interface CameraAnimation {
+  camera: THREE.PerspectiveCamera;
+  controls: OrbitControls;
+  startPosition: THREE.Vector3;
+  targetPosition: THREE.Vector3;
+  startTime: number;
+  duration: number;
+  isActive: boolean;
+}
+
 const floatingObjects: FloatingAnimation[] = [];
 const waterWaveObjects: WaterWaveAnimation[] = [];
+let cameraAnimation: CameraAnimation | null = null;
 
 export function addFloatingAnimation(
   object: THREE.Object3D,
@@ -54,6 +65,39 @@ export function addWaterWaveAnimation(
     waveSpeed,
     phase,
   });
+}
+
+// 카메라 애니메이션 시작 함수
+export function startCameraAnimation(
+  camera: THREE.PerspectiveCamera,
+  controls: OrbitControls,
+  targetX: number,
+  targetY: number,
+  targetZ: number,
+  duration: number = 2000
+): void {
+  // 기존 애니메이션이 있으면 중단
+  if (cameraAnimation?.isActive) {
+    cameraAnimation.isActive = false;
+  }
+
+  // 새로운 카메라 애니메이션 설정
+  cameraAnimation = {
+    camera,
+    controls,
+    startPosition: camera.position.clone(),
+    targetPosition: new THREE.Vector3(targetX, targetY, targetZ),
+    startTime: Date.now(),
+    duration,
+    isActive: true,
+  };
+
+  console.log(`카메라 애니메이션 시작: (${targetX}, ${targetY}, ${targetZ})`);
+}
+
+// easing 함수 (부드러운 애니메이션을 위한)
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 function updateFloatingAnimations(time: number): void {
@@ -111,6 +155,45 @@ function updateWaterWaveAnimations(time: number): void {
   });
 }
 
+function updateCameraAnimation(): void {
+  if (!cameraAnimation || !cameraAnimation.isActive) {
+    return;
+  }
+
+  const {
+    camera,
+    controls,
+    startPosition,
+    targetPosition,
+    startTime,
+    duration,
+  } = cameraAnimation;
+  const elapsed = Date.now() - startTime;
+  const progress = Math.min(elapsed / duration, 1);
+
+  // easeInOutCubic 함수 사용하여 부드러운 애니메이션
+  const easedProgress = easeInOutCubic(progress);
+
+  // 위치 보간
+  const currentPosition = new THREE.Vector3().lerpVectors(
+    startPosition,
+    targetPosition,
+    easedProgress
+  );
+
+  // 카메라 위치 설정
+  camera.position.copy(currentPosition);
+
+  // 컨트롤 업데이트
+  controls.update();
+
+  // 애니메이션 완료 확인
+  if (progress >= 1) {
+    cameraAnimation.isActive = false;
+    console.log("카메라 애니메이션 완료");
+  }
+}
+
 export function createAnimationLoop(
   scene: THREE.Scene,
   camera: THREE.PerspectiveCamera,
@@ -131,6 +214,7 @@ export function createAnimationLoop(
 
     updateFloatingAnimations(time);
     updateWaterWaveAnimations(time);
+    updateCameraAnimation(); // 카메라 애니메이션 업데이트 추가
 
     const target = controls.target;
     trackballControls.target.set(target.x, target.y, target.z);

@@ -3,7 +3,6 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 const gltfLoader = new GLTFLoader();
 
-// GLB 파일 로드 함수
 export function loadGLBModel(
   path: string,
   onLoad?: (gltf: any) => void,
@@ -16,56 +15,32 @@ export function loadGLBModel(
       (gltf) => {
         console.log(`GLB 모델 로드 성공: ${path}`, gltf);
 
-        // 모델의 모든 메시에 그림자 설정 및 재질 조정
-        gltf.scene.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            // 모든 메시에 그림자 설정 강화
-            child.castShadow = true;
-            child.receiveShadow = true;
+        try {
+          // UI에 모델 로드 완료 알림
+          if (window.LoadingUI) {
+            window.LoadingUI.onModelLoaded();
+          }
 
-            // 그림자 품질 향상을 위한 재질 설정
-            if (child.material) {
-              if (Array.isArray(child.material)) {
-                child.material.forEach((mat) => {
-                  if (
-                    mat instanceof THREE.MeshStandardMaterial ||
-                    mat instanceof THREE.MeshPhysicalMaterial
-                  ) {
-                    mat.shadowSide = THREE.FrontSide;
-                  }
-                });
-              } else {
-                if (
-                  child.material instanceof THREE.MeshStandardMaterial ||
-                  child.material instanceof THREE.MeshPhysicalMaterial
-                ) {
-                  child.material.shadowSide = THREE.FrontSide;
-                }
-              }
+          // 모델의 모든 메시에 그림자 설정 및 재질 조정
+          gltf.scene.traverse((child) => {
+            // undefined나 null 체크 추가
+            if (!child) return;
+
+            // Bone 객체에 대한 안전한 처리
+            if (child.type === "Bone" || child.isBone) {
+              // Bone 객체는 그냥 넘어감
+              return;
             }
 
-            // 나무 모델의 재질을 초록색으로 조정
-            if (path.includes("low_poly_trees")) {
-              console.log(`나무 모델 발견: ${child.name}`);
-              adjustTreeMaterial(child.material);
-            }
-            // floating island 모델의 재질 조정 (색상 보존)
-            else if (path.includes("low_poly_floating_island")) {
-              console.log(`Floating Island 모델 발견: ${child.name}`);
-              console.log(`재질 색상:`, child.material.color);
-              console.log(
-                `그림자 설정 - castShadow: ${child.castShadow}, receiveShadow: ${child.receiveShadow}`
-              );
-              adjustFloatingIslandMaterial(child.material, child.name);
-
-              // Floating Island 모델에 대해 추가 그림자 설정
+            if (child instanceof THREE.Mesh) {
+              // 모든 메시에 그림자 설정 강화
               child.castShadow = true;
               child.receiveShadow = true;
 
+              // 그림자 품질 향상을 위한 재질 설정
               if (child.material) {
                 if (Array.isArray(child.material)) {
                   child.material.forEach((mat) => {
-                    mat.needsUpdate = true;
                     if (
                       mat instanceof THREE.MeshStandardMaterial ||
                       mat instanceof THREE.MeshPhysicalMaterial
@@ -74,7 +49,6 @@ export function loadGLBModel(
                     }
                   });
                 } else {
-                  child.material.needsUpdate = true;
                   if (
                     child.material instanceof THREE.MeshStandardMaterial ||
                     child.material instanceof THREE.MeshPhysicalMaterial
@@ -83,38 +57,98 @@ export function loadGLBModel(
                   }
                 }
               }
+
+              // 나무 모델의 재질을 초록색으로 조정
+              if (path.includes("low_poly_trees")) {
+                console.log(`나무 모델 발견: ${child.name}`);
+                adjustTreeMaterial(child.material);
+              }
+              // floating island 모델의 재질 조정 (색상 보존)
+              else if (path.includes("low_poly_floating_island")) {
+                console.log(`Floating Island 모델 발견: ${child.name}`);
+                console.log(`재질 색상:`, child.material.color);
+                console.log(
+                  `그림자 설정 - castShadow: ${child.castShadow}, receiveShadow: ${child.receiveShadow}`
+                );
+                adjustFloatingIslandMaterial(child.material, child.name);
+
+                // Floating Island 모델에 대해 추가 그림자 설정
+                child.castShadow = true;
+                child.receiveShadow = true;
+
+                if (child.material) {
+                  if (Array.isArray(child.material)) {
+                    child.material.forEach((mat) => {
+                      mat.needsUpdate = true;
+                      if (
+                        mat instanceof THREE.MeshStandardMaterial ||
+                        mat instanceof THREE.MeshPhysicalMaterial
+                      ) {
+                        mat.shadowSide = THREE.FrontSide;
+                      }
+                    });
+                  } else {
+                    child.material.needsUpdate = true;
+                    if (
+                      child.material instanceof THREE.MeshStandardMaterial ||
+                      child.material instanceof THREE.MeshPhysicalMaterial
+                    ) {
+                      child.material.shadowSide = THREE.FrontSide;
+                    }
+                  }
+                }
+              }
+              // water 모델의 재질 조정 (물 효과를 위한 투명도와 반사 설정)
+              else if (path.includes("water")) {
+                console.log(`Water 모델 발견: ${child.name}`);
+                adjustWaterMaterial(child.material, child.name);
+
+                // 물 모델에 대해 그림자 설정
+                child.castShadow = false; // 물은 그림자를 드리지 않음
+                child.receiveShadow = true; // 물은 그림자를 받음
+              }
             }
-            // water 모델의 재질 조정 (물 효과를 위한 투명도와 반사 설정)
-            else if (path.includes("water")) {
-              console.log(`Water 모델 발견: ${child.name}`);
-              adjustWaterMaterial(child.material, child.name);
 
-              // 물 모델에 대해 그림자 설정
-              child.castShadow = false; // 물은 그림자를 드리지 않음
-              child.receiveShadow = true; // 물은 그림자를 받음
+            // GLB 내부 조명 강도 조정
+            if (child instanceof THREE.Light) {
+              console.log(`조명 발견: ${child.type}, 강도: ${child.intensity}`);
+              // 조명 강도를 50%로 줄임 (과도한 밝기 방지)
+              if (typeof child.intensity === "number") {
+                child.intensity *= 0.5;
+              }
             }
-          }
+          });
 
-          // GLB 내부 조명 강도 조정
-          if (child instanceof THREE.Light) {
-            console.log(`조명 발견: ${child.type}, 강도: ${child.intensity}`);
-            // 조명 강도를 50%로 줄임 (과도한 밝기 방지)
-            child.intensity *= 0.5;
-          }
-        });
-
-        if (onLoad) onLoad(gltf);
-        resolve(gltf);
+          if (onLoad) onLoad(gltf);
+          resolve(gltf);
+        } catch (error) {
+          console.error(`GLB 모델 후처리 중 오류 발생: ${path}`, error);
+          // 후처리에서 오류가 발생해도 모델 자체는 로드 성공으로 처리
+          if (onLoad) onLoad(gltf);
+          resolve(gltf);
+        }
       },
       (progress) => {
         console.log(
           `GLB 모델 로드 진행률: ${path}`,
           ((progress.loaded / progress.total) * 100).toFixed(2) + "%"
         );
+
+        // UI에 진행률 업데이트
+        if (progress.total > 0 && window.LoadingUI) {
+          window.LoadingUI.onModelProgress(progress.loaded, progress.total);
+        }
+
         if (onProgress) onProgress(progress);
       },
       (error) => {
         console.error(`GLB 모델 로드 실패: ${path}`, error);
+
+        // UI에 에러 알림
+        if (window.LoadingUI) {
+          window.LoadingUI.onError(`모델 로드 실패`);
+        }
+
         if (onError) onError(error as Error);
         reject(error);
       }

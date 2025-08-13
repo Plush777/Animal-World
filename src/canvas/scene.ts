@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { loadGLBModel, addGLBModelToScene } from "../utils/glbLoader";
 import { addFloatingAnimation, addWaterWaveAnimation } from "./animation";
+import { getSceneModelPath, isDayTime } from "./time";
 
 export function createScene(): THREE.Scene {
   const scene = new THREE.Scene();
@@ -12,9 +13,19 @@ export function createScene(): THREE.Scene {
   canvas.height = 1024;
 
   const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  gradient.addColorStop(0, "#87CEEB"); // 밝은 하늘색 (위쪽)
-  gradient.addColorStop(0.5, "#4682B4"); // 중간 파란색
-  gradient.addColorStop(1, "#000080"); // 진한 파란색 (아래쪽)
+
+  // 시간에 따라 다른 배경색 적용
+  if (isDayTime()) {
+    // 낮 시간 배경 (기존 색상)
+    gradient.addColorStop(0, "#87CEEB"); // 밝은 하늘색 (위쪽)
+    gradient.addColorStop(0.5, "#4682B4"); // 중간 파란색
+    gradient.addColorStop(1, "#000080"); // 진한 파란색 (아래쪽)
+  } else {
+    // 밤 시간 배경 (어두운 색상)
+    gradient.addColorStop(0, "#1a1a2e"); // 어두운 보라색 (위쪽)
+    gradient.addColorStop(0.5, "#16213e"); // 어두운 남색
+    gradient.addColorStop(1, "#0f0f0f"); // 검은색에 가까운 색 (아래쪽)
+  }
 
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -81,10 +92,20 @@ export function createRenderer(): THREE.WebGLRenderer {
 
 // 조명 설정
 export function setupLighting(scene: THREE.Scene): void {
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
+  // 시간에 따라 조명 강도 조정
+  const isDay = isDayTime();
+  // 밤에는 스카이박스가 잘 보이도록 주변광을 적당히 유지
+  const ambientIntensity = isDay ? 0.15 : 0.12; // 밤에는 스카이박스를 위해 약간 밝게
+  const directionalIntensity = isDay ? 2.0 : 0.6; // 밤에는 직사광을 줄여서 스카이박스가 돋보이게
+  const lightColor = isDay ? 0xffffff : 0x9bb5ff; // 밤에는 스카이박스와 어울리는 연한 파란빛
+
+  const ambientLight = new THREE.AmbientLight(lightColor, ambientIntensity);
   scene.add(ambientLight);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
+  const directionalLight = new THREE.DirectionalLight(
+    lightColor,
+    directionalIntensity
+  );
   directionalLight.position.set(30, 120, 0);
   directionalLight.castShadow = true;
 
@@ -132,9 +153,18 @@ export function createCircularGradientGround(scene: THREE.Scene): void {
     canvas.width / 2
   );
 
-  gradient.addColorStop(0, "#0dd8fc"); // 밝은 하늘색 (중앙)
-  gradient.addColorStop(0.5, "#0d94fc"); // 중간 파란색
-  gradient.addColorStop(1, "#0329ff"); // 진한 파란색 (가장자리)
+  // 시간에 따라 다른 그라데이션 색상 적용
+  if (isDayTime()) {
+    // 낮 시간: 밝은 파란색 그라데이션
+    gradient.addColorStop(0, "#0dd8fc"); // 밝은 하늘색 (중앙)
+    gradient.addColorStop(0.5, "#0d94fc"); // 중간 파란색
+    gradient.addColorStop(1, "#0329ff"); // 진한 파란색 (가장자리)
+  } else {
+    // 밤 시간: 어두운 보라/남색 그라데이션
+    gradient.addColorStop(0, "#1a2540"); // 어두운 회색-파랑 (중앙)
+    gradient.addColorStop(0.5, "#0f1b2e"); // 더 어두운 남색
+    gradient.addColorStop(1, "#06101c"); // 거의 검은색 (가장자리)
+  }
 
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -206,6 +236,33 @@ export function setupOrbitControls(
   return controls;
 }
 
+// 카메라 위치 변경 이벤트 처리
+export function setupCameraEventListeners(
+  camera: THREE.PerspectiveCamera,
+  controls: OrbitControls
+): void {
+  // 'changeCameraPosition' 커스텀 이벤트 리스너 등록
+  document.addEventListener("changeCameraPosition", (event: CustomEvent) => {
+    const { x, y, z, duration = 2000 } = event.detail;
+
+    // animation.ts의 카메라 애니메이션 함수 사용
+    import("./animation")
+      .then((animationModule) => {
+        animationModule.startCameraAnimation(
+          camera,
+          controls,
+          x,
+          y,
+          z,
+          duration
+        );
+      })
+      .catch((error) => {
+        console.error("카메라 애니메이션 시작 중 오류:", error);
+      });
+  });
+}
+
 export function setupResizeHandler(
   camera: THREE.PerspectiveCamera,
   renderer: THREE.WebGLRenderer
@@ -240,13 +297,41 @@ export async function loadModel(
 
 export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
   try {
-    await loadModel(
+    // 로딩할 총 모델 수 설정 (8개 모델)
+    if (window.LoadingUI) {
+      window.LoadingUI.setTotalModels(8);
+    }
+
+    // 현재 시간에 따라 적절한 씬 모델 로드
+    const sceneModelPath = getSceneModelPath();
+    const isDay = isDayTime();
+
+    // 시간에 따라 다른 위치, 스케일, 회전 적용
+    const scenePosition = isDay
+      ? new THREE.Vector3(0, 0, 0) // 낮
+      : new THREE.Vector3(0, 0, 0); // 밤
+
+    const sceneScale = isDay
+      ? new THREE.Vector3(1, 1, 1)
+      : new THREE.Vector3(1, 1, 1);
+
+    const sceneRotation = isDay
+      ? new THREE.Euler(0, 0, 0)
+      : new THREE.Euler(0, 0, 0);
+
+    // 씬 모델 로드
+    const sceneModel = await loadModel(
       scene,
-      "/models/scene.glb",
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(1, 1, 1),
-      new THREE.Euler(0, 0, 0)
+      sceneModelPath,
+      scenePosition,
+      sceneScale,
+      sceneRotation
     );
+
+    // 밤 시간에 씬 모델에 어두운 효과 적용
+    if (sceneModel && !isDay) {
+      adjustSceneForNightTime(sceneModel);
+    }
 
     await loadModel(
       scene,
@@ -256,13 +341,18 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
       new THREE.Euler(0, 0, 0)
     );
 
-    await loadModel(
+    const forestGroundModel = await loadModel(
       scene,
       "/models/low_poly_game_forest_ground.glb",
       new THREE.Vector3(70, 0, 100),
       new THREE.Vector3(22, 22, 22),
       new THREE.Euler(0, 0, 0)
     );
+
+    // 시간에 따른 숲 지면 조명 조정
+    if (forestGroundModel) {
+      adjustForestGroundLighting(forestGroundModel, isDay);
+    }
 
     const floatingIsland = await loadModel(
       scene,
@@ -316,11 +406,15 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
       new THREE.Euler(0, 0, 0)
     );
 
-    // water.glb 모델에서 pSic1_WaterL_0 오브젝트를 찾아 물결 애니메이션 적용
+    // water.glb 모델에서 pSic1_WaterL_0 오브젝트를 찾아 물결 애니메이션 및 조명 조정 적용
     if (waterModel) {
       waterModel.traverse((child) => {
         if (child.name === "pDisc1_WaterL_0") {
+          // 물결 애니메이션 추가
           addWaterWaveAnimation(child, 0.5, 1.5, 1.2, 0);
+
+          // 시간에 따른 물 조명 조정
+          adjustWaterLighting(child, isDay);
         }
       });
     }
@@ -329,4 +423,109 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
   } catch (error) {
     console.error("모델 로드 중 오류 발생:", error);
   }
+}
+
+/**
+ * 시간에 따라 물 모델의 조명을 조정합니다.
+ * @param waterObject 물 오브젝트 (pDisc1_WaterL_0)
+ * @param isDay 낮 시간 여부
+ */
+function adjustWaterLighting(waterObject: any, isDay: boolean): void {
+  if (waterObject && waterObject.material) {
+    const material = waterObject.material;
+
+    if (isDay) {
+      // 낮 시간: 밝은 물 설정
+      if (material.color) {
+        material.color.setHex(0x4dd8fc); // 밝은 파란색
+      }
+      if (material.emissive) {
+        material.emissive.setHex(0x001122); // 약간의 발광
+      }
+      if (material.opacity !== undefined) {
+        material.opacity = 0.8; // 투명도
+      }
+    } else {
+      // 밤 시간: 어두운 물 설정
+      if (material.color) {
+        material.color.setHex(0x1a3d5c); // 어두운 파란색
+      }
+      if (material.emissive) {
+        material.emissive.setHex(0x000811); // 더 어두운 발광
+      }
+      if (material.opacity !== undefined) {
+        material.opacity = 0.6; // 더 투명하게
+      }
+    }
+
+    // 머티리얼 업데이트
+    material.needsUpdate = true;
+
+    console.log(`물 조명 조정 완료: ${isDay ? "낮" : "밤"} 모드`);
+  }
+}
+
+/**
+ * 밤 시간에 씬 모델을 어둡게 조정합니다.
+ * @param sceneModel 씬 모델 그룹
+ */
+function adjustSceneForNightTime(sceneModel: THREE.Group): void {
+  sceneModel.traverse((child) => {
+    if (child instanceof THREE.Mesh && child.material) {
+      const materials = Array.isArray(child.material)
+        ? child.material
+        : [child.material];
+
+      materials.forEach((mat) => {
+        if (mat.color) {
+          // 밤 시간에는 모든 색상을 어둡게 조정
+          mat.color.multiplyScalar(0.3); // 30%로 어둡게
+        }
+        if (mat.emissive) {
+          // 약간의 파란 발광 효과 추가
+          mat.emissive.setHex(0x001122);
+        }
+        mat.needsUpdate = true;
+      });
+    }
+  });
+
+  console.log("씬 모델에 밤 효과 적용 완료");
+}
+
+function adjustForestGroundLighting(
+  forestGroundModel: THREE.Group,
+  isDay: boolean
+): void {
+  forestGroundModel.traverse((child) => {
+    if (child instanceof THREE.Mesh && child.material) {
+      const material = child.material;
+
+      // 배열 형태의 머티리얼 처리
+      const materials = Array.isArray(material) ? material : [material];
+
+      materials.forEach((mat) => {
+        if (isDay) {
+          // 낮 시간: 원래 색상 유지 (밝게)
+
+          if (mat.color) {
+            mat.color.multiplyScalar(1.0); // 밝기
+          }
+          if (mat.emissive) {
+            mat.emissive.setHex(0x000000); // 발광 없음
+          }
+        } else {
+          // 밤 시간: 어둡게 조정
+          if (mat.color) {
+            mat.color.multiplyScalar(1.0);
+          }
+          if (mat.emissive) {
+            mat.emissive.setHex(0x001122); // 약간의 파란 발광
+          }
+        }
+
+        mat.needsUpdate = true;
+      });
+    }
+  });
 }

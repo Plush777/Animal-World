@@ -1,0 +1,23 @@
+.intro-logo-area,
+.intro-description-box,
+.intro-bottom .button-3d {
+  transform: scale(0);
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.intro-logo-area.animate-in {
+  transform: scale(1) translateY(-70px);
+}
+
+.intro-bottom .button-3d.animate-in {
+  transform: scale(1);
+}
+
+.intro-description-box {
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.intro-description-box.animate-in {
+  opacity: 1;
+}
