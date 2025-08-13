@@ -242,8 +242,9 @@ export function setupCameraEventListeners(
   controls: OrbitControls
 ): void {
   // 'changeCameraPosition' 커스텀 이벤트 리스너 등록
-  document.addEventListener("changeCameraPosition", (event: CustomEvent) => {
-    const { x, y, z, duration = 2000 } = event.detail;
+  document.addEventListener("changeCameraPosition", (event: Event) => {
+    const customEvent = event as CustomEvent;
+    const { x, y, z, duration = 2000 } = customEvent.detail;
 
     // animation.ts의 카메라 애니메이션 함수 사용
     import("./animation")

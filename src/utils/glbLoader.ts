@@ -23,12 +23,9 @@ export function loadGLBModel(
 
           // 모델의 모든 메시에 그림자 설정 및 재질 조정
           gltf.scene.traverse((child) => {
-            // undefined나 null 체크 추가
             if (!child) return;
 
-            // Bone 객체에 대한 안전한 처리
-            if (child.type === "Bone" || child.isBone) {
-              // Bone 객체는 그냥 넘어감
+            if (child.type === "Bone" || child instanceof THREE.Bone) {
               return;
             }
 
@@ -298,21 +295,21 @@ function adjustSingleTreeMaterial(material: THREE.Material): void {
 // Floating Island 재질을 밝게 조정하는 함수
 function adjustFloatingIslandMaterial(
   material: THREE.Material | THREE.Material[],
-  meshName: string
+  _meshName: string
 ): void {
   if (Array.isArray(material)) {
     material.forEach((mat) => {
-      adjustSingleFloatingIslandMaterial(mat, meshName);
+      adjustSingleFloatingIslandMaterial(mat, _meshName);
     });
   } else {
-    adjustSingleFloatingIslandMaterial(material, meshName);
+    adjustSingleFloatingIslandMaterial(material, _meshName);
   }
 }
 
 // 단일 Floating Island 재질 조정 함수
 function adjustSingleFloatingIslandMaterial(
   material: THREE.Material,
-  meshName: string
+  _meshName: string
 ): void {
   // MeshStandardMaterial 또는 MeshPhysicalMaterial인 경우
   if (
@@ -386,21 +383,21 @@ function adjustSingleFloatingIslandMaterial(
 // Water 재질을 조정하는 함수
 function adjustWaterMaterial(
   material: THREE.Material | THREE.Material[],
-  meshName: string
+  _meshName: string
 ): void {
   if (Array.isArray(material)) {
     material.forEach((mat) => {
-      adjustSingleWaterMaterial(mat, meshName);
+      adjustSingleWaterMaterial(mat, _meshName);
     });
   } else {
-    adjustSingleWaterMaterial(material, meshName);
+    adjustSingleWaterMaterial(material, _meshName);
   }
 }
 
 // 단일 Water 재질 조정 함수
 function adjustSingleWaterMaterial(
   material: THREE.Material,
-  meshName: string
+  _meshName: string
 ): void {
   // MeshStandardMaterial 또는 MeshPhysicalMaterial인 경우
   if (

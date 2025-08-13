@@ -111,15 +111,8 @@ function updateFloatingAnimations(time: number): void {
 
 function updateWaterWaveAnimations(time: number): void {
   waterWaveObjects.forEach((waterWave) => {
-    const {
-      object,
-      originalPosition,
-      originalRotation,
-      waveAmplitude,
-      waveFrequency,
-      waveSpeed,
-      phase,
-    } = waterWave;
+    const { object, originalPosition, originalRotation, waveSpeed, phase } =
+      waterWave;
 
     // 위치는 고정 (움직임 없음)
     object.position.copy(originalPosition);
