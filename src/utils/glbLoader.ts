@@ -18,7 +18,7 @@ export function loadGLBModel(
         try {
           // UI에 모델 로드 완료 알림
           if (window.LoadingUI) {
-            window.LoadingUI.onModelLoaded();
+            window.LoadingUI.onModelLoaded(path);
           }
 
           // 모델의 모든 메시에 그림자 설정 및 재질 조정
@@ -133,7 +133,11 @@ export function loadGLBModel(
 
         // UI에 진행률 업데이트
         if (progress.total > 0 && window.LoadingUI) {
-          window.LoadingUI.onModelProgress(progress.loaded, progress.total);
+          window.LoadingUI.onModelProgress(
+            progress.loaded,
+            progress.total,
+            path
+          );
         }
 
         if (onProgress) onProgress(progress);

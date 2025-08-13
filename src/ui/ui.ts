@@ -7,10 +7,10 @@ window.LoadingUI = window.LoadingUI || {};
 
 (function () {
   // 로딩 상태 변수들 (전역 네임스페이스 내부)
-  let loadingWrapper = null;
-  let progressFill = null;
-  let progressText = null;
-  let tipText = null;
+  let loadingWrapper: HTMLElement | null = null;
+  let progressFill: HTMLElement | null = null;
+  let progressText: HTMLElement | null = null;
+  let tipText: HTMLElement | null = null;
 
   let totalModels = 0;
   let loadedModels = 0;
@@ -41,7 +41,7 @@ window.LoadingUI = window.LoadingUI || {};
   /**
    * 로딩할 총 모델 수 설정
    */
-  function setTotalModels(total) {
+  function setTotalModels(total: number) {
     totalModels = total;
     loadedModels = 0;
     currentProgress = 0;
@@ -51,7 +51,7 @@ window.LoadingUI = window.LoadingUI || {};
   /**
    * 모델 로딩 완료 시 호출
    */
-  function onModelLoaded(modelName) {
+  function onModelLoaded() {
     loadedModels++;
     currentProgress = (loadedModels / totalModels) * 100;
 
@@ -69,7 +69,7 @@ window.LoadingUI = window.LoadingUI || {};
   /**
    * 개별 모델 로딩 진행률 업데이트
    */
-  function onModelProgress(loaded, total, modelName) {
+  function onModelProgress(loaded: number, total: number) {
     if (total === 0) return;
 
     const modelProgress = (loaded / total) * 100;
@@ -199,7 +199,7 @@ window.LoadingUI = window.LoadingUI || {};
   /**
    * 에러 발생 시 처리
    */
-  function onLoadingError(error) {
+  function onLoadingError(error: any) {
     if (progressText) {
       progressText.textContent = "로딩 중 오류가 발생했습니다.";
     }
