@@ -199,3 +199,7 @@ strong {
 #app {
   user-select: none;
 }
+
+input {
+  outline: 0;
+}

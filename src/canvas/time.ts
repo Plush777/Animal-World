@@ -1,5 +1,3 @@
-// 🔧 테스트용: 아래 값을 변경해서 시간대 테스트 가능
-// null = 실제 시간 사용, 숫자 = 해당 시간 사용 (0-23)
 const TEST_TIME: number | null = null;
 
 // const TEST_TIME: number | null = 8;   // 오전 8시 (낮 모드) 테스트
@@ -51,7 +49,5 @@ export function isNightTime(): boolean {
  
  */
 export function getSceneModelPath(): string {
-  return isDayTime()
-    ? "/models/scene.glb"
-    : "/models/fantasy_sky_background.glb";
+  return isDayTime() ? "/models/scene.glb" : "/models/night_sky_scene.glb";
 }

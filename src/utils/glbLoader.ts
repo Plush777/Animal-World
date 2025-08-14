@@ -104,6 +104,37 @@ export function loadGLBModel(
                 child.castShadow = false; // 물은 그림자를 드리지 않음
                 child.receiveShadow = true; // 물은 그림자를 받음
               }
+              // night_sky_scene 모델의 재질 조정 (밤 하늘 배경 보존)
+              else if (path.includes("night_sky_scene")) {
+                console.log(`Night Sky Scene 모델 발견: ${child.name}`);
+                adjustNightSkyMaterial(child.material, child.name);
+
+                // 밤 하늘 배경은 그림자 설정 없음
+                child.castShadow = false;
+                child.receiveShadow = false;
+
+                // 밤 하늘 배경에 특별한 조명 처리
+                if (child.material) {
+                  if (Array.isArray(child.material)) {
+                    child.material.forEach((mat) => {
+                      // 밤 하늘 배경의 밝기와 색상 보존
+                      if (mat.color) {
+                        console.log(
+                          `Night Sky Scene 원본 색상: ${mat.color.getHexString()}`
+                        );
+                      }
+                      mat.needsUpdate = true;
+                    });
+                  } else {
+                    if (child.material.color) {
+                      console.log(
+                        `Night Sky Scene 원본 색상: ${child.material.color.getHexString()}`
+                      );
+                    }
+                    child.material.needsUpdate = true;
+                  }
+                }
+              }
             }
 
             // GLB 내부 조명 강도 조정
@@ -395,6 +426,71 @@ function adjustWaterMaterial(
     });
   } else {
     adjustSingleWaterMaterial(material, _meshName);
+  }
+}
+
+// Night Sky Scene 재질을 조정하는 함수
+function adjustNightSkyMaterial(
+  material: THREE.Material | THREE.Material[],
+  _meshName: string
+): void {
+  if (Array.isArray(material)) {
+    material.forEach((mat) => {
+      adjustSingleNightSkyMaterial(mat, _meshName);
+    });
+  } else {
+    adjustSingleNightSkyMaterial(material, _meshName);
+  }
+}
+
+// 단일 Night Sky Scene 재질 조정 함수
+function adjustSingleNightSkyMaterial(
+  material: THREE.Material,
+  _meshName: string
+): void {
+  // MeshStandardMaterial 또는 MeshPhysicalMaterial인 경우
+  if (
+    material instanceof THREE.MeshStandardMaterial ||
+    material instanceof THREE.MeshPhysicalMaterial
+  ) {
+    material.metalness = 0.0;
+    material.roughness = 0.9;
+    material.transparent = false;
+    material.opacity = 1.0;
+
+    // 밤 하늘 배경의 원래 색상 보존 - 색상 조정하지 않음
+    if (material.color) {
+      // 원래 색상을 그대로 유지
+      console.log(
+        `Night Sky Scene 색상 보존: ${material.color.getHexString()}`
+      );
+    }
+  }
+
+  // MeshLambertMaterial인 경우
+  else if (material instanceof THREE.MeshLambertMaterial) {
+    material.transparent = false;
+    material.opacity = 1.0;
+
+    if (material.color) {
+      // 원래 색상을 그대로 유지
+      console.log(
+        `Night Sky Scene Lambert 색상 보존: ${material.color.getHexString()}`
+      );
+    }
+  }
+
+  // MeshBasicMaterial인 경우
+  else if (material instanceof THREE.MeshBasicMaterial) {
+    material.transparent = false;
+    material.opacity = 1.0;
+
+    if (material.color) {
+      // 원래 색상을 그대로 유지
+      console.log(
+        `Night Sky Scene Basic 색상 보존: ${material.color.getHexString()}`
+      );
+    }
   }
 }
 

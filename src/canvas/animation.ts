@@ -117,32 +117,33 @@ function updateWaterWaveAnimations(time: number): void {
     // 위치는 고정 (움직임 없음)
     object.position.copy(originalPosition);
 
-    // 물결 효과를 위한 회전 (좌우로 부드럽게 흔들림)
-    const rotationOffset = Math.sin(time * waveSpeed * 0.5 + phase) * 0.02;
+    // 물결 효과를 위한 회전 (좌우로 부드럽게 흔들림) - 더 흔들리게 증가
+    const rotationOffset = Math.sin(time * waveSpeed * 0.8 + phase) * 0.015;
     object.rotation.z = originalRotation.z + rotationOffset;
 
-    // 물결 효과를 위한 X축 회전 (앞뒤로 부드럽게 흔들림)
-    const xRotationOffset = Math.sin(time * waveSpeed * 0.3 + phase + 1) * 0.01;
+    // 물결 효과를 위한 X축 회전 (앞뒤로 부드럽게 흔들림) - 더 흔들리게 증가
+    const xRotationOffset =
+      Math.sin(time * waveSpeed * 0.6 + phase + 1) * 0.012;
     object.rotation.x = originalRotation.x + xRotationOffset;
 
-    // 물결 효과를 위한 Y축 회전 (좌우로 부드럽게 흔들림)
+    // 물결 효과를 위한 Y축 회전 (좌우로 부드럽게 흔들림) - 더 흔들리게 증가
     const yRotationOffset =
-      Math.sin(time * waveSpeed * 0.4 + phase + 2) * 0.015;
+      Math.sin(time * waveSpeed * 0.7 + phase + 2) * 0.018;
     object.rotation.y = originalRotation.y + yRotationOffset;
 
-    // 물결 효과를 위한 스케일 변화 (호흡하는 듯한 효과)
-    const scaleOffset = Math.sin(time * waveSpeed * 0.3 + phase) * 0.01;
+    // 물결 효과를 위한 스케일 변화 (호흡하는 듯한 효과) - 더 흔들리게 증가
+    const scaleOffset = Math.sin(time * waveSpeed * 0.5 + phase) * 0.003;
     const newScale = 1 + scaleOffset;
     object.scale.set(newScale, newScale, newScale);
 
-    // 물결 효과를 위한 재질 애니메이션 (투명도 변화)
+    // 물결 효과를 위한 재질 애니메이션 (투명도 변화) - 더 흔들리게 증가
     if (object instanceof THREE.Mesh && object.material) {
       const material = Array.isArray(object.material)
         ? object.material[0]
         : object.material;
       if (material && material.transparent) {
-        const opacityOffset = Math.sin(time * waveSpeed * 0.2 + phase) * 0.1;
-        material.opacity = Math.max(0.3, Math.min(0.7, 0.5 + opacityOffset));
+        const opacityOffset = Math.sin(time * waveSpeed * 0.4 + phase) * 0.05;
+        material.opacity = Math.max(0.85, Math.min(0.98, 0.92 + opacityOffset));
       }
     }
   });
