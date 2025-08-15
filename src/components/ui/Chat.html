@@ -1,9 +1,10 @@
-<section class="chat-wrapper">
+<section class="chat-wrapper active">
   <div class="chat-inner">
     <header class="chat-header">
       <div class="chat-button-group">
         <button type="button" class="chat-close-button">
           <load src="src/components/icons/triangle-arrow.html" />
+          <span class="hidden">채팅창 닫기</span>
         </button>
       </div>
     </header>
@@ -15,7 +16,7 @@
           placeholder="메시지를 입력하세요."
           class="chat-input"
         />
-        <button type="button" class="chat-enter-button short-key">
+        <button type="button" class="chat-enter-button short-key has-border">
           <load src="src/components/icons/enter.html" />
           <span class="hidden">메시지 전송</span>
         </button>

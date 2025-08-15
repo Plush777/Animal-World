@@ -11,8 +11,11 @@ import {
 } from "./scene";
 
 import { createAnimationLoop } from "./animation";
+import { initializeTheme } from "../ui/theme";
 
 async function init(): Promise<void> {
+  initializeTheme();
+
   const scene = createScene();
 
   const camera = createCamera();

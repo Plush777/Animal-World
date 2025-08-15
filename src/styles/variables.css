@@ -266,3 +266,21 @@
   --stone-900: oklch(0.216 0.006 56.043);
   --stone-950: oklch(0.147 0.004 49.25);
 }
+
+[data-theme="light"] {
+  --body: var(--white);
+
+  --theme-element1: var(--black);
+  --theme-element2: var(--white);
+
+  --theme-disabled: var(--gray-700);
+}
+
+[data-theme="dark"] {
+  --body: #121212;
+
+  --theme-element1: var(--white);
+  --theme-element2: var(--black);
+
+  --theme-disabled: var(--gray-400);
+}

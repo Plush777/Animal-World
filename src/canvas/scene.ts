@@ -14,14 +14,11 @@ export function createScene(): THREE.Scene {
 
   const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
 
-  // 시간에 따라 다른 배경색 적용
   if (isDayTime()) {
-    // 낮 시간 배경 (기존 색상)
     gradient.addColorStop(0, "#87CEEB"); // 밝은 하늘색 (위쪽)
     gradient.addColorStop(0.5, "#4682B4"); // 중간 파란색
     gradient.addColorStop(1, "#000080"); // 진한 파란색 (아래쪽)
   } else {
-    // 밤 시간 배경 (어두운 색상)
     gradient.addColorStop(0, "#1a1a2e"); // 어두운 보라색 (위쪽)
     gradient.addColorStop(0.5, "#16213e"); // 어두운 남색
     gradient.addColorStop(1, "#0f0f0f"); // 검은색에 가까운 색 (아래쪽)
@@ -68,7 +65,6 @@ export function logCameraInfo(
   console.log(`==================`);
 }
 
-// 렌더러 생성 및 설정
 export function createRenderer(): THREE.WebGLRenderer {
   const renderer = new THREE.WebGLRenderer({
     canvas: document.getElementById("scene") as HTMLCanvasElement,
@@ -77,14 +73,12 @@ export function createRenderer(): THREE.WebGLRenderer {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
 
-  // 그림자 설정 개선
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.shadowMap.autoUpdate = false; // 성능 최적화를 위해 자동 업데이트 비활성화
+  renderer.shadowMap.autoUpdate = false;
 
-  // 톤 매핑 설정으로 밝기 조정
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = isDayTime() ? 1.0 : 1.2; // 밤에는 night_sky_scene을 위해 더 밝게
+  renderer.toneMappingExposure = isDayTime() ? 1.0 : 1.2;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   return renderer;
@@ -92,9 +86,8 @@ export function createRenderer(): THREE.WebGLRenderer {
 
 // 조명 설정
 export function setupLighting(scene: THREE.Scene): void {
-  // 시간에 따라 조명 강도 조정
   const isDay = isDayTime();
-  // 밤에는 night_sky_scene이 잘 보이도록 조명 조정
+
   const ambientIntensity = isDay ? 0.15 : 0.25; // 밤에는 night_sky_scene을 위해 더 밝게
   const directionalIntensity = isDay ? 2.0 : 0.8; // 밤에는 직사광을 약간 증가
   const lightColor = isDay ? 0xffffff : 0xffffff; // 밤에는 흰색 조명으로 원래 색상 보존
@@ -475,10 +468,6 @@ function adjustWaterLighting(waterObject: any, isDay: boolean): void {
   }
 }
 
-/**
- * 밤 시간에 씬 모델을 어둡게 조정합니다.
- * @param sceneModel 씬 모델 그룹
- */
 function adjustSceneForNightTime(sceneModel: THREE.Group): void {
   sceneModel.traverse((child) => {
     if (child instanceof THREE.Mesh && child.material) {
@@ -507,7 +496,6 @@ function adjustForestGroundLighting(
     if (child instanceof THREE.Mesh && child.material) {
       const material = child.material;
 
-      // 배열 형태의 머티리얼 처리
       const materials = Array.isArray(material) ? material : [material];
 
       materials.forEach((mat) => {
@@ -554,42 +542,26 @@ function adjustNightSkySceneOpacity(nightSkyModel: THREE.Group): void {
   });
 }
 
-/**
- * lighthouse 모델의 Node-Mesh_9 오브젝트를 시간에 따라 제어합니다.
- * 낮에는 숨기고, 밤에는 보이게 합니다.
- * @param lighthouseModel lighthouse 모델 그룹
- * @param isDay 낮 시간 여부
- */
 function controlLighthouseLight(
   lighthouseModel: THREE.Group,
   isDay: boolean
 ): void {
-  console.log("controlLighthouseLight 함수 시작");
-  console.log("lighthouseModel:", lighthouseModel);
-  console.log("isDay:", isDay);
-
   let lightObject9: THREE.Object3D | null = null;
 
-  // Node-Mesh_9 오브젝트 찾기
-  lighthouseModel.traverse((child) => {
+  lighthouseModel.traverse((child: THREE.Object3D) => {
     if (child.name === "Node-Mesh_9") {
       lightObject9 = child;
-      console.log("Node-Mesh_9 찾음:", child);
     }
   });
 
   if (lightObject9) {
     if (isDay) {
-      // 낮 시간: Node-Mesh_9 숨기기
-      lightObject9.visible = false;
-      console.log("Node-Mesh_9 숨김 (낮 시간)");
+      (lightObject9 as THREE.Object3D).visible = false;
     } else {
-      // 밤 시간: Node-Mesh_9 보이기
-      lightObject9.visible = true;
-      console.log("Node-Mesh_9 보임 (밤 시간)");
+      (lightObject9 as THREE.Object3D).visible = true;
     }
   } else {
-    console.warn(
+    console.error(
       "lighthouse 모델에서 Node-Mesh_9 오브젝트를 찾을 수 없습니다."
     );
   }

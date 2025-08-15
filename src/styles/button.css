@@ -57,7 +57,11 @@
 }
 
 .button-3d:not(:disabled):hover {
-  transform: translateY(0.25em);
+  transform: scale(1) translateY(0.25em) !important;
+}
+
+.button-3d:not(:disabled):hover:before {
+  transform: translate3d(0, 0.5em, -1em);
 }
 
 .button-3d:not(:disabled):hover:before {
@@ -101,6 +105,20 @@
 
 .button-3d-gray2-shadow::before {
   box-shadow: 0 0 0 2px oklch(21% 0.006 285.885);
+}
+
+.only-icon-button:disabled {
+  opacity: 0.4;
+}
+
+.only-icon-button:disabled svg {
+  color: var(--theme-disabled);
+}
+
+.button-3d-blue .short-key {
+  border: 1px solid var(--black);
+  color: var(--black);
+  background-color: var(--white);
 }
 
 .button-size-lg {

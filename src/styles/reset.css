@@ -75,6 +75,7 @@ html {
 
 body {
   overflow: hidden;
+  background-color: var(--theme-element2);
 }
 
 ol,
@@ -200,6 +201,12 @@ strong {
   user-select: none;
 }
 
-input {
+input,
+button {
   outline: 0;
+}
+
+button:disabled {
+  opacity: 1;
+  pointer-events: none;
 }
