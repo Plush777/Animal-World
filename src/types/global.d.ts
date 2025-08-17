@@ -15,4 +15,12 @@ declare global {
   }
 }
 
+interface ImportMetaEnv {
+  readonly VITE_SUPABASE_API_KEY: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
 export {};

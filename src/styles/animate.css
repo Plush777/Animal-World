@@ -1,6 +1,7 @@
 .intro-logo-area,
 .intro-description-box,
-.intro-bottom .button {
+.intro-bottom .button,
+.popup-etc-area {
   transform: scale(0);
   transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -9,7 +10,8 @@
   transform: scale(1) translateY(-70px);
 }
 
-.intro-bottom .button.animate-in {
+.intro-bottom .button.animate-in,
+.popup-etc-area.animate-in {
   transform: scale(1);
 }
 

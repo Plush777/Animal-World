@@ -10,13 +10,7 @@ window.LoadingUI = window.LoadingUI || {};
   let loadedModels = 0;
   let currentProgress = 0;
 
-  const tips = [
-    "팁 텍스트입니다1",
-    "팁 텍스트입니다2",
-    "팁 텍스트입니다3",
-    "팁 텍스트입니다4",
-    "팁 텍스트입니다5",
-  ];
+  const tips = ["팁 텍스트입니다1", "팁 텍스트입니다2", "팁 텍스트입니다3", "팁 텍스트입니다4", "팁 텍스트입니다5"];
 
   /**
    * 로딩 화면 생성 및 표시
@@ -152,9 +146,7 @@ window.LoadingUI = window.LoadingUI || {};
           canvas.classList.add("loaded");
         }
 
-        const introWrapper = document.querySelector(
-          ".intro-wrapper"
-        ) as HTMLElement;
+        const introWrapper = document.querySelector(".intro-wrapper") as HTMLElement;
         if (introWrapper) {
           introWrapper.style.display = "flex";
 
@@ -173,32 +165,93 @@ window.LoadingUI = window.LoadingUI || {};
   }
 
   /**
+   * 로그인 상태 확인 함수
+   */
+  function isUserLoggedIn(): boolean {
+    const userLogoutElement = document.querySelector("#user-logout-element");
+    const userLoginElement = document.querySelector("#user-login-element");
+
+    // userLogoutElement가 존재하고 display가 none이 아니면 로그인된 상태
+    if (userLogoutElement && (userLogoutElement as HTMLElement).style.display !== "none") {
+      return true;
+    }
+
+    // userLoginElement가 존재하고 display가 none이 아니면 로그인되지 않은 상태
+    if (userLoginElement && (userLoginElement as HTMLElement).style.display !== "none") {
+      return false;
+    }
+
+    // 기본적으로 로그인 버튼이 있는지 확인
+    const googleLoginButton = document.querySelector(".google-login-button");
+    const kakaoLoginButton = document.querySelector(".kakao-login-button");
+
+    return !(googleLoginButton || kakaoLoginButton);
+  }
+
+  /**
+   * 기존 애니메이션 클래스 제거 함수
+   */
+  function resetAnimationClasses(): void {
+    const animatedElements = document.querySelectorAll(".animate-in");
+    animatedElements.forEach((element) => {
+      element.classList.remove("animate-in");
+    });
+  }
+
+  /**
    * Intro 요소들의 순차적 애니메이션 시작
    */
   function startIntroAnimations(): void {
+    // 기존 애니메이션 클래스 제거
+    resetAnimationClasses();
+
     const logoArea = document.querySelector(".intro-logo-area");
     const descriptionBox = document.querySelector(".intro-description-box");
     const button = document.querySelector(".intro-bottom button");
+    const googleLoginButton = document.querySelector(".google-login-button");
+    const kakaoLoginButton = document.querySelector(".kakao-login-button");
+    const popupEtcArea = document.querySelector(".popup-etc-area");
 
-    // 1. 로고 영역 애니메이션 (즉시 시작)
+    // 로고 영역은 항상 먼저 애니메이션
     if (logoArea) {
       setTimeout(() => {
         logoArea.classList.add("animate-in");
       }, 200);
     }
 
-    // 2. 버튼 애니메이션 (0.6초 후)
-    if (button) {
-      setTimeout(() => {
-        button.classList.add("animate-in");
-      }, 500);
-    }
+    if (isUserLoggedIn()) {
+      if (button) {
+        setTimeout(() => {
+          button.classList.add("animate-in");
+        }, 400);
+      }
 
-    // 3. 설명 박스 애니메이션 (1.6초 후)
-    if (descriptionBox) {
-      setTimeout(() => {
-        descriptionBox.classList.add("animate-in");
-      }, 1600);
+      if (descriptionBox) {
+        setTimeout(() => {
+          descriptionBox.classList.add("animate-in");
+        }, 1200);
+      }
+    } else {
+      // 2. 구글 로그인 버튼 애니메이션 (0.4초 후)
+      if (googleLoginButton) {
+        setTimeout(() => {
+          googleLoginButton.classList.add("animate-in");
+        }, 400);
+      }
+
+      // 3. 카카오 로그인 버튼 애니메이션 (0.6초 후)
+      if (kakaoLoginButton) {
+        setTimeout(() => {
+          kakaoLoginButton.classList.add("animate-in");
+        }, 600);
+      }
+
+      // 4. 기타 영역 애니메이션 (0.8초 후)
+      if (popupEtcArea) {
+        setTimeout(() => {
+          popupEtcArea.classList.add("animate-in");
+        }, 800);
+      }
     }
   }
 
@@ -229,13 +282,14 @@ window.LoadingUI = window.LoadingUI || {};
     onError: onLoadingError,
   };
 
+  // 전역에서 애니메이션 함수 접근 가능하도록 노출
+  (window as any).startIntroAnimations = startIntroAnimations;
+
   /**
    * intro-wrapper만 숨기기 (카메라 이동 없음)
    */
   function hideIntroWrapperOnly(): void {
-    const introWrapper = document.querySelector(
-      ".intro-wrapper"
-    ) as HTMLElement;
+    const introWrapper = document.querySelector(".intro-wrapper") as HTMLElement;
     if (introWrapper) {
       introWrapper.style.transition = "opacity 0.5s ease-out";
       introWrapper.style.opacity = "0";
@@ -263,9 +317,7 @@ window.LoadingUI = window.LoadingUI || {};
   }
 
   async function setupJoinButton(): Promise<void> {
-    const joinButton = document.querySelector(
-      "#join-button"
-    ) as HTMLButtonElement;
+    const joinButton = document.querySelector("#join-button") as HTMLButtonElement;
     if (joinButton) {
       joinButton.addEventListener("click", async () => {
         // Canvas 로딩 완료 이벤트 리스너 등록 (참여하기 버튼 클릭 시점에 등록)
@@ -315,32 +367,22 @@ window.LoadingUI = window.LoadingUI || {};
 })();
 
 document.addEventListener("DOMContentLoaded", () => {
-  document
-    .querySelector(".chat-close-button")
-    ?.addEventListener("click", () => {
-      const chatWrapper = document.querySelector(
-        ".chat-wrapper"
-      ) as HTMLElement;
+  document.querySelector(".chat-close-button")?.addEventListener("click", () => {
+    const chatWrapper = document.querySelector(".chat-wrapper") as HTMLElement;
 
-      if (chatWrapper) {
-        chatWrapper.classList.toggle("active");
-      }
+    if (chatWrapper) {
+      chatWrapper.classList.toggle("active");
+    }
 
-      const hidden = document.querySelector(
-        ".chat-close-button .hidden"
-      ) as HTMLElement;
+    const hidden = document.querySelector(".chat-close-button .hidden") as HTMLElement;
 
-      if (hidden) {
-        hidden.textContent = chatWrapper.classList.contains("active")
-          ? "채팅창 닫기"
-          : "채팅창 열기";
-      }
-    });
+    if (hidden) {
+      hidden.textContent = chatWrapper.classList.contains("active") ? "채팅창 닫기" : "채팅창 열기";
+    }
+  });
 
   document.querySelector(".setting-button")?.addEventListener("click", () => {
-    const settingPopup = document.querySelector(
-      ".popup.setting"
-    ) as HTMLElement;
+    const settingPopup = document.querySelector(".popup.setting") as HTMLElement;
 
     settingPopup.classList.toggle("active");
   });
@@ -352,6 +394,35 @@ document.addEventListener("DOMContentLoaded", () => {
       popup.classList.remove("active");
     }
   });
+
+  // 캐릭터 선택 버튼 이벤트
+  document.querySelectorAll(".popup-character-tab-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      // 모든 버튼에서 selected 클래스 제거
+      document.querySelectorAll(".popup-character-tab-button").forEach((btn) => {
+        btn.classList.remove("selected");
+      });
+
+      // 클릭된 버튼에 selected 클래스 추가
+      button.classList.add("selected");
+
+      // 선택된 캐릭터 저장
+      const character = button.getAttribute("data-character");
+      if (character) {
+        localStorage.setItem("selectedCharacter", character);
+        console.log(`선택된 캐릭터: ${character}`);
+      }
+    });
+  });
+
+  // 저장된 캐릭터 선택 복원
+  const savedCharacter = localStorage.getItem("selectedCharacter");
+  if (savedCharacter) {
+    const savedButton = document.querySelector(`[data-character="${savedCharacter}"]`);
+    if (savedButton) {
+      savedButton.classList.add("selected");
+    }
+  }
 
   const lightVideo = document.querySelector(".light-video") as HTMLVideoElement;
   const darkVideo = document.querySelector(".dark-video") as HTMLVideoElement;
@@ -374,5 +445,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (darkVideo) {
       darkVideo.style.display = "none";
     }
+  }
+
+  const userBoxLogoutElement = document.getElementById("userbox-user-logout-element") as HTMLElement;
+
+  if (userBoxLogoutElement) {
+    userBoxLogoutElement.addEventListener("click", () => {
+      const userBoxList = document.querySelector(".user-box-list") as HTMLElement;
+      userBoxList.classList.toggle("active");
+    });
   }
 });

@@ -2,13 +2,13 @@
 <html lang="ko">
   <load src="src/components/layouts/Head.html" />
   <body>
-    <noscript
-      >컨텐츠를 표시하기 위해서는 자바스크립트를 활성화해주세요.</noscript
-    >
+    <noscript>컨텐츠를 표시하기 위해서는 자바스크립트를 활성화해주세요.</noscript>
     <load src="src/components/config/ThemeScript.html" />
     <div id="app">
       <main class="main">
         <div class="intro-wrapper">
+          <load src="src/components/intro/UserBox.html" />
+
           <section class="intro-box">
             <load src="src/components/intro/IntroLogo.html" />
             <load src="src/components/intro/IntroBottom.html" />
@@ -25,26 +25,23 @@
           </div>
 
           <a class="threejs-logo" href="https://threejs.org/" target="_blank">
-            <img
-              src="/images/logo/logo-threejs.png"
-              alt="three.js logo"
-              width="100"
-              height="111"
-            />
+            <img src="/images/logo/logo-threejs.png" alt="three.js logo" width="100" height="111" />
           </a>
         </div>
 
         <canvas id="scene"></canvas>
 
-        <load src="src/components/ui/Chat.html" />
-        <load src="src/components/ui/HeaderRight.html" />
+        <load src="src/components/ui/scene/Chat.html" />
+        <load src="src/components/ui/scene/HeaderRight.html" />
       </main>
 
       <!-- popup -->
-      <!-- <load src="src/components/ui/LoginPopup.html" /> -->
-      <!-- <load src="src/components/ui/UsernamePopup.html" /> -->
+      <!-- <load src="src/pages/popup/LoginPopup.html" /> -->
+      <!-- <load src="src/pages/popup/UsernamePopup.html" />
+      <load src="src/pages/popup/CharacterSettingPopup.html" /> -->
 
       <script type="module" src="/src/canvas/main.ts"></script>
+      <script type="module" src="/src/auth/auth.ts"></script>
     </div>
   </body>
 </html>

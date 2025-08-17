@@ -1,4 +1,4 @@
-const TEST_TIME: number | null = null;
+const TEST_TIME: number | null = 8;
 
 // const TEST_TIME: number | null = 8;   // 오전 8시 (낮 모드) 테스트
 // const TEST_TIME: number | null = 20;  // 오후 8시 (밤 모드) 테스트

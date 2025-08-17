@@ -26,4 +26,8 @@
   .button-sky:hover {
     background-color: var(--sky-500);
   }
+
+  .popup-character-tab-button:hover {
+    border-color: var(--blue-500);
+  }
 }

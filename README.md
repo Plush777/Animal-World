@@ -39,3 +39,9 @@
 - https://coastalworld.com/
 - https://www.choonsikdiary.com/
 - https://v0.app/community/habbo-hotel-like-multiplayer-chatroom-using-gpt-5-EYN85i0FdYV
+
+#### Troubleshooting
+
+- https://euni8917.tistory.com/575
+- https://woorii-kye.tistory.com/227
+- https://mycodings.fly.dev/blog/2025-01-01-nextjs-supabase-tutorial-2-login-with-google-id-oauth
