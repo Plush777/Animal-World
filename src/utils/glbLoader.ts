@@ -10,6 +10,13 @@ export function loadGLBModel(
   onError?: (error: Error) => void
 ): Promise<any> {
   return new Promise((resolve, reject) => {
+    // 로딩 시작을 즉시 알림
+    if (window.LoadingUI) {
+      window.LoadingUI.updateProgressText(
+        `${path.split("/").pop()?.replace(".glb", "")} 로딩 중...`
+      );
+    }
+
     gltfLoader.load(
       path,
       (gltf) => {

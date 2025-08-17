@@ -1,0 +1,251 @@
+.popup {
+  position: absolute;
+  display: none;
+}
+
+.popup.active {
+  display: block;
+}
+
+.popup.setting {
+  top: 80px;
+  right: 0;
+  width: 350px;
+}
+
+.popup-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  border: 2px solid var(--gray-700);
+  border-radius: 12px 12px 0 0;
+  background-color: var(--blue-400);
+}
+
+.popup-close {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-700);
+  background-color: var(--blue-100);
+}
+
+.popup-close svg {
+  width: 18px;
+  height: 18px;
+  color: var(--gray-900);
+}
+
+.popup-body {
+  padding: 12px;
+  border: 2px solid var(--gray-700);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  background-color: var(--blue-100);
+}
+
+.popup-header-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.popup-section {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.popup-section-item {
+  display: flex;
+  align-items: center;
+  column-gap: 6px;
+  border-radius: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--gray-300);
+  background-color: var(--white);
+}
+
+.popup-section-item-box {
+  display: flex;
+  flex-direction: column;
+  row-gap: 4px;
+}
+
+.popup-section-title {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.popup-section-item-title {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.range-bar {
+  flex: 1;
+}
+
+.popup-inner {
+  width: 100%;
+}
+
+.popup.username .popup-inner {
+  max-width: 768px;
+}
+
+.popup.fullscreen {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(20px);
+  background-color: rgba(var(--theme-rgb1), 0.5);
+}
+
+.popup.login .popup-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  max-width: 768px;
+  width: 100%;
+  padding: 0;
+}
+
+.popup-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  column-gap: 6px;
+  font-size: 48px;
+  font-family: "Recipekorea";
+  font-weight: 700;
+  color: var(--title);
+}
+
+.popup-description {
+  font-size: 22px;
+  color: var(--gray-500);
+  font-weight: 400;
+  margin-top: 8px;
+  word-break: break-all;
+}
+
+.popup-title::before,
+.popup-title::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  width: 6px;
+  height: 55px;
+}
+
+.popup-title-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.popup-title::before {
+  left: -20px;
+  background-color: var(--sky-500);
+}
+
+.popup-title::after {
+  left: -26px;
+  background-color: var(--blue-950);
+}
+
+.popup-title-box + .popup-button-box,
+.popup-title-box + .popup-input-box {
+  margin-top: 60px;
+}
+
+.popup-button-box {
+  display: flex;
+  flex-direction: column;
+  row-gap: 12px;
+}
+
+[id*="login"] svg {
+  width: 20px;
+  height: 20px;
+}
+
+.popup-section-item svg {
+  width: 24px;
+  height: 24px;
+  color: var(--theme-element2);
+}
+
+.popup-input-box {
+  display: flex;
+  align-items: center;
+  column-gap: 12px;
+  width: 100%;
+}
+
+.popup-input-box button {
+  padding: 0 12px;
+  column-gap: 10px;
+  min-width: 135px;
+}
+
+.popup-input-box .short-key {
+  position: static;
+  transform: none;
+}
+
+.username-set-button .short-key {
+  height: 24px;
+  width: auto;
+}
+
+.fullscreen-popup-input {
+  width: 100%;
+  height: 62px;
+  font-size: 20px;
+  color: var(--blue-950);
+  padding: 0 12px;
+  text-align: center;
+  background-color: var(--white);
+  font-family: "Recipekorea";
+  line-height: 56px;
+}
+
+.fullscreen-popup-input::placeholder {
+  color: var(--blue-200);
+  margin-top: -10px;
+}
+
+.fullscreen-popup-input::-webkit-input-placeholder {
+  position: relative;
+  top: 3px;
+}
+
+.popup-bottom-button-group {
+  margin-top: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  column-gap: 8px;
+}
+
+.popup-bottom-button-group button {
+  min-width: 200px;
+}

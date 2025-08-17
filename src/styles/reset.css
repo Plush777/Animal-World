@@ -70,7 +70,7 @@ html {
   margin: 0;
   padding: 0;
   letter-spacing: 0;
-  font-family: "PretendardVariable";
+  font-family: "PretendardVariable" !important;
 }
 
 body {
@@ -204,6 +204,10 @@ strong {
 input,
 button {
   outline: 0;
+}
+
+input {
+  border: 0;
 }
 
 button:disabled {

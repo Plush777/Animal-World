@@ -57,15 +57,24 @@ export function setAutoTheme(): void {
 
 /**
  * 테마 시스템을 초기화합니다.
- * 저장된 테마가 있으면 사용하고, 없으면 현재 시간을 기반으로 자동 설정합니다.
+ * 저장된 테마와 현재 시간을 비교하여 필요시 자동 업데이트합니다.
  */
 export function initializeTheme(): void {
   const storedTheme = getStoredTheme();
+  const autoTheme = getAutoTheme();
 
-  if (storedTheme) {
-    applyTheme(storedTheme);
-  } else {
+  if (!storedTheme) {
+    // 저장된 테마가 없으면 현재 시간 기반으로 설정
     setAutoTheme();
+  } else {
+    // 저장된 테마가 있어도 현재 시간과 다르면 업데이트
+    if (storedTheme !== autoTheme) {
+      console.log(`시간대 변경 감지: ${storedTheme} → ${autoTheme}`);
+      setAutoTheme();
+    } else {
+      // 저장된 테마와 현재 시간 기반 테마가 같으면 그대로 사용
+      applyTheme(storedTheme);
+    }
   }
 }
 
@@ -76,4 +85,21 @@ export function initializeTheme(): void {
 export function getCurrentTheme(): Theme {
   const theme = document.body.getAttribute("data-theme");
   return theme === "dark" ? "dark" : "light";
+}
+
+/**
+ * 정기적으로 시간을 확인하여 테마를 자동 업데이트합니다.
+ * 10분마다 현재 시간을 확인하고 필요시 테마를 변경합니다.
+ */
+export function startAutoThemeUpdater(): void {
+  // 10분마다 테마 확인
+  setInterval(() => {
+    const currentTheme = getCurrentTheme();
+    const autoTheme = getAutoTheme();
+
+    if (currentTheme !== autoTheme) {
+      console.log(`자동 테마 업데이트: ${currentTheme} → ${autoTheme}`);
+      setAutoTheme();
+    }
+  }, 10 * 60 * 1000); // 10분 = 600,000ms
 }

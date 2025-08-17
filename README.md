@@ -38,3 +38,4 @@
 - https://www.kodeclubs.com/
 - https://coastalworld.com/
 - https://www.choonsikdiary.com/
+- https://v0.app/community/habbo-hotel-like-multiplayer-chatroom-using-gpt-5-EYN85i0FdYV

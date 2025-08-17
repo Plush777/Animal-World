@@ -19,7 +19,43 @@ window.LoadingUI = window.LoadingUI || {};
   ];
 
   /**
-   * 로딩 UI 초기화
+   * 로딩 화면 생성 및 표시
+   */
+  function createAndShowLoadingUI() {
+    // 로딩 화면 HTML 생성
+    const loadingHTML = `
+      <div class="loading-wrapper">
+        <div class="loading-image-area">
+          <span class="hidden">로딩 배경화면</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="loading-inner">
+          <div class="loading-progress">
+            <p class="progress-text" id="progress-text"></p>
+            <div class="loading-tips">
+              <p class="tip-text" id="tip-text"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // body에 로딩 화면 추가
+    document.body.insertAdjacentHTML("afterbegin", loadingHTML);
+
+    // DOM 요소 참조
+    loadingWrapper = document.querySelector(".loading-wrapper");
+    progressFill = document.getElementById("progress-fill");
+    progressText = document.getElementById("progress-text");
+    tipText = document.getElementById("tip-text");
+
+    showRandomTip();
+  }
+
+  /**
+   * 로딩 UI 초기화 (기존 로딩 화면이 있을 때)
    */
   function initLoadingUI() {
     loadingWrapper = document.querySelector(".loading-wrapper");
@@ -27,7 +63,9 @@ window.LoadingUI = window.LoadingUI || {};
     progressText = document.getElementById("progress-text");
     tipText = document.getElementById("tip-text");
 
-    showRandomTip();
+    if (loadingWrapper && tipText) {
+      showRandomTip();
+    }
   }
 
   /**
@@ -182,14 +220,19 @@ window.LoadingUI = window.LoadingUI || {};
 
   window.LoadingUI = {
     init: initLoadingUI,
+    createAndShow: createAndShowLoadingUI,
     setTotalModels: setTotalModels,
     onModelLoaded: onModelLoaded,
     onModelProgress: onModelProgress,
+    updateProgressText: updateProgressText,
     forceHide: forceHideLoading,
     onError: onLoadingError,
   };
 
-  function hideIntroWrapper(): void {
+  /**
+   * intro-wrapper만 숨기기 (카메라 이동 없음)
+   */
+  function hideIntroWrapperOnly(): void {
     const introWrapper = document.querySelector(
       ".intro-wrapper"
     ) as HTMLElement;
@@ -199,8 +242,6 @@ window.LoadingUI = window.LoadingUI || {};
 
       setTimeout(() => {
         introWrapper.style.display = "none";
-
-        dispatchCameraChangeEvent();
       }, 500);
     }
   }
@@ -221,37 +262,117 @@ window.LoadingUI = window.LoadingUI || {};
     document.dispatchEvent(event);
   }
 
-  function setupJoinButton(): void {
+  async function setupJoinButton(): Promise<void> {
     const joinButton = document.querySelector(
       "#join-button"
     ) as HTMLButtonElement;
     if (joinButton) {
-      joinButton.addEventListener("click", () => {
-        hideIntroWrapper();
+      joinButton.addEventListener("click", async () => {
+        // Canvas 로딩 완료 이벤트 리스너 등록 (참여하기 버튼 클릭 시점에 등록)
+        document.addEventListener(
+          "canvasLoadingComplete",
+          () => {
+            // 카메라 위치 변경 (Canvas 준비 완료 후)
+            dispatchCameraChangeEvent();
+
+            setTimeout(() => {
+              const mainTag = document.querySelector(".main") as HTMLElement;
+              if (mainTag) {
+                mainTag.classList.add("ui-visible");
+              }
+            }, 3000);
+          },
+          { once: true }
+        );
+
+        // 인트로 화면 즉시 숨기기 (카메라 이동 없음)
+        hideIntroWrapperOnly();
+
+        // 로딩 화면 표시 및 초기 설정
+        createAndShowLoadingUI();
+
+        // 로딩할 총 모델 수를 미리 설정 (8개 모델)
+        setTotalModels(8);
+
+        // 초기 진행률 표시
+        updateProgressText("월드를 준비하는 중...");
+
+        try {
+          // Canvas 초기화 (전역 함수 호출)
+          await (window as any).initCanvas();
+        } catch (error) {
+          onLoadingError(error);
+          return;
+        }
       });
     }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    initLoadingUI();
     setupJoinButton();
+    startIntroAnimations();
   });
 })();
 
-document.querySelector(".chat-close-button")?.addEventListener("click", () => {
-  const chatWrapper = document.querySelector(".chat-wrapper") as HTMLElement;
+document.addEventListener("DOMContentLoaded", () => {
+  document
+    .querySelector(".chat-close-button")
+    ?.addEventListener("click", () => {
+      const chatWrapper = document.querySelector(
+        ".chat-wrapper"
+      ) as HTMLElement;
 
-  if (chatWrapper) {
-    chatWrapper.classList.toggle("active");
+      if (chatWrapper) {
+        chatWrapper.classList.toggle("active");
+      }
+
+      const hidden = document.querySelector(
+        ".chat-close-button .hidden"
+      ) as HTMLElement;
+
+      if (hidden) {
+        hidden.textContent = chatWrapper.classList.contains("active")
+          ? "채팅창 닫기"
+          : "채팅창 열기";
+      }
+    });
+
+  document.querySelector(".setting-button")?.addEventListener("click", () => {
+    const settingPopup = document.querySelector(
+      ".popup.setting"
+    ) as HTMLElement;
+
+    settingPopup.classList.toggle("active");
+  });
+
+  document.querySelector(".popup-close")?.addEventListener("click", () => {
+    const popup = document.querySelector(".popup") as HTMLElement;
+
+    if (popup) {
+      popup.classList.remove("active");
+    }
+  });
+
+  const lightVideo = document.querySelector(".light-video") as HTMLVideoElement;
+  const darkVideo = document.querySelector(".dark-video") as HTMLVideoElement;
+
+  if (document.body.dataset.theme === "dark") {
+    if (lightVideo) {
+      lightVideo.style.display = "none";
+    }
+
+    if (darkVideo) {
+      darkVideo.style.display = "block";
+    }
   }
 
-  const hidden = document.querySelector(
-    ".chat-close-button .hidden"
-  ) as HTMLElement;
+  if (document.body.dataset.theme === "light") {
+    if (lightVideo) {
+      lightVideo.style.display = "block";
+    }
 
-  if (hidden) {
-    hidden.textContent = chatWrapper.classList.contains("active")
-      ? "채팅창 닫기"
-      : "채팅창 열기";
+    if (darkVideo) {
+      darkVideo.style.display = "none";
+    }
   }
 });

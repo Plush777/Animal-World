@@ -273,6 +273,10 @@
   --theme-element1: var(--black);
   --theme-element2: var(--white);
 
+  --theme-rgb1: 255, 255, 255;
+
+  --title: var(--blue-950);
+
   --theme-disabled: var(--gray-700);
 }
 
@@ -282,5 +286,9 @@
   --theme-element1: var(--white);
   --theme-element2: var(--black);
 
+  --theme-rgb1: 0, 0, 0;
+
   --theme-disabled: var(--gray-400);
+
+  --title: var(--blue-500);
 }

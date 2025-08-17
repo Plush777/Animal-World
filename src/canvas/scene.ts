@@ -289,9 +289,9 @@ export async function loadModel(
 
 export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
   try {
-    // 로딩할 총 모델 수 설정 (8개 모델)
+    // 모델 로딩 시작을 알림
     if (window.LoadingUI) {
-      window.LoadingUI.setTotalModels(8);
+      window.LoadingUI.updateProgressText("모델 로딩을 시작합니다...");
     }
 
     const sceneModelPath = getSceneModelPath();

@@ -11,11 +11,11 @@ import {
 } from "./scene";
 
 import { createAnimationLoop } from "./animation";
-import { initializeTheme } from "../ui/theme";
 
-async function init(): Promise<void> {
-  initializeTheme();
+import { initializeTheme, startAutoThemeUpdater } from "../ui/theme";
 
+// 전역 함수로 선언
+(window as any).initCanvas = async function (): Promise<void> {
   const scene = createScene();
 
   const camera = createCamera();
@@ -36,6 +36,14 @@ async function init(): Promise<void> {
 
   const animate = createAnimationLoop(scene, camera, renderer, controls);
   animate();
-}
 
-init();
+  // Canvas 로딩 완료 이벤트 발생
+  const canvasLoadedEvent = new CustomEvent("canvasLoadingComplete");
+  document.dispatchEvent(canvasLoadedEvent);
+};
+
+// 페이지 로드 시 테마 초기화
+document.addEventListener("DOMContentLoaded", () => {
+  initializeTheme();
+  startAutoThemeUpdater();
+});

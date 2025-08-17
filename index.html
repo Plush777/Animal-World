@@ -5,25 +5,33 @@
     <noscript
       >컨텐츠를 표시하기 위해서는 자바스크립트를 활성화해주세요.</noscript
     >
-    <script>
-      document.body.dataset.theme =
-        window.localStorage.getItem("animal-world-theme") || "light";
-
-      if (document.body.dataset.theme === "dark") {
-        document.body.style.backgroundColor = "#121212";
-      } else if (document.body.dataset.theme === "light") {
-        document.body.style.backgroundColor = "#ffffff";
-      }
-    </script>
+    <load src="src/components/config/ThemeScript.html" />
     <div id="app">
-      <load src="src/components/loading/Loading.html" />
-
-      <main>
+      <main class="main">
         <div class="intro-wrapper">
           <section class="intro-box">
             <load src="src/components/intro/IntroLogo.html" />
             <load src="src/components/intro/IntroBottom.html" />
           </section>
+
+          <div class="video-wrapper">
+            <video class="light-video" autoplay muted loop>
+              <source src="/videos/intro-light.mp4" type="video/mp4" />
+            </video>
+
+            <video class="dark-video" autoplay muted loop>
+              <source src="/videos/intro-dark.mp4" type="video/mp4" />
+            </video>
+          </div>
+
+          <a class="threejs-logo" href="https://threejs.org/" target="_blank">
+            <img
+              src="/images/logo/logo-threejs.png"
+              alt="three.js logo"
+              width="100"
+              height="111"
+            />
+          </a>
         </div>
 
         <canvas id="scene"></canvas>
@@ -31,6 +39,10 @@
         <load src="src/components/ui/Chat.html" />
         <load src="src/components/ui/HeaderRight.html" />
       </main>
+
+      <!-- popup -->
+      <!-- <load src="src/components/ui/LoginPopup.html" /> -->
+      <!-- <load src="src/components/ui/UsernamePopup.html" /> -->
 
       <script type="module" src="/src/canvas/main.ts"></script>
     </div>

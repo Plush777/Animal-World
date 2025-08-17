@@ -1,8 +1,10 @@
 interface LoadingUIInterface {
   init(): void;
+  createAndShow(): void;
   setTotalModels(total: number): void;
-  onModelLoaded(modelName: string): void;
-  onModelProgress(loaded: number, total: number, modelName: string): void;
+  onModelLoaded(): void;
+  onModelProgress(loaded: number, total: number): void;
+  updateProgressText(text: string): void;
   forceHide(): void;
   onError(error: any): void;
 }

@@ -1,0 +1,19 @@
+<script>
+  function getAutoTheme() {
+    const now = new Date();
+
+    const koreanTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const hour = koreanTime.getUTCHours();
+
+    return hour >= 6 && hour <= 17 ? "light" : "dark";
+  }
+
+  let storedTheme = window.localStorage.getItem("animal-world-theme");
+
+  if (!storedTheme) {
+    storedTheme = getAutoTheme();
+    window.localStorage.setItem("animal-world-theme", storedTheme);
+  }
+
+  document.body.dataset.theme = storedTheme;
+</script>
