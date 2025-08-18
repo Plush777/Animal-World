@@ -23,3 +23,13 @@
 #mypage-setting {
   display: none;
 }
+
+#mypage-img-element {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 150px;
+  height: 150px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+}

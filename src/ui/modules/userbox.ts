@@ -1,11 +1,3 @@
-/**
- * 사용자 박스 UI 관리 모듈
- * 사용자 박스 드롭다운 메뉴 열기/닫기 처리
- */
-
-/**
- * 사용자 박스 드롭다운 토글 설정
- */
 function setupUserBoxToggle(): void {
   const userBoxLogoutElement = document.getElementById("userbox-user-logout-element") as HTMLElement;
 
@@ -20,9 +12,6 @@ function setupUserBoxToggle(): void {
   }
 }
 
-/**
- * 사용자 박스 외부 클릭 시 닫기 설정
- */
 function setupUserBoxOutsideClick(): void {
   document.addEventListener("click", (e) => {
     const userBoxList = document.querySelector(".user-box-list") as HTMLElement;
@@ -36,9 +25,6 @@ function setupUserBoxOutsideClick(): void {
   });
 }
 
-/**
- * 사용자 박스 모듈 초기화
- */
 function initUserBoxModule(): void {
   setupUserBoxToggle();
   setupUserBoxOutsideClick();

@@ -1,12 +1,20 @@
 import { type User } from "@supabase/supabase-js";
 import { authHtml } from "../data/authHtml";
 import { handleGoogleLogin, handleKakaoLogin, handleLogout } from "./auth-core";
+import { renderMyPageProfileImage, reconnectMyPageEventListeners, loadMyPageFormData } from "../ui/modules/myPage";
 
-// DOM 요소들 가져오기
 const loginBtn = document.getElementById("google-login") as HTMLButtonElement | null;
 const loginKakaoBtn = document.getElementById("kakao-login") as HTMLButtonElement | null;
 const logoutBtn = document.getElementById("logout") as HTMLButtonElement | null;
 const userInfoDiv = document.getElementById("user-info") as HTMLDivElement | null;
+
+// 현재 로그인된 사용자 정보 저장
+let currentLoggedInUser: User | null = null;
+
+// 현재 로그인된 사용자 정보 가져오기
+export function getCurrentLoggedInUser(): User | null {
+  return currentLoggedInUser;
+}
 
 // 로그인 이벤트 리스너 재연결 함수
 export function reconnectLoginEventListeners(): void {
@@ -26,19 +34,28 @@ export function reconnectLogoutEventListener(): void {
   dynamicLogoutBtn?.addEventListener("click", handleLogout);
 
   dynamicMypageSettingBtn?.addEventListener("click", (e) => {
-    e.preventDefault(); // 기본 앵커 동작 방지
-    // pageNavigate 함수는 전역으로 선언되어 있다고 가정
+    e.preventDefault();
+
     (window as any).pageNavigate?.("mypage-setting");
+
+    // 마이페이지 폼 데이터 로드 및 이벤트 리스너 재연결
+    setTimeout(async () => {
+      // 현재 로그인된 사용자 정보 가져오기
+      const currentUser = getCurrentLoggedInUser();
+      await loadMyPageFormData(currentUser);
+      reconnectMyPageEventListeners();
+    }, 100);
   });
 
   dynamicMyPageSettingCloseBtn?.addEventListener("click", () => {
-    // pageClose 함수는 전역으로 선언되어 있다고 가정
     (window as any).pageClose?.();
   });
 }
 
 // 유저 정보 렌더링 함수
 export function renderUser(user: User | null): void {
+  // 현재 사용자 정보 업데이트
+  currentLoggedInUser = user;
   const userLoginElement = document.getElementById("user-login-element") as HTMLDivElement | null;
   const userLogoutElement = document.getElementById("user-logout-element") as HTMLDivElement | null;
   const userBoxLogoutElement = document.getElementById("userbox-user-logout-element") as HTMLDivElement | null;
@@ -94,15 +111,11 @@ export function renderUser(user: User | null): void {
     userBoxLogoutElement.innerHTML = authHtml.logout.userBoxDiv;
   }
 
-  // 사용자 정보 표시 (동적으로 생성된 요소를 다시 선택)
-  const userMetadata = user.user_metadata;
-  const dynamicUserInfoDiv = document.getElementById("user-info") as HTMLDivElement | null;
-  if (dynamicUserInfoDiv) {
-    dynamicUserInfoDiv.innerHTML = `
-      <img width="48" height="48" src="${userMetadata.avatar_url}" 
-      alt="user-avatar" class="user-avatar">
-    `;
-  }
+  // 사용자 정보 표시 - 마이페이지 모듈에서 처리하도록 위임
+  // (저장된 프로필 이미지가 있으면 우선 사용)
+  renderMyPageProfileImage(user).catch((error) => {
+    console.error("프로필 이미지 렌더링 실패:", error);
+  });
 
   reconnectLogoutEventListener();
 

@@ -113,16 +113,24 @@
   min-width: 105px;
 }
 
-.user-box-button svg {
+.user-box-button .arrow-up {
   width: 24px;
   height: 24px;
   transform: rotate(180deg);
 }
 
 .user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 48px;
   height: 48px;
   border-radius: 50%;
+}
+
+.user-avatar-default-svg svg {
+  width: 32px;
+  height: 32px;
 }
 
 .user-box-list {
