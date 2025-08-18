@@ -53,16 +53,6 @@
   background-color: var(--yellow-300);
 }
 
-.button-3d-blue .short-key {
-  border: 1px solid var(--black);
-  color: var(--black);
-  background-color: var(--white);
-}
-
-.popup-etc-area {
-  margin-top: 30px;
-}
-
 .button-underline {
   font-weight: 500;
   color: var(--black);

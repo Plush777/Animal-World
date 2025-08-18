@@ -1,0 +1,90 @@
+.mypage-section {
+  padding: 28px;
+  border-radius: 8px;
+  background-color: var(--white);
+  overflow-y: auto;
+  height: calc(100vh - 281px);
+}
+
+.mypage-section + .mypage-section {
+  margin-top: 60px;
+}
+
+.mypage-section-title-box {
+  border-bottom: 1px solid var(--gray-200);
+  padding-bottom: 16px;
+}
+
+.mypage-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--black);
+}
+
+.mypage-row {
+  display: flex;
+  padding-top: 16px;
+}
+
+.mypage-item {
+  display: flex;
+  flex: 1;
+}
+
+.mypage-item-text {
+  display: flex;
+  min-width: 200px;
+  font-size: 16px;
+  font-weight: 500;
+  height: fit-content;
+  color: var(--gray-700);
+}
+
+.mypage-img-box {
+  display: flex;
+  flex-direction: column;
+  row-gap: 32px;
+}
+
+.mypage-img {
+  width: 150px;
+  height: 150px;
+  border-radius: 12px;
+}
+
+.mypage-img-button-group {
+  display: flex;
+  flex-direction: column;
+  row-gap: 4px;
+}
+
+.mypage-img-button-group .button {
+  width: 100%;
+}
+
+.mypage-input-group {
+  flex: 1;
+}
+
+.mypage-input-group .input,
+.mypage-input-group .textarea {
+  width: 100%;
+}
+
+.mypage-intro-text-count {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mypage-intro-text-count-text {
+  font-size: 14px;
+  color: var(--gray-400);
+}
+
+.mypage-input-group .input {
+  height: 48px;
+}
+
+.mypage-input-group .textarea {
+  height: 88px;
+}

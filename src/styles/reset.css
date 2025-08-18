@@ -202,8 +202,13 @@ strong {
 }
 
 input,
-button {
+button,
+textarea {
   outline: 0;
+}
+
+textarea {
+  resize: none;
 }
 
 input {

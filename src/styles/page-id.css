@@ -1,0 +1,25 @@
+.page-active {
+  display: block !important;
+}
+
+#user-logout-element {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#userbox-user-logout-element {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+#user-info {
+  display: block;
+  width: 48px;
+  height: 48px;
+}
+
+#mypage-setting {
+  display: none;
+}

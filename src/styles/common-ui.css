@@ -1,0 +1,76 @@
+.short-key {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.has-short-key {
+  column-gap: 8px;
+}
+
+.has-short-key .short-key {
+  display: flex;
+  position: static;
+  transform: none;
+}
+
+.short-key.has-border {
+  border: 1px solid var(--theme-element1);
+  background-color: var(--theme-element1);
+}
+
+.short-key.has-border svg {
+  color: var(--theme-element2);
+}
+
+.short-key.has-text {
+  width: auto;
+  /* 20x20 */
+  padding: 0 6px;
+  color: var(--theme-element2);
+}
+
+.ui-element {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1s ease-in-out, visibility 1s ease-in-out;
+  pointer-events: none;
+}
+
+.ui-visible .ui-element {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.input {
+  padding: 0 12px;
+}
+
+.textarea {
+  padding: 12px;
+}
+
+.input,
+.textarea {
+  font-size: 16px;
+  color: var(--black);
+  border: 1px solid var(--gray-200);
+  background-color: var(--white);
+  font-family: "PretendardVariable";
+  border-radius: 6px;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--gray-400);
+}

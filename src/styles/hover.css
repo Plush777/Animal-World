@@ -3,18 +3,6 @@
     background-color: var(--blue-200);
   }
 
-  .button-3d:not(:disabled):hover {
-    transform: scale(1) translateY(0.25em) !important;
-  }
-
-  .button-3d:not(:disabled):hover:before {
-    transform: translate3d(0, 0.5em, -1em);
-  }
-
-  .button-3d:not(:disabled):hover:before {
-    transform: translate3d(0, 0.5em, -1em);
-  }
-
   .chat-close-button:hover {
     background-color: var(--sky-600);
   }
@@ -29,5 +17,10 @@
 
   .popup-character-tab-button:hover {
     border-color: var(--blue-500);
+  }
+
+  .user-box-item-button:hover {
+    color: var(--blue-600);
+    background-color: var(--gray-100);
   }
 }
