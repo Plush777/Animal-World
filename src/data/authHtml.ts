@@ -2,7 +2,7 @@ import { svg } from "./svg";
 
 const introBottomButtonText = "intro-bottom-button-text";
 
-export const authHtml: { [key: string]: string } = {
+export const authHtml: { [key: string]: any } = {
   login: `
     <div class="intro-bottom-button-box">
         <button type="button" id="google-login" class="google-login-button button-white button-size-lg button button-has-icon rounded-button">

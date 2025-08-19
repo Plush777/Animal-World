@@ -1,14 +1,6 @@
 import { type User } from "@supabase/supabase-js";
 import { authHtml } from "../data/authHtml";
-import {
-  handleGoogleLogin,
-  handleKakaoLogin,
-  handleLogout,
-  handleGuestLogin,
-  handleGuestLogout,
-  getCurrentGuestUser,
-  isGuestUser,
-} from "./auth-core";
+import { handleGoogleLogin, handleKakaoLogin, handleLogout, handleGuestLogin, handleGuestLogout, isGuestUser } from "./auth-core";
 import { renderMyPageProfileImage, reconnectMyPageEventListeners, loadMyPageFormData } from "../ui/modules/myPage";
 
 const loginBtn = document.getElementById("google-login") as HTMLButtonElement | null;
