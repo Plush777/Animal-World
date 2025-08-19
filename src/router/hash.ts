@@ -1,3 +1,5 @@
+import { authHtml } from "../data/authHtml";
+
 interface RouteHandler {
   show: () => void;
   hide: () => void;
@@ -95,6 +97,21 @@ function initRouter(): void {
   window.addEventListener("hashchange", () => {
     handleHashChange();
   });
+
+  // 새로고침 시에도 마이페이지 데이터 로드 확인
+  window.addEventListener("load", () => {
+    setTimeout(async () => {
+      const hash = window.location.hash.slice(1);
+      if (hash === "mypage-setting") {
+        try {
+          const { ensureMyPageDataLoaded } = await import("../ui/modules/myPage");
+          ensureMyPageDataLoaded();
+        } catch (error) {
+          console.error("마이페이지 데이터 로드 실패:", error);
+        }
+      }
+    }, 300);
+  });
 }
 
 // 라우터 객체 생성
@@ -115,14 +132,36 @@ initRouter();
 router.registerRoute("mypage-setting", {
   show: () => {
     const mypageSettingPopup = document.querySelector("#mypage-setting") as HTMLElement;
+    mypageSettingPopup.innerHTML = authHtml.mypage.setting;
+
     if (mypageSettingPopup) {
-      mypageSettingPopup.classList.add("page-active");
+      // 로딩 상태 초기화
+      const wrapper = mypageSettingPopup.querySelector(".mypage-setting-wrapper") as HTMLElement;
+      if (wrapper) {
+        wrapper.classList.add("mypage-loading");
+        wrapper.classList.remove("mypage-loaded");
+      }
+
+      // 마이페이지 폼 데이터 로드 및 이벤트 리스너 재연결
+      // 즉시 실행하되, DOM이 준비될 때까지 대기
+      (async () => {
+        // 동적 import로 마이페이지 모듈 로드
+        const { reconnectMyPageEventListeners } = await import("../ui/modules/myPage");
+        reconnectMyPageEventListeners();
+      })();
     }
   },
   hide: () => {
     const mypageSettingPopup = document.querySelector("#mypage-setting") as HTMLElement;
     if (mypageSettingPopup) {
-      mypageSettingPopup.classList.remove("page-active");
+      mypageSettingPopup.innerHTML = "";
+
+      // 로딩 상태 리셋
+      const wrapper = mypageSettingPopup.querySelector(".mypage-setting-wrapper") as HTMLElement;
+      if (wrapper) {
+        wrapper.classList.add("mypage-loading");
+        wrapper.classList.remove("mypage-loaded");
+      }
     }
   },
 });

@@ -48,9 +48,10 @@ function startIntroAnimations(): void {
   const logoArea = document.querySelector(".intro-logo-area");
   const descriptionBox = document.querySelector(".intro-description-box");
   const button = document.querySelector(".intro-bottom button");
+  const guestLoginButton = document.querySelector(".guest-login");
   const googleLoginButton = document.querySelector(".google-login-button");
   const kakaoLoginButton = document.querySelector(".kakao-login-button");
-  const introEtcArea = document.querySelector(".intro-etc-area");
+  // const introEtcArea = document.querySelector(".intro-etc-area");
 
   // 로고 영역은 항상 먼저 애니메이션
   if (logoArea) {
@@ -84,11 +85,17 @@ function startIntroAnimations(): void {
       }, 600);
     }
 
-    if (introEtcArea) {
+    if (guestLoginButton) {
       setTimeout(() => {
-        introEtcArea.classList.add("animate-in");
+        guestLoginButton.classList.add("animate-in");
       }, 800);
     }
+
+    // if (introEtcArea) {
+    //   setTimeout(() => {
+    //     introEtcArea.classList.add("animate-in");
+    //   }, 800);
+    // }
   }
 }
 

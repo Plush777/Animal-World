@@ -62,4 +62,63 @@ export const svg: { [key: string]: string } = {
 </g>
 </svg>
   `,
+
+  info: `
+  
+<svg xmlns:x="http://ns.adobe.com/Extensibility/1.0/" xmlns:i="http://ns.adobe.com/AdobeIllustrator/10.0/" xmlns:graph="http://ns.adobe.com/Graphs/1.0/" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="currentColor" version="1.1" id="Layer_1" width="800px" height="800px" viewBox="0 0 24 24" enable-background="new 0 0 24 24" xml:space="preserve">
+<metadata>
+	<sfw xmlns="http://ns.adobe.com/SaveForWeb/1.0/">
+		<slices>
+
+</slices>
+		<sliceSourceBounds width="505" height="984" bottomLeftOrigin="true" x="0" y="-552">
+
+</sliceSourceBounds>
+	</sfw>
+</metadata>
+<g>
+	<g>
+		<g>
+			<path d="M23,23H1c-0.4,0-0.7-0.2-0.9-0.5c-0.2-0.3-0.2-0.7,0-1l11-20c0.4-0.6,1.4-0.6,1.8,0l11,20c0.2,0.3,0.2,0.7,0,1     C23.7,22.8,23.4,23,23,23z M2.7,21h18.6L12,4.1L2.7,21z"/>
+		</g>
+	</g>
+	<g>
+		<g>
+			<path d="M12,16c-0.6,0-1-0.4-1-1v-5c0-0.6,0.4-1,1-1s1,0.4,1,1v5C13,15.6,12.6,16,12,16z"/>
+		</g>
+	</g>
+	<g>
+		<g>
+			<circle cx="12" cy="18" r="1"/>
+		</g>
+		<g>
+			<path d="M12,19.5c-0.8,0-1.5-0.7-1.5-1.5s0.7-1.5,1.5-1.5s1.5,0.7,1.5,1.5S12.8,19.5,12,19.5z M12,17.5c-0.3,0-0.5,0.2-0.5,0.5     s0.2,0.5,0.5,0.5s0.5-0.2,0.5-0.5S12.3,17.5,12,17.5z"/>
+		</g>
+	</g>
+</g>
+</svg>
+  `,
+
+  guest: `
+    <svg xmlns="http://www.w3.org/2000/svg" width="800px" height="800px" viewBox="0 0 24 24" fill="none">
+<circle cx="12" cy="6" r="4" fill="currentColor"/>
+<path d="M20 17.5C20 19.9853 20 22 12 22C4 22 4 19.9853 4 17.5C4 15.0147 7.58172 13 12 13C16.4183 13 20 15.0147 20 17.5Z" fill="currentColor"/>
+</svg>
+  
+  `,
+
+  enter: `
+  
+    <svg
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="16"
+  height="16"
+  viewBox="0 0 16 16"
+  version="1.1"
+>
+  <path fill="currentColor" d="M0 9l7 4v-3h9v-7l-3 2v2h-6v-3l-7 5z" />
+</svg>
+
+  `,
 };

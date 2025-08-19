@@ -74,3 +74,9 @@
 .textarea::placeholder {
   color: var(--gray-400);
 }
+
+.input:disabled,
+.textarea:disabled {
+  background-color: var(--gray-200);
+  color: var(--gray-800);
+}

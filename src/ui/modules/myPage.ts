@@ -1,13 +1,15 @@
 import { type User } from "@supabase/supabase-js";
 import { svg } from "../../data/svg";
-import { saveUserProfile, loadUserProfile, type UserProfile } from "../../auth/auth-core";
+import { saveUserProfile, loadUserProfile, type UserProfile, isGuestUser, isAnonymousUser, supabase } from "../../auth/auth-core";
 import { getCurrentLoggedInUser } from "../../auth/auth-ui";
 
-// 마이페이지 관련 타입 정의
+import { handleImageUpload, handleImageRemove } from "../../utils/imageUpload";
+import { addGuestNoticeMessage, CONSTANTS, getMyPageElements, getImageElements, showMyPageLoading, hideMyPageLoading } from "../../utils/mypage";
+
 interface MyPageImageState {
   currentImageUrl: string | null;
   hasCustomImage: boolean;
-  isImageRemoved: boolean; // 이미지 제거 여부 추가
+  isImageRemoved: boolean;
 }
 
 let imageState: MyPageImageState = {
@@ -27,91 +29,28 @@ interface OriginalProfileData {
 
 let originalProfileData: OriginalProfileData | null = null;
 
-// 이미지 업로드 핸들러
-export function handleImageUpload(): void {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = "image/*";
-
-  input.onchange = (event) => {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) {
-      // 파일 크기 체크 (5MB 제한)
-      if (file.size > 5 * 1024 * 1024) {
-        alert("파일 크기는 5MB 이하여야 합니다.");
-        return;
-      }
-
-      // 이미지 파일 타입 체크
-      if (!file.type.startsWith("image/")) {
-        alert("이미지 파일만 업로드 가능합니다.");
-        return;
-      }
-
-      // FileReader로 이미지 미리보기
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        updateProfileImage(imageUrl);
-        imageState.currentImageUrl = imageUrl;
-        imageState.hasCustomImage = true;
-        imageState.isImageRemoved = false; // 이미지 업로드 시 제거 상태 해제
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  input.click();
+// 이미지 상태 설정 유틸리티 함수
+function setImageState(imageUrl: string, hasCustomImage: boolean, isImageRemoved: boolean): void {
+  imageState.currentImageUrl = imageUrl;
+  imageState.hasCustomImage = hasCustomImage;
+  imageState.isImageRemoved = isImageRemoved;
 }
 
-// 이미지 제거 핸들러
-export function handleImageRemove(): void {
-  if (confirm("프로필 이미지를 제거하시겠습니까?")) {
-    // 기본 SVG 이미지로 복원 (항상 svg.defaultImage 사용)
-    updateProfileImage(svg.defaultImage);
-    imageState.currentImageUrl = svg.defaultImage;
-    imageState.hasCustomImage = false;
-    imageState.isImageRemoved = true; // 이미지 제거 상태로 설정
-  }
-}
-
-// 프로필 이미지 업데이트 (UI 반영)
-function updateProfileImage(imageUrlOrSvg: string): void {
-  // SVG 문자열인지 URL인지 확인
+// 모든 프로필 이미지 업데이트 (중복 제거)
+function updateAllProfileImages(imageUrlOrSvg: string): void {
+  const { mypageImg, userInfo } = getImageElements();
   const isSvg = imageUrlOrSvg.trim().startsWith("<svg");
 
   // 마이페이지 설정 팝업의 이미지 업데이트
-  const mypageImgElement = document.getElementById("mypage-img-element") as HTMLDivElement | null;
-  if (mypageImgElement) {
-    if (isSvg) {
-      // SVG 문자열을 직접 삽입
-      mypageImgElement.innerHTML = imageUrlOrSvg;
-    } else {
-      // URL을 이미지 태그로 삽입
-      mypageImgElement.innerHTML = `
-        <img src="${imageUrlOrSvg}" 
-        alt="프로필 이미지" class="mypage-img">
-      `;
-    }
+  if (mypageImg) {
+    mypageImg.innerHTML = isSvg ? imageUrlOrSvg : `<img src="${imageUrlOrSvg}" alt="프로필 이미지" class="mypage-img">`;
   }
 
   // 헤더 유저 아바타 이미지 업데이트
-  const userInfoDiv = document.getElementById("user-info") as HTMLDivElement | null;
-  if (userInfoDiv) {
-    if (isSvg) {
-      // SVG 문자열을 직접 삽입
-      userInfoDiv.innerHTML = `
-        <div class="user-avatar user-avatar-default-svg">
-          ${imageUrlOrSvg}
-        </div>
-      `;
-    } else {
-      // URL을 이미지 태그로 삽입
-      userInfoDiv.innerHTML = `
-        <img width="48" height="48" src="${imageUrlOrSvg}" 
-        alt="user-avatar" class="user-avatar ">
-      `;
-    }
+  if (userInfo) {
+    userInfo.innerHTML = isSvg
+      ? `<div class="user-avatar user-avatar-default-svg">${imageUrlOrSvg}</div>`
+      : `<img width="48" height="48" src="${imageUrlOrSvg}" alt="user-avatar" class="user-avatar">`;
   }
 }
 
@@ -132,7 +71,18 @@ export async function renderMyPageProfileImage(user: User | null): Promise<void>
   if (!user) return;
 
   try {
-    // 저장된 프로필 정보 먼저 로드
+    // 게스트 사용자인지 확인
+    if (isGuestUser(user)) {
+      // 게스트 사용자는 기본 이미지 사용
+      console.log("게스트 사용자 이미지 렌더링: 기본 이미지 사용");
+      const finalImageUrl = svg.defaultImage;
+      setImageState(finalImageUrl, false, false);
+      updateAllProfileImages(finalImageUrl);
+      return;
+    }
+
+    // 일반 사용자만 프로필 데이터 로드
+    console.log("일반 사용자 이미지 렌더링: 프로필 데이터 로드 시작");
     const savedProfile = await loadUserProfileData(user.id);
 
     let finalImageUrl: string;
@@ -153,35 +103,35 @@ export async function renderMyPageProfileImage(user: User | null): Promise<void>
         imageState.hasCustomImage = false;
         imageState.isImageRemoved = false;
       }
-      imageState.currentImageUrl = finalImageUrl;
+      setImageState(finalImageUrl, imageState.hasCustomImage, imageState.isImageRemoved);
     } else {
       // 저장된 프로필이 없으면 소셜 로그인 이미지 사용
       const userMetadata = user.user_metadata;
       finalImageUrl = userMetadata.avatar_url || svg.defaultImage;
-
-      imageState.currentImageUrl = finalImageUrl;
-      imageState.hasCustomImage = false;
-      imageState.isImageRemoved = false;
+      setImageState(finalImageUrl, false, false);
     }
 
-    updateProfileImage(finalImageUrl);
+    updateAllProfileImages(finalImageUrl);
   } catch (error) {
     console.error("프로필 이미지 렌더링 실패:", error);
-
-    // 에러 시 소셜 로그인 이미지로 폴백
-    const userMetadata = user.user_metadata;
-    const fallbackImageUrl = userMetadata.avatar_url || svg.defaultImage;
-
-    imageState.currentImageUrl = fallbackImageUrl;
-    imageState.hasCustomImage = false;
-    imageState.isImageRemoved = false;
-
-    updateProfileImage(fallbackImageUrl);
+    // 에러 시 기본 이미지 사용
+    const fallbackImageUrl = svg.defaultImage;
+    setImageState(fallbackImageUrl, false, false);
+    updateAllProfileImages(fallbackImageUrl);
   }
 }
 
 // 마이페이지 이벤트 리스너 초기화
 export function initializeMyPageEventListeners(): void {
+  // 현재 사용자 정보 가져오기
+  const currentUser = getCurrentLoggedInUser();
+
+  // 게스트 사용자인지 확인하고 제한 적용
+  if (currentUser && isGuestUser(currentUser)) {
+    console.log("마이페이지 초기화: 게스트 사용자 제한 적용");
+    disableGuestUserInputs();
+  }
+
   // 이미지 업로드 버튼 이벤트 리스너
   const uploadButton = document.querySelector(".mypage-img-button-group .button-sky") as HTMLButtonElement;
   if (uploadButton) {
@@ -258,22 +208,8 @@ async function handleSaveProfile(): Promise<void> {
     }
 
     // user-avatar에도 현재 이미지 반영
-    const userInfoDiv = document.getElementById("user-info") as HTMLDivElement | null;
-    if (userInfoDiv && imageState.currentImageUrl) {
-      const isSvg = imageState.currentImageUrl.trim().startsWith("<svg");
-
-      if (isSvg) {
-        userInfoDiv.innerHTML = `
-          <div class="user-avatar user-avatar-default-svg">
-            ${imageState.currentImageUrl}
-          </div>
-        `;
-      } else {
-        userInfoDiv.innerHTML = `
-          <img width="48" height="48" src="${imageState.currentImageUrl}" 
-          alt="user-avatar" class="user-avatar">
-        `;
-      }
+    if (imageState.currentImageUrl) {
+      updateAllProfileImages(imageState.currentImageUrl);
     }
 
     // 페이지 닫기
@@ -301,12 +237,9 @@ async function handleSaveProfile(): Promise<void> {
   }
 }
 
-// 프로필 취소 핸들러 (닫기 버튼)
 function handleCancelProfile(): void {
-  // 원본 데이터로 복원
   restoreOriginalFormData();
 
-  // 페이지 닫기
   if ((window as any).pageClose) {
     (window as any).pageClose();
   }
@@ -314,9 +247,78 @@ function handleCancelProfile(): void {
 
 // 마이페이지 이벤트 리스너 재연결 (동적 생성된 요소들을 위해)
 export function reconnectMyPageEventListeners(): void {
-  setTimeout(() => {
-    initializeMyPageEventListeners();
-  }, 100);
+  // 즉시 실행하되, DOM이 준비될 때까지 대기
+  const executeWhenReady = async () => {
+    console.log("마이페이지 이벤트 리스너 재연결 시작");
+
+    // 현재 사용자 정보 가져오기
+    const currentUser = getCurrentLoggedInUser();
+    console.log("현재 사용자:", currentUser);
+
+    if (!currentUser) {
+      console.log("사용자 정보가 없음");
+      return;
+    }
+
+    // DOM 요소가 준비될 때까지 대기
+    let attempts = 0;
+    while (attempts < CONSTANTS.MAX_DOM_WAIT_ATTEMPTS) {
+      const { nameInput, introTextarea } = getMyPageElements();
+
+      if (nameInput && introTextarea) {
+        break;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, CONSTANTS.DOM_WAIT_DELAY));
+      attempts++;
+    }
+
+    // 먼저 폼 데이터 로드 (모든 사용자 타입에 대해)
+    console.log("폼 데이터 로드 시작");
+    await loadMyPageFormData(currentUser);
+    console.log("폼 데이터 로드 완료");
+
+    // 게스트 사용자인지 확인하고 제한 적용
+    if (isGuestUser(currentUser)) {
+      console.log("마이페이지 재연결: 게스트 사용자 제한 적용");
+
+      // 게스트 제한 다시 적용
+      disableGuestUserInputs();
+    } else {
+      console.log("일반 사용자: 기본 이벤트 리스너 초기화");
+      // 일반 사용자는 기본 이벤트 리스너만 초기화
+      initializeMyPageEventListeners();
+    }
+
+    console.log("마이페이지 이벤트 리스너 재연결 완료");
+  };
+
+  // 즉시 실행 시도
+  executeWhenReady();
+}
+
+// 새로고침 시에도 데이터를 유지하기 위한 함수
+export function ensureMyPageDataLoaded(): void {
+  setTimeout(async () => {
+    const currentUser = getCurrentLoggedInUser();
+    if (currentUser) {
+      console.log("마이페이지 데이터 로드 확인 시작");
+
+      // 현재 마이페이지가 활성화되어 있는지 확인
+      const mypageSettingPopup = document.querySelector("#mypage-setting") as HTMLElement;
+      if (mypageSettingPopup) {
+        console.log("마이페이지가 활성화되어 있음, 데이터 로드 실행");
+        await loadMyPageFormData(currentUser);
+
+        // 게스트 사용자인지 확인하고 제한 적용
+        if (isGuestUser(currentUser)) {
+          disableGuestUserInputs();
+        } else {
+          initializeMyPageEventListeners();
+        }
+      }
+    }
+  }, CONSTANTS.DATA_LOAD_DELAY);
 }
 
 // 현재 이미지 상태 가져오기
@@ -347,12 +349,24 @@ export async function saveUserProfileData(userId: string, name: string, introduc
   return await saveUserProfile(profileData);
 }
 
-// 사용자 프로필 데이터 로드 (Supabase)
+// 사용자 프로필 데이터 로드 (Supabase) - 게스트 사용자는 호출하지 않아야 함
 export async function loadUserProfileData(userId: string): Promise<UserProfile | null> {
+  console.log("프로필 데이터 로드 시작, userId:", userId);
+
+  // 게스트 사용자인지 다시 한번 확인 (이중 검증)
+  const currentUser = getCurrentLoggedInUser();
+  if (currentUser && (isGuestUser(currentUser) || isAnonymousUser(currentUser))) {
+    console.log("게스트/익명 사용자이므로 프로필 조회를 건너뜁니다.");
+    return null;
+  }
+
+  console.log("일반 사용자 프로필 조회 시작");
   const result = await loadUserProfile(userId);
+  console.log("프로필 조회 결과:", result);
 
   if (result.success && result.data) {
     const profile = result.data;
+    console.log("프로필 데이터 로드 성공:", profile);
 
     // 이미지 상태 복원
     imageState.currentImageUrl = profile.avatar_url;
@@ -364,7 +378,96 @@ export async function loadUserProfileData(userId: string): Promise<UserProfile |
     console.error("프로필 로드 실패:", result.error);
   }
 
+  console.log("프로필 데이터 없음");
   return null;
+}
+
+// 일반 사용자 UI 설정 함수
+function setupRegularUserUI(
+  nameInput: HTMLInputElement,
+  introTextarea: HTMLTextAreaElement,
+  countText: HTMLSpanElement | null,
+  wrapper: HTMLElement | null,
+  name: string,
+  introduction: string
+): void {
+  // 닉네임과 소개 설정
+  nameInput.value = name;
+  introTextarea.value = introduction;
+
+  // 원본 데이터 백업
+  originalProfileData = {
+    name,
+    introduction,
+    avatarUrl: imageState.currentImageUrl,
+    hasCustomImage: imageState.hasCustomImage,
+    isImageRemoved: imageState.isImageRemoved,
+  };
+
+  // 한줄 소개 글자 수 업데이트
+  if (countText) {
+    countText.textContent = introduction.length.toString();
+  }
+
+  // 입력 필드 활성화
+  nameInput.disabled = false;
+  introTextarea.disabled = false;
+
+  // 로딩 UI 제거
+  hideMyPageLoading();
+
+  // 데이터 로드 완료 후 UI 표시
+  showMyPageLoading();
+}
+
+// UI 로딩 완료 함수
+function completeUILoading(nameInput: HTMLInputElement, introTextarea: HTMLTextAreaElement, wrapper: HTMLElement | null): void {
+  // 입력 필드 활성화
+  nameInput.disabled = false;
+  introTextarea.disabled = false;
+
+  // 로딩 UI 제거하고 실제 콘텐츠 표시
+  hideMyPageLoading();
+
+  // 데이터 로드 완료 후 UI 표시
+  showMyPageLoading();
+}
+
+// 게스트 사용자 UI 설정 함수
+function setupGuestUserUI(
+  nameInput: HTMLInputElement,
+  introTextarea: HTMLTextAreaElement,
+  countText: HTMLSpanElement | null,
+  section: HTMLElement | null,
+  nickname: string
+): void {
+  // 로딩 UI 표시
+  showMyPageLoading();
+
+  // 약간의 지연을 두어 로딩 UI가 보이도록 함
+  setTimeout(() => {
+    // 닉네임과 소개 설정 (disableGuestUserInputs보다 먼저 설정)
+    nameInput.value = nickname;
+    introTextarea.value = CONSTANTS.GUEST_DEFAULT_INTRO;
+
+    // 원본 데이터 백업
+    originalProfileData = {
+      name: nickname,
+      introduction: CONSTANTS.GUEST_DEFAULT_INTRO,
+      avatarUrl: imageState.currentImageUrl,
+      hasCustomImage: imageState.hasCustomImage,
+      isImageRemoved: imageState.isImageRemoved,
+    };
+
+    if (countText) {
+      countText.textContent = CONSTANTS.GUEST_DEFAULT_INTRO.length.toString();
+    }
+
+    disableGuestUserInputs();
+
+    // 로딩 UI 제거
+    hideMyPageLoading();
+  }, 500); // 0.5초 지연
 }
 
 // 마이페이지 폼 데이터 로드 (소셜 로그인 정보 + 저장된 정보)
@@ -372,70 +475,76 @@ export async function loadMyPageFormData(user: User | null): Promise<void> {
   const nameInput = document.getElementById("mypage-name") as HTMLInputElement;
   const introTextarea = document.getElementById("mypage-intro-text") as HTMLTextAreaElement;
   const countText = document.querySelector(".mypage-intro-text-count-text") as HTMLSpanElement;
+  const wrapper = document.querySelector(".mypage-setting-wrapper") as HTMLElement;
+  const section = document.querySelector(".mypage-section") as HTMLElement;
 
-  if (!nameInput || !introTextarea || !user) return;
+  if (!nameInput || !introTextarea || !user) {
+    console.log("마이페이지 폼 요소를 찾을 수 없거나 사용자 정보가 없음");
+    return;
+  }
 
-  // 로딩 상태 표시
+  // 로딩 UI 먼저 표시
+  showMyPageLoading();
+
+  console.log("마이페이지 폼 데이터 로드 시작:", user);
+
+  // 게스트 사용자인지 확인
+  if (isGuestUser(user)) {
+    try {
+      console.log("게스트 사용자 감지됨:", user);
+      console.log("user.user_metadata:", user.user_metadata);
+
+      // user_metadata에서 닉네임 가져오기
+      const guestNickname = user.user_metadata?.nickname || CONSTANTS.GUEST_DEFAULT_NICKNAME;
+      console.log("게스트 닉네임 설정:", guestNickname);
+
+      setupGuestUserUI(nameInput, introTextarea, countText, section, guestNickname);
+      console.log("게스트 사용자 폼 데이터 로드 완료");
+      return;
+    } catch (error) {
+      console.error("게스트 계정 정보 로드 실패:", error);
+      // 에러 시 기본값 사용
+      setupGuestUserUI(nameInput, introTextarea, countText, section, CONSTANTS.GUEST_DEFAULT_NICKNAME);
+    }
+  }
+
+  console.log("일반 사용자 폼 데이터 로드 시작");
+
   nameInput.disabled = true;
   introTextarea.disabled = true;
 
   try {
-    // 저장된 프로필 데이터 로드
+    // 저장된 프로필 데이터 로드 (loadUserProfileData에서 게스트 검증 처리)
     const savedProfile = await loadUserProfileData(user.id);
 
-    let displayName = "";
-    let displayIntro = "";
-
     if (savedProfile) {
-      // 저장된 데이터가 있으면 우선 사용
-      displayName = savedProfile.name;
-      displayIntro = savedProfile.introduction;
-    } else if (user?.user_metadata) {
-      // 저장된 데이터가 없으면 소셜 로그인 정보 사용
-      const userMetadata = user.user_metadata;
-      displayName = userMetadata.full_name || userMetadata.name || "";
-      displayIntro = "";
+      // 저장된 프로필 데이터가 있으면 사용
+      console.log("저장된 프로필 데이터 로드:", savedProfile);
+
+      const name = savedProfile.name || user.user_metadata?.full_name || user.user_metadata?.name || "";
+      const introduction = savedProfile.introduction || "";
+
+      setupRegularUserUI(nameInput, introTextarea, countText, wrapper, name, introduction);
+    } else {
+      // 저장된 프로필 데이터가 없으면 소셜 로그인 정보 사용
+      console.log("저장된 프로필 데이터 없음, 소셜 로그인 정보 사용");
+
+      const socialName = user.user_metadata?.full_name || user.user_metadata?.name || "";
+      const introduction = "";
+
+      setupRegularUserUI(nameInput, introTextarea, countText, wrapper, socialName, introduction);
     }
 
-    // 원본 데이터 백업 (닫기 버튼용)
-    originalProfileData = {
-      name: displayName,
-      introduction: displayIntro,
-      avatarUrl: imageState.currentImageUrl,
-      hasCustomImage: imageState.hasCustomImage,
-      isImageRemoved: imageState.isImageRemoved,
-    };
-
-    // 폼에 데이터 설정
-    nameInput.value = displayName;
-    introTextarea.value = displayIntro;
-
-    // 한줄 소개 글자 수 업데이트
-    if (countText) {
-      countText.textContent = displayIntro.length.toString();
-    }
+    console.log("일반 사용자 폼 데이터 로드 완료");
   } catch (error) {
-    console.error("폼 데이터 로드 실패:", error);
+    console.error("프로필 데이터 로드 실패:", error);
 
-    // 에러 시 소셜 로그인 정보로 폴백
-    if (user?.user_metadata) {
-      const userMetadata = user.user_metadata;
-      const fallbackName = userMetadata.full_name || userMetadata.name || "";
-      nameInput.value = fallbackName;
-      introTextarea.value = "";
+    // 에러 시 기본값 사용
+    const socialName = user.user_metadata?.full_name || user.user_metadata?.name || "";
+    nameInput.value = socialName;
+    introTextarea.value = "";
 
-      originalProfileData = {
-        name: fallbackName,
-        introduction: "",
-        avatarUrl: imageState.currentImageUrl,
-        hasCustomImage: imageState.hasCustomImage,
-        isImageRemoved: imageState.isImageRemoved,
-      };
-    }
-  } finally {
-    // 로딩 상태 해제
-    nameInput.disabled = false;
-    introTextarea.disabled = false;
+    completeUILoading(nameInput, introTextarea, wrapper);
   }
 }
 
@@ -466,8 +575,42 @@ export function restoreOriginalFormData(): void {
 
   // UI에 이미지 복원
   if (originalProfileData.avatarUrl) {
-    updateProfileImage(originalProfileData.avatarUrl);
+    updateAllProfileImages(originalProfileData.avatarUrl);
   } else {
-    updateProfileImage(svg.defaultImage);
+    updateAllProfileImages(svg.defaultImage);
+  }
+}
+
+// 게스트 사용자 제한 함수
+function disableGuestUserInputs(): void {
+  const nameInput = document.getElementById("mypage-name") as HTMLInputElement;
+  const introTextarea = document.getElementById("mypage-intro-text") as HTMLTextAreaElement;
+  const uploadButton = document.querySelector(".mypage-img-button-group .button-sky") as HTMLButtonElement;
+  const removeButton = document.querySelector(".mypage-img-button-group .button-blue") as HTMLButtonElement;
+  const saveButton = document.querySelector("#mypage-setting .popup-bottom-button-group .next-button") as HTMLButtonElement;
+
+  // 게스트 안내 메시지 추가
+  addGuestNoticeMessage();
+
+  if (nameInput) {
+    nameInput.disabled = true;
+  }
+
+  if (introTextarea) {
+    introTextarea.disabled = true;
+    // 게스트 계정 안내 메시지로 설정 (이미 설정된 값 덮어쓰기)
+    introTextarea.value = CONSTANTS.GUEST_INTRO_RESTRICTION_MESSAGE;
+  }
+
+  if (uploadButton) {
+    uploadButton.disabled = true;
+  }
+
+  if (removeButton) {
+    removeButton.disabled = true;
+  }
+
+  if (saveButton) {
+    saveButton.disabled = true;
   }
 }

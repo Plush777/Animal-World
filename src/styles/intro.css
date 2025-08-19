@@ -52,6 +52,11 @@
 
 .intro-bottom .button {
   min-width: 200px;
+  margin: 0 auto;
+}
+
+.intro-bottom .button[id*="login"] {
+  min-width: 241px;
 }
 
 .intro-description-box {
@@ -63,6 +68,11 @@
   box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
   background-color: var(--white);
   animation: bounce 1.5s ease-in-out infinite;
+}
+
+.intro-bottom-button-text {
+  display: block;
+  min-width: 165px;
 }
 
 .intro-description-box::before {

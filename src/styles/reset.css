@@ -215,7 +215,8 @@ input {
   border: 0;
 }
 
-button:disabled {
-  opacity: 1;
+*:disabled {
+  user-select: none;
   pointer-events: none;
+  opacity: 0.5;
 }

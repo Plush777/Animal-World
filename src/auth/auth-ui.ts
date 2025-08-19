@@ -1,6 +1,14 @@
 import { type User } from "@supabase/supabase-js";
 import { authHtml } from "../data/authHtml";
-import { handleGoogleLogin, handleKakaoLogin, handleLogout } from "./auth-core";
+import {
+  handleGoogleLogin,
+  handleKakaoLogin,
+  handleLogout,
+  handleGuestLogin,
+  handleGuestLogout,
+  getCurrentGuestUser,
+  isGuestUser,
+} from "./auth-core";
 import { renderMyPageProfileImage, reconnectMyPageEventListeners, loadMyPageFormData } from "../ui/modules/myPage";
 
 const loginBtn = document.getElementById("google-login") as HTMLButtonElement | null;
@@ -18,11 +26,24 @@ export function getCurrentLoggedInUser(): User | null {
 
 // 로그인 이벤트 리스너 재연결 함수
 export function reconnectLoginEventListeners(): void {
-  const dynamicGoogleLoginBtn = document.getElementById("google-login") as HTMLButtonElement | null;
+  const dynamicGoogleLoginBtn = document.getElementById("google-login");
   const dynamicKakaoLoginBtn = document.getElementById("kakao-login") as HTMLButtonElement | null;
+  const dynamicGuestLoginBtn = document.getElementById("guest-login") as HTMLButtonElement | null;
 
   dynamicGoogleLoginBtn?.addEventListener("click", handleGoogleLogin);
   dynamicKakaoLoginBtn?.addEventListener("click", handleKakaoLogin);
+  dynamicGuestLoginBtn?.addEventListener("click", async () => {
+    // 비회원 로그인 확인 창 표시
+    const isConfirmed = confirm(
+      "비회원 계정은 제한된 기능만 이용할 수 있으며, 로그아웃 시 데이터가 자동으로 삭제됩니다.\n\n안전한 이용을 위하여 소셜 계정 연동을 권장드립니다.\n\n그래도 비회원으로 이용하시겠습니까?"
+    );
+
+    if (isConfirmed) {
+      // 확인을 누른 경우 비회원 로그인 진행
+      await handleGuestLogin();
+    }
+    // 취소를 누른 경우 아무것도 하지 않음
+  });
 }
 
 // 로그아웃 이벤트 리스너 재연결 함수
@@ -31,7 +52,15 @@ export function reconnectLogoutEventListener(): void {
   const dynamicMypageSettingBtn = document.getElementById("mypage-setting-button") as HTMLButtonElement | null;
   const dynamicMyPageSettingCloseBtn = document.querySelector("#mypage-setting .esc-button") as HTMLButtonElement | null;
 
-  dynamicLogoutBtn?.addEventListener("click", handleLogout);
+  dynamicLogoutBtn?.addEventListener("click", async () => {
+    // 게스트 사용자인지 확인
+    const currentUser = getCurrentLoggedInUser();
+    if (currentUser && isGuestUser(currentUser)) {
+      await handleGuestLogout();
+    } else {
+      await handleLogout();
+    }
+  });
 
   dynamicMypageSettingBtn?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -54,6 +83,14 @@ export function reconnectLogoutEventListener(): void {
 
 // 유저 정보 렌더링 함수
 export function renderUser(user: User | null): void {
+  console.log("renderUser 호출됨:", user);
+
+  if (user) {
+    console.log("renderUser - app_metadata:", user.app_metadata);
+    console.log("renderUser - user_metadata:", user.user_metadata);
+    console.log("renderUser - isGuestUser 결과:", isGuestUser(user));
+  }
+
   // 현재 사용자 정보 업데이트
   currentLoggedInUser = user;
   const userLoginElement = document.getElementById("user-login-element") as HTMLDivElement | null;
@@ -61,6 +98,7 @@ export function renderUser(user: User | null): void {
   const userBoxLogoutElement = document.getElementById("userbox-user-logout-element") as HTMLDivElement | null;
 
   if (!user) {
+    console.log("로그아웃 상태 UI 렌더링");
     // 로그아웃 상태 UI 렌더링
     if (userLoginElement) {
       userLoginElement.style.display = "block";
@@ -95,6 +133,7 @@ export function renderUser(user: User | null): void {
     return;
   }
 
+  console.log("로그인 상태 UI 렌더링");
   // 로그인 상태 UI 렌더링
   // 로그인 요소 숨김
   if (userLoginElement) {
@@ -105,10 +144,12 @@ export function renderUser(user: User | null): void {
   // 로그아웃 상태 요소들 표시
   if (userLogoutElement) {
     userLogoutElement.innerHTML = authHtml.logout.buttons;
+    userLogoutElement.style.display = "block";
   }
 
   if (userBoxLogoutElement) {
     userBoxLogoutElement.innerHTML = authHtml.logout.userBoxDiv;
+    userBoxLogoutElement.style.display = "block";
   }
 
   // 사용자 정보 표시 - 마이페이지 모듈에서 처리하도록 위임
@@ -141,4 +182,17 @@ export function initializeAuthUI(): void {
   loginBtn?.addEventListener("click", handleGoogleLogin);
   loginKakaoBtn?.addEventListener("click", handleKakaoLogin);
   logoutBtn?.addEventListener("click", handleLogout);
+
+  // 비회원 로그인 버튼 이벤트 리스너 설정
+  const guestLoginBtn = document.getElementById("guest-login") as HTMLButtonElement | null;
+  guestLoginBtn?.addEventListener("click", async () => {
+    // 비회원 로그인 확인 창 표시
+    const isConfirmed = confirm("비회원으로 이용하시겠습니까?\n\n비회원 계정은 제한된 기능만 이용할 수 있으며, 24시간 후 자동으로 만료됩니다.");
+
+    if (isConfirmed) {
+      // 확인을 누른 경우 비회원 로그인 진행
+      await handleGuestLogin();
+    }
+    // 취소를 누른 경우 아무것도 하지 않음
+  });
 }

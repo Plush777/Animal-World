@@ -30,6 +30,13 @@
   background-color: var(--sky-400);
 }
 
+.button-gray {
+  font-weight: 500;
+  color: var(--white);
+  border: 1px solid var(--black);
+  background-color: var(--gray-500);
+}
+
 .button-blue {
   font-weight: 500;
   color: var(--white);
