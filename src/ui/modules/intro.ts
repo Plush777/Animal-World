@@ -60,6 +60,9 @@ function dispatchCameraChangeEvent(): void {
   document.dispatchEvent(event);
 }
 
+// 전역 변수로 이벤트 리스너 참조 저장
+let joinButtonClickListener: ((event: Event) => void) | null = null;
+
 /**
  * 참여하기 버튼 설정
  */
@@ -70,11 +73,13 @@ async function setupJoinButton(): Promise<void> {
   if (joinButton) {
     console.log("join-button 이벤트 리스너 등록");
 
-    // 기존 이벤트 리스너 제거 (중복 방지)
-    joinButton.replaceWith(joinButton.cloneNode(true));
-    const newJoinButton = document.querySelector("#join-button") as HTMLButtonElement;
+    // 기존 이벤트 리스너가 있으면 제거
+    if (joinButtonClickListener) {
+      joinButton.removeEventListener("click", joinButtonClickListener);
+    }
 
-    newJoinButton.addEventListener("click", async () => {
+    // 새로운 이벤트 리스너 생성 및 저장
+    joinButtonClickListener = async () => {
       console.log("join-button 클릭됨!");
       // Canvas 로딩 완료 이벤트 리스너 등록 (참여하기 버튼 클릭 시점에 등록)
       document.addEventListener(
@@ -117,7 +122,10 @@ async function setupJoinButton(): Promise<void> {
         onLoadingError(error);
         return;
       }
-    });
+    };
+
+    // 이벤트 리스너 추가
+    joinButton.addEventListener("click", joinButtonClickListener);
   } else {
     console.warn("join-button 요소를 찾을 수 없습니다.");
   }

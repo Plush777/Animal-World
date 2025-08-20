@@ -6,7 +6,6 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_PROJECT_URL as string;
 const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY as string;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Supabase 클라이언트 export
 export { supabase };
 
 export type AuthEventCallback = (user: User | null) => void;

@@ -22,16 +22,13 @@ export function reconnectLoginEventListeners(): void {
   dynamicGoogleLoginBtn?.addEventListener("click", handleGoogleLogin);
   dynamicKakaoLoginBtn?.addEventListener("click", handleKakaoLogin);
   dynamicGuestLoginBtn?.addEventListener("click", async () => {
-    // 비회원 로그인 확인 창 표시
     const isConfirmed = confirm(
       "비회원 계정은 제한된 기능만 이용할 수 있으며, 로그아웃 시 데이터가 자동으로 삭제됩니다.\n\n안전한 이용을 위하여 소셜 계정 연동을 권장드립니다.\n\n그래도 비회원으로 이용하시겠습니까?"
     );
 
     if (isConfirmed) {
-      // 확인을 누른 경우 비회원 로그인 진행
       await handleGuestLogin();
     }
-    // 취소를 누른 경우 아무것도 하지 않음
   });
 }
 
@@ -42,7 +39,6 @@ export function reconnectLogoutEventListener(): void {
   const dynamicMyPageSettingCloseBtn = document.querySelector("#mypage-setting .esc-button") as HTMLButtonElement | null;
 
   dynamicLogoutBtn?.addEventListener("click", async () => {
-    // 게스트 사용자인지 확인
     const currentUser = getCurrentLoggedInUser();
     if (currentUser && isGuestUser(currentUser)) {
       await handleGuestLogout();
@@ -83,14 +79,12 @@ export function renderUser(user: User | null): void {
   const userBoxLogoutElement = document.getElementById("userbox-user-logout-element") as HTMLDivElement | null;
 
   if (!user) {
-    console.log("로그아웃 상태 UI 렌더링");
     // 로그아웃 상태 UI 렌더링
     if (userLoginElement) {
       userLoginElement.style.display = "block";
       userLoginElement.innerHTML = authHtml.login;
     }
 
-    // 로그아웃 상태 요소들 숨김
     if (userLogoutElement) {
       userLogoutElement.style.display = "none";
       userLogoutElement.innerHTML = "";
@@ -101,7 +95,6 @@ export function renderUser(user: User | null): void {
       userBoxLogoutElement.innerHTML = "";
     }
 
-    // 사용자 정보 초기화
     if (userInfoDiv) {
       userInfoDiv.innerHTML = "";
     }
@@ -111,17 +104,21 @@ export function renderUser(user: User | null): void {
     return;
   }
 
-  console.log("로그인 상태 UI 렌더링");
   // 로그인 상태 UI 렌더링
-  // 로그인 요소 숨김
   if (userLoginElement) {
     userLoginElement.style.display = "none";
     userLoginElement.innerHTML = "";
   }
 
-  // 로그아웃 상태 요소들 표시
   if (userLogoutElement) {
-    userLogoutElement.innerHTML = authHtml.logout.buttons;
+    // 요소가 이미 존재하는지 확인
+    const existingDescriptionBox = userLogoutElement.querySelector(".intro-description-box");
+    const existingJoinButton = userLogoutElement.querySelector("#join-button");
+
+    // 요소가 존재하지 않을 때만 렌더링
+    if (!existingDescriptionBox || !existingJoinButton) {
+      userLogoutElement.innerHTML = authHtml.logout.buttons;
+    }
     userLogoutElement.style.display = "block";
   }
 
