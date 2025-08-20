@@ -49,3 +49,4 @@
 - https://euni8917.tistory.com/575
 - https://woorii-kye.tistory.com/227
 - https://mycodings.fly.dev/blog/2025-01-01-nextjs-supabase-tutorial-2-login-with-google-id-oauth
+- https://velog.io/@chay140/%EC%95%84%EC%9B%83%EC%86%8C%EC%8B%B1-%ED%8C%80-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-supabase-single-%EC%9D%B4%EC%8A%88 (supabase 406: single => maybesingle)

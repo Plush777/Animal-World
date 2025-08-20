@@ -1,23 +1,55 @@
 .intro-logo-area,
 .intro-description-box,
-.intro-bottom .button,
-.intro-etc-area {
-  transform: scale(0);
+.intro-bottom .button {
   opacity: 0;
-  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.8s ease-in-out;
+  transform: scale(0);
+  transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.intro-logo-area.animate-in {
-  transform: scale(1) translateY(-70px);
-  opacity: 1;
+.intro-logo-area {
+  animation: scaleInTransform 0.65s ease-in-out forwards;
+  animation-delay: 0.2s;
 }
 
-.intro-bottom .button.animate-in,
-.intro-etc-area.animate-in {
-  transform: scale(1);
-  opacity: 1;
+.intro-bottom .button {
+  animation: scaleIn 0.65s ease-in-out forwards;
+  animation-delay: 0.5s;
 }
 
-.intro-description-box.animate-in {
-  opacity: 1;
+.intro-description-box {
+  animation: scaleIn 0.8s ease-in-out forwards, bounce 0.8s ease-in-out infinite;
+  animation-delay: 1.6s;
+}
+
+@keyframes scaleInTransform {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(-70px);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* intro-description-box bounce key frame */
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
 }

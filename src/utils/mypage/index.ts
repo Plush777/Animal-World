@@ -23,22 +23,15 @@ export function getMyPageElements() {
   };
 }
 
-export function getImageElements() {
-  return {
-    mypageImg: document.getElementById("mypage-img-element") as HTMLDivElement,
-    userInfo: document.getElementById("user-info") as HTMLDivElement,
-  };
-}
-
 // 로딩 UI 표시 함수
 export function showMyPageLoading(): void {
   const loadingContainer = document.getElementById("mypage-section-loading") as HTMLElement;
   const wrapper = document.querySelector(".mypage-setting-wrapper") as HTMLElement;
 
   if (loadingContainer) {
+    loadingContainer.innerHTML = myPageHtml.loading;
     wrapper.classList.add("mypage-loading");
     wrapper.classList.remove("mypage-loaded");
-    loadingContainer.innerHTML = myPageHtml.loading;
   }
 }
 

@@ -59,13 +59,9 @@ export function reconnectLogoutEventListener(): void {
 
     (window as any).pageNavigate?.("mypage-setting");
 
-    // 마이페이지 폼 데이터 로드 및 이벤트 리스너 재연결
-    setTimeout(async () => {
-      // 현재 로그인된 사용자 정보 가져오기
-      const currentUser = getCurrentLoggedInUser();
-      await loadMyPageFormData(currentUser);
-      reconnectMyPageEventListeners();
-    }, 100);
+    const currentUser = getCurrentLoggedInUser();
+    loadMyPageFormData(currentUser);
+    reconnectMyPageEventListeners();
   });
 
   dynamicMyPageSettingCloseBtn?.addEventListener("click", () => {
@@ -115,13 +111,6 @@ export function renderUser(user: User | null): void {
 
     reconnectLoginEventListeners();
 
-    // 인트로 애니메이션 시작
-    setTimeout(() => {
-      if ((window as any).startIntroAnimations) {
-        (window as any).startIntroAnimations();
-      }
-    }, 100);
-
     return;
   }
 
@@ -156,13 +145,6 @@ export function renderUser(user: User | null): void {
   setTimeout(() => {
     if ((window as any).setupJoinButton) {
       (window as any).setupJoinButton();
-    }
-  }, 100);
-
-  // 인트로 애니메이션 시작
-  setTimeout(() => {
-    if ((window as any).startIntroAnimations) {
-      (window as any).startIntroAnimations();
     }
   }, 100);
 

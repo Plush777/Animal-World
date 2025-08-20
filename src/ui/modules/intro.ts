@@ -30,76 +30,6 @@ function isUserLoggedIn(): boolean {
 }
 
 /**
- * 기존 애니메이션 클래스 제거 함수
- */
-function resetAnimationClasses(): void {
-  const animatedElements = document.querySelectorAll(".animate-in");
-  animatedElements.forEach((element) => {
-    element.classList.remove("animate-in");
-  });
-}
-
-/**
- * Intro 요소들의 순차적 애니메이션 시작
- */
-function startIntroAnimations(): void {
-  resetAnimationClasses();
-
-  const logoArea = document.querySelector(".intro-logo-area");
-  const descriptionBox = document.querySelector(".intro-description-box");
-  const button = document.querySelector(".intro-bottom button");
-  const guestLoginButton = document.querySelector(".guest-login");
-  const googleLoginButton = document.querySelector(".google-login-button");
-  const kakaoLoginButton = document.querySelector(".kakao-login-button");
-  // const introEtcArea = document.querySelector(".intro-etc-area");
-
-  // 로고 영역은 항상 먼저 애니메이션
-  if (logoArea) {
-    setTimeout(() => {
-      logoArea.classList.add("animate-in");
-    }, 200);
-  }
-
-  if (isUserLoggedIn()) {
-    if (button) {
-      setTimeout(() => {
-        button.classList.add("animate-in");
-      }, 400);
-    }
-
-    if (descriptionBox) {
-      setTimeout(() => {
-        descriptionBox.classList.add("animate-in");
-      }, 1200);
-    }
-  } else {
-    if (googleLoginButton) {
-      setTimeout(() => {
-        googleLoginButton.classList.add("animate-in");
-      }, 400);
-    }
-
-    if (kakaoLoginButton) {
-      setTimeout(() => {
-        kakaoLoginButton.classList.add("animate-in");
-      }, 600);
-    }
-
-    if (guestLoginButton) {
-      setTimeout(() => {
-        guestLoginButton.classList.add("animate-in");
-      }, 800);
-    }
-
-    // if (introEtcArea) {
-    //   setTimeout(() => {
-    //     introEtcArea.classList.add("animate-in");
-    //   }, 800);
-    // }
-  }
-}
-
-/**
  * intro-wrapper만 숨기기 (카메라 이동 없음)
  */
 function hideIntroWrapperOnly(): void {
@@ -128,18 +58,6 @@ function dispatchCameraChangeEvent(): void {
   });
 
   document.dispatchEvent(event);
-}
-
-/**
- * 로딩 완료 시 인트로 화면 표시
- */
-function showIntroWrapper(): void {
-  const introWrapper = document.querySelector(".intro-wrapper") as HTMLElement;
-  if (introWrapper) {
-    introWrapper.style.display = "flex";
-    // 순차적 애니메이션 시작
-    startIntroAnimations();
-  }
 }
 
 /**
@@ -209,14 +127,10 @@ async function setupJoinButton(): Promise<void> {
  * 인트로 모듈 초기화
  */
 function initIntroModule(): void {
-  // 로딩 완료 이벤트 리스너 등록
-  document.addEventListener("loadingComplete", showIntroWrapper);
-
   // 전역에서 애니메이션 함수 접근 가능하도록 노출
   if (typeof window !== "undefined") {
-    (window as any).startIntroAnimations = startIntroAnimations;
     (window as any).setupJoinButton = setupJoinButton;
   }
 }
 
-export { startIntroAnimations, setupJoinButton, initIntroModule, isUserLoggedIn };
+export { setupJoinButton, initIntroModule, isUserLoggedIn };

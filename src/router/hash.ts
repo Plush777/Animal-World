@@ -1,4 +1,7 @@
+import { isGuestUser, supabase } from "../auth/auth-core";
+import { getCurrentLoggedInUser } from "../auth/auth-ui";
 import { authHtml } from "../data/authHtml";
+import { reconnectMyPageEventListeners } from "../ui/modules/myPage";
 
 interface RouteHandler {
   show: () => void;
@@ -97,21 +100,6 @@ function initRouter(): void {
   window.addEventListener("hashchange", () => {
     handleHashChange();
   });
-
-  // 새로고침 시에도 마이페이지 데이터 로드 확인
-  window.addEventListener("load", () => {
-    setTimeout(async () => {
-      const hash = window.location.hash.slice(1);
-      if (hash === "mypage-setting") {
-        try {
-          const { ensureMyPageDataLoaded } = await import("../ui/modules/myPage");
-          ensureMyPageDataLoaded();
-        } catch (error) {
-          console.error("마이페이지 데이터 로드 실패:", error);
-        }
-      }
-    }, 300);
-  });
 }
 
 // 라우터 객체 생성
@@ -125,51 +113,48 @@ const router = {
   init: initRouter,
 };
 
-// 라우터 초기화
 initRouter();
 
-// 마이페이지 라우트 등록
 router.registerRoute("mypage-setting", {
-  show: () => {
+  show: async () => {
     const mypageSettingPopup = document.querySelector("#mypage-setting") as HTMLElement;
-    mypageSettingPopup.innerHTML = authHtml.mypage.setting;
+
+    // 새로고침 시에도 올바른 사용자 정보를 가져오기 위해 Supabase 세션에서 직접 확인
+    let currentUser = getCurrentLoggedInUser();
+
+    if (!currentUser) {
+      // 세션에서 사용자 정보 가져오기
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        currentUser = session?.user || null;
+      } catch (error) {
+        console.error("세션에서 사용자 정보 가져오기 실패:", error);
+        currentUser = null;
+      }
+    }
+
+    if (currentUser && isGuestUser(currentUser)) {
+      mypageSettingPopup.innerHTML = authHtml.mypage.setting.guest;
+    } else {
+      mypageSettingPopup.innerHTML = authHtml.mypage.setting.user;
+    }
 
     if (mypageSettingPopup) {
-      // 로딩 상태 초기화
-      const wrapper = mypageSettingPopup.querySelector(".mypage-setting-wrapper") as HTMLElement;
-      if (wrapper) {
-        wrapper.classList.add("mypage-loading");
-        wrapper.classList.remove("mypage-loaded");
-      }
-
-      // 마이페이지 폼 데이터 로드 및 이벤트 리스너 재연결
-      // 즉시 실행하되, DOM이 준비될 때까지 대기
-      (async () => {
-        // 동적 import로 마이페이지 모듈 로드
-        const { reconnectMyPageEventListeners } = await import("../ui/modules/myPage");
-        reconnectMyPageEventListeners();
-      })();
+      reconnectMyPageEventListeners();
     }
   },
   hide: () => {
     const mypageSettingPopup = document.querySelector("#mypage-setting") as HTMLElement;
     if (mypageSettingPopup) {
       mypageSettingPopup.innerHTML = "";
-
-      // 로딩 상태 리셋
-      const wrapper = mypageSettingPopup.querySelector(".mypage-setting-wrapper") as HTMLElement;
-      if (wrapper) {
-        wrapper.classList.add("mypage-loading");
-        wrapper.classList.remove("mypage-loaded");
-      }
     }
   },
 });
 
-// 전역에서 접근 가능하도록 export
 export { router };
 
-// window 객체에도 추가 (기존 코드와의 호환성을 위해)
 (window as any).hashRouter = router;
 (window as any).pageNavigate = pageNavigate;
 (window as any).pageClose = pageClose;

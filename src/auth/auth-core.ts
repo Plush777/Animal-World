@@ -154,22 +154,9 @@ export async function saveUserProfile(profile: Omit<UserProfile, "id" | "created
 // 사용자 프로필 로드
 export async function loadUserProfile(userId: string): Promise<{ success: boolean; data?: UserProfile; error?: string }> {
   try {
-    // 디버깅을 위한 호출 스택 추적
-    console.log("loadUserProfile 호출됨, userId:", userId);
-    console.trace("loadUserProfile 호출 스택:");
-
-    // 게스트 사용자 확인 - 이 함수 자체에서도 차단
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    console.log("현재 세션 사용자:", session?.user);
-
-    if (session?.user) {
-      console.log("사용자 app_metadata:", session.user.app_metadata);
-      console.log("사용자 user_metadata:", session.user.user_metadata);
-      console.log("isAnonymousUser 결과:", isAnonymousUser(session.user));
-      console.log("isGuestUser 결과:", isGuestUser(session.user));
-    }
 
     if (session?.user && (isAnonymousUser(session.user) || isGuestUser(session.user))) {
       console.log("loadUserProfile: 게스트/익명 사용자이므로 프로필 조회를 건너뜁니다.");
@@ -177,7 +164,7 @@ export async function loadUserProfile(userId: string): Promise<{ success: boolea
     }
 
     console.log("일반 사용자로 확인됨, profiles 테이블 조회 진행");
-    const { data, error } = await supabase.from("profiles").select("*").eq("user_id", userId).single();
+    const { data, error } = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
 
     if (error) {
       if (error.code === "PGRST116") {
@@ -284,16 +271,17 @@ export async function validateGuestSession(): Promise<boolean> {
       return false;
     }
 
-    // 세션 만료 시간 확인 (24시간)
-    const sessionCreatedAt = new Date(session.created_at).getTime();
+    // 세션 만료 시간 확인
     const currentTime = Date.now();
-    const sessionAge = currentTime - sessionCreatedAt;
-    const maxSessionAge = 24 * 60 * 60 * 1000; // 24시간
 
-    if (sessionAge > maxSessionAge) {
-      // 세션이 만료되었으면 로그아웃
-      await supabase.auth.signOut();
-      return false;
+    if (session.expires_at) {
+      const sessionExpiresAt = new Date(session.expires_at).getTime();
+
+      if (currentTime > sessionExpiresAt) {
+        // 세션이 만료되었으면 로그아웃
+        await supabase.auth.signOut();
+        return false;
+      }
     }
 
     return true;
