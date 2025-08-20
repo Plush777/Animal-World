@@ -110,7 +110,6 @@ export interface UserProfile {
 // 사용자 프로필 저장
 export async function saveUserProfile(profile: Omit<UserProfile, "id" | "created_at" | "updated_at">): Promise<{ success: boolean; error?: string }> {
   try {
-    // 게스트 사용자 확인 - 이 함수 자체에서도 차단
     const {
       data: { session },
     } = await supabase.auth.getSession();

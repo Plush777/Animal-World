@@ -3,9 +3,6 @@ import { authHtml } from "../data/authHtml";
 import { handleGoogleLogin, handleKakaoLogin, handleLogout, handleGuestLogin, handleGuestLogout, isGuestUser } from "./auth-core";
 import { renderMyPageProfileImage, reconnectMyPageEventListeners, loadMyPageFormData } from "../ui/modules/myPage";
 
-const loginBtn = document.getElementById("google-login") as HTMLButtonElement | null;
-const loginKakaoBtn = document.getElementById("kakao-login") as HTMLButtonElement | null;
-const logoutBtn = document.getElementById("logout") as HTMLButtonElement | null;
 const userInfoDiv = document.getElementById("user-info") as HTMLDivElement | null;
 
 // 현재 로그인된 사용자 정보 저장
@@ -142,31 +139,9 @@ export function renderUser(user: User | null): void {
   reconnectLogoutEventListener();
 
   // join-button 이벤트 리스너 설정 (로그인 상태에서만)
-  setTimeout(() => {
-    if ((window as any).setupJoinButton) {
-      (window as any).setupJoinButton();
-    }
-  }, 100);
+  if ((window as any).setupJoinButton) {
+    (window as any).setupJoinButton();
+  }
 
   console.log("로그인된 사용자:", user);
-}
-
-// 초기 이벤트 리스너 설정
-export function initializeAuthUI(): void {
-  loginBtn?.addEventListener("click", handleGoogleLogin);
-  loginKakaoBtn?.addEventListener("click", handleKakaoLogin);
-  logoutBtn?.addEventListener("click", handleLogout);
-
-  // 비회원 로그인 버튼 이벤트 리스너 설정
-  const guestLoginBtn = document.getElementById("guest-login") as HTMLButtonElement | null;
-  guestLoginBtn?.addEventListener("click", async () => {
-    // 비회원 로그인 확인 창 표시
-    const isConfirmed = confirm("비회원으로 이용하시겠습니까?\n\n비회원 계정은 제한된 기능만 이용할 수 있으며, 24시간 후 자동으로 만료됩니다.");
-
-    if (isConfirmed) {
-      // 확인을 누른 경우 비회원 로그인 진행
-      await handleGuestLogin();
-    }
-    // 취소를 누른 경우 아무것도 하지 않음
-  });
 }

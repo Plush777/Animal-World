@@ -2,9 +2,7 @@
 // 인증 로직과 UI 로직을 분리하여 관리
 
 import { onAuthStateChange, initializeAuth } from "./auth-core";
-import { renderUser, initializeAuthUI } from "./auth-ui";
-
-initializeAuthUI();
+import { renderUser } from "./auth-ui";
 
 onAuthStateChange(renderUser);
 
