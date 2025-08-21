@@ -6,15 +6,9 @@ export const chatHtml: { [key: string]: any } = {
             <div class="chat-inner">
                 <header class="chat-header">
                     <div class="chat-button-group">
-                        <button type="button" class="chat-leave-button">
-                            ${svg.chatLeave}
-                            <span class="hidden">방 나가기</span>
-                        </button>
-                    </div>
-                    <div class="chat-button-group">
                         <button type="button" class="chat-close-button">
-                        ${svg.chatClose}
-                        <span class="hidden">채팅창 닫기</span>
+                            ${svg.chatClose}
+                            <span class="hidden">채팅창 닫기</span>
                         </button>
                     </div>
                 </header>

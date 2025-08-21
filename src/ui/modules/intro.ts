@@ -100,8 +100,14 @@ async function setupJoinButton(): Promise<void> {
 
           setTimeout(() => {
             const mainTag = document.querySelector(".main") as HTMLElement;
+            const worldHeader = document.getElementById("world-header") as HTMLElement;
+
             if (mainTag) {
               mainTag.classList.add("ui-visible");
+            }
+
+            if (worldHeader) {
+              worldHeader.classList.add("ui-visible");
             }
           }, 3000);
         },

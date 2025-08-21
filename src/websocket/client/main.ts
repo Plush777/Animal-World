@@ -1,5 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import { chatHtml } from "../../data/chatHtml";
+import { sceneHtml } from "../../data/sceneHtml";
 
 // 타입 정의
 interface RoomInfo {
@@ -169,21 +170,34 @@ class ChatSystem {
     const roomNumber = roomId.replace("room_", "");
     this.removeExistingHeaders();
 
-    const header = document.createElement("div");
-    header.className = "world-header";
-    header.innerHTML = `
-      <div class="world-header-content">
-        <h1>채팅 월드 ${roomNumber}</h1>
-      </div>
-    `;
+    const app = document.getElementById("app") as HTMLElement;
 
-    document.body.insertBefore(header, document.body.firstChild);
+    app.insertAdjacentHTML(
+      "afterbegin",
+      `
+      <header id="world-header" >
+        <div class="world-header-content ui-element">
+          <h1>채팅 월드 ${roomNumber}</h1>
+          ${sceneHtml.headerRight}
+        </div>
+      </header>
+    `
+    );
   }
 
   // 기존 헤더 제거
   private removeExistingHeaders(): void {
-    const existingHeaders = document.querySelectorAll(".world-header");
-    existingHeaders.forEach((header) => header.remove());
+    // ID로 헤더 제거
+    const existingHeaderById = document.querySelector("#world-header");
+    if (existingHeaderById) {
+      existingHeaderById.remove();
+    }
+
+    // 클래스로 헤더 제거 (추가 안전장치)
+    const existingHeadersByClass = document.querySelectorAll(".world-header");
+    existingHeadersByClass.forEach((header) => header.remove());
+
+    console.log("기존 헤더 제거 완료");
   }
 
   // 소켓 연결
@@ -297,8 +311,14 @@ class ChatSystem {
     }
 
     const mainTag = this.findElement<HTMLElement>(".main");
+    const worldHeader = this.findElement<HTMLElement>("#world-header");
+
     if (mainTag) {
       mainTag.classList.remove("ui-visible");
+    }
+
+    if (worldHeader) {
+      worldHeader.classList.remove("ui-visible");
     }
 
     const loadingUI = this.findElement<HTMLElement>(".loading-wrapper");
@@ -428,21 +448,6 @@ class ChatSystem {
       );
     }
   }
-
-  // 헤더 강제 제거 (디버깅용)
-  forceRemoveHeader(): void {
-    const headers = document.querySelectorAll(".world-header");
-    console.log(`강제 헤더 제거: ${headers.length}개 발견`);
-    headers.forEach((header, index) => {
-      console.log(`헤더 ${index + 1} 제거:`, header);
-      header.remove();
-    });
-
-    const mainElement = this.findElement<HTMLElement>(".main");
-    if (mainElement) {
-      mainElement.style.marginTop = "0";
-    }
-  }
 }
 
 // 싱글톤 인스턴스 생성
@@ -454,33 +459,39 @@ const chatSystem = new ChatSystem();
 (window as any).forceGoHome = () => chatSystem.forceGoHome();
 (window as any).autoJoinStoredRoom = () => chatSystem.autoJoinStoredRoom();
 (window as any).cleanupUI = () => chatSystem.cleanupUI();
-(window as any).forceRemoveHeader = () => chatSystem.forceRemoveHeader();
 
 // 브라우저 이벤트 처리
 window.addEventListener("popstate", (event) => {
   console.log("URL 변경 감지:", window.location.href, "State:", event.state);
 
-  const roomNumber =
-    chatSystem.parseRoomNumberFromURL?.() ||
-    (() => {
-      const hash = window.location.hash;
-      if (hash.includes("world") && hash.includes("number=")) {
-        const match = hash.match(/number=(\d+)/);
-        return match ? match[1] : null;
-      }
-      return null;
-    })();
+  const hash = window.location.hash;
 
-  if (roomNumber && window.location.hash.includes("world")) {
-    console.log(`popstate: 방 ${roomNumber}에 입장 시도`);
-    if (chatSystem.socket) {
-      chatSystem.socket.emit("joinSpecificRoom", { roomNumber: parseInt(roomNumber) });
+  // world 해시가 있는 경우에만 채팅 시스템 처리
+  if (hash.includes("world")) {
+    const roomNumber =
+      chatSystem.parseRoomNumberFromURL?.() ||
+      (() => {
+        if (hash.includes("world") && hash.includes("number=")) {
+          const match = hash.match(/number=(\d+)/);
+          return match ? match[1] : null;
+        }
+        return null;
+      })();
+
+    if (roomNumber) {
+      console.log(`popstate: 방 ${roomNumber}에 입장 시도`);
+      if (chatSystem.socket) {
+        chatSystem.socket.emit("joinSpecificRoom", { roomNumber: parseInt(roomNumber) });
+      } else {
+        chatSystem.connectToServer();
+      }
     } else {
-      chatSystem.connectToServer();
+      console.log("popstate: world 해시는 있지만 방 번호가 없음");
+      // world 해시가 있지만 방 번호가 없는 경우는 기존 라우터가 처리하도록 함
     }
   } else {
-    console.log("popstate: 방에서 나가기");
-    chatSystem.forceGoHome();
+    // world 해시가 없는 경우는 기존 라우터가 처리하도록 함
+    console.log("popstate: world 해시가 없음, 기존 라우터가 처리");
   }
 });
 
@@ -494,28 +505,35 @@ window.addEventListener("beforeunload", () => {
 
 window.addEventListener("load", () => {
   setTimeout(() => {
-    const roomNumber =
-      chatSystem.parseRoomNumberFromURL?.() ||
-      (() => {
-        const hash = window.location.hash;
-        if (hash.includes("world") && hash.includes("number=")) {
-          const match = hash.match(/number=(\d+)/);
-          return match ? match[1] : null;
-        }
-        return null;
-      })();
+    const hash = window.location.hash;
 
-    const storedRoomInfo = chatSystem.loadRoomInfoFromStorage?.();
+    // world 해시가 있는 경우에만 채팅 시스템 처리
+    if (hash.includes("world")) {
+      const roomNumber =
+        chatSystem.parseRoomNumberFromURL?.() ||
+        (() => {
+          if (hash.includes("world") && hash.includes("number=")) {
+            const match = hash.match(/number=(\d+)/);
+            return match ? match[1] : null;
+          }
+          return null;
+        })();
 
-    if (roomNumber) {
-      console.log("페이지 로드 시 URL에서 방 번호 발견:", roomNumber);
-    } else if (storedRoomInfo) {
-      console.log("페이지 로드 시 저장된 방 정보 발견:", storedRoomInfo);
-      const storedRoomNumber = storedRoomInfo.roomId.replace("room_", "");
-      const newURL = `/#world?number=${storedRoomNumber}`;
-      window.history.replaceState({ roomId: storedRoomInfo.roomId, type: "room" }, "", newURL);
+      const storedRoomInfo = chatSystem.loadRoomInfoFromStorage?.();
+
+      if (roomNumber) {
+        console.log("페이지 로드 시 URL에서 방 번호 발견:", roomNumber);
+      } else if (storedRoomInfo) {
+        console.log("페이지 로드 시 저장된 방 정보 발견:", storedRoomInfo);
+        const storedRoomNumber = storedRoomInfo.roomId.replace("room_", "");
+        const newURL = `/#world?number=${storedRoomNumber}`;
+        window.history.replaceState({ roomId: storedRoomInfo.roomId, type: "room" }, "", newURL);
+      } else {
+        chatSystem.cleanupUI();
+      }
     } else {
-      chatSystem.cleanupUI();
+      // world 해시가 없는 경우는 기존 라우터가 처리하도록 함
+      console.log("페이지 로드 시 world 해시가 없음, 기존 라우터가 처리");
     }
   }, 100);
 });
