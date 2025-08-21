@@ -34,12 +34,7 @@ const floatingObjects: FloatingAnimation[] = [];
 const waterWaveObjects: WaterWaveAnimation[] = [];
 let cameraAnimation: CameraAnimation | null = null;
 
-export function addFloatingAnimation(
-  object: THREE.Object3D,
-  amplitude: number = 10,
-  frequency: number = 1,
-  phase: number = 0
-): void {
+export function addFloatingAnimation(object: THREE.Object3D, amplitude: number = 10, frequency: number = 1, phase: number = 0): void {
   floatingObjects.push({
     object,
     originalPosition: object.position.clone(),
@@ -111,8 +106,7 @@ function updateFloatingAnimations(time: number): void {
 
 function updateWaterWaveAnimations(time: number): void {
   waterWaveObjects.forEach((waterWave) => {
-    const { object, originalPosition, originalRotation, waveSpeed, phase } =
-      waterWave;
+    const { object, originalPosition, originalRotation, waveSpeed, phase } = waterWave;
 
     // 위치는 고정 (움직임 없음)
     object.position.copy(originalPosition);
@@ -122,13 +116,11 @@ function updateWaterWaveAnimations(time: number): void {
     object.rotation.z = originalRotation.z + rotationOffset;
 
     // 물결 효과를 위한 X축 회전 (앞뒤로 부드럽게 흔들림) - 더 흔들리게 증가
-    const xRotationOffset =
-      Math.sin(time * waveSpeed * 0.6 + phase + 1) * 0.012;
+    const xRotationOffset = Math.sin(time * waveSpeed * 0.6 + phase + 1) * 0.012;
     object.rotation.x = originalRotation.x + xRotationOffset;
 
     // 물결 효과를 위한 Y축 회전 (좌우로 부드럽게 흔들림) - 더 흔들리게 증가
-    const yRotationOffset =
-      Math.sin(time * waveSpeed * 0.7 + phase + 2) * 0.018;
+    const yRotationOffset = Math.sin(time * waveSpeed * 0.7 + phase + 2) * 0.018;
     object.rotation.y = originalRotation.y + yRotationOffset;
 
     // 물결 효과를 위한 스케일 변화 (호흡하는 듯한 효과) - 더 흔들리게 증가
@@ -138,9 +130,7 @@ function updateWaterWaveAnimations(time: number): void {
 
     // 물결 효과를 위한 재질 애니메이션 (투명도 변화) - 더 흔들리게 증가
     if (object instanceof THREE.Mesh && object.material) {
-      const material = Array.isArray(object.material)
-        ? object.material[0]
-        : object.material;
+      const material = Array.isArray(object.material) ? object.material[0] : object.material;
       if (material && material.transparent) {
         const opacityOffset = Math.sin(time * waveSpeed * 0.4 + phase) * 0.05;
         material.opacity = Math.max(0.85, Math.min(0.98, 0.92 + opacityOffset));
@@ -154,14 +144,7 @@ function updateCameraAnimation(): void {
     return;
   }
 
-  const {
-    camera,
-    controls,
-    startPosition,
-    targetPosition,
-    startTime,
-    duration,
-  } = cameraAnimation;
+  const { camera, controls, startPosition, targetPosition, startTime, duration } = cameraAnimation;
   const elapsed = Date.now() - startTime;
   const progress = Math.min(elapsed / duration, 1);
 
@@ -169,11 +152,7 @@ function updateCameraAnimation(): void {
   const easedProgress = easeInOutCubic(progress);
 
   // 위치 보간
-  const currentPosition = new THREE.Vector3().lerpVectors(
-    startPosition,
-    targetPosition,
-    easedProgress
-  );
+  const currentPosition = new THREE.Vector3().lerpVectors(startPosition, targetPosition, easedProgress);
 
   // 카메라 위치 설정
   camera.position.copy(currentPosition);
@@ -193,7 +172,7 @@ export function createAnimationLoop(
   camera: THREE.PerspectiveCamera,
   renderer: THREE.WebGLRenderer,
   controls: OrbitControls | TrackballControls
-): () => void {
+): () => number {
   const clock = new THREE.Clock();
   let lastUpdateTime = 0;
 
@@ -203,7 +182,7 @@ export function createAnimationLoop(
   trackballControls.noZoom = false; // Enable zoom
   trackballControls.zoomSpeed = 0.2; // Adjust as needed
 
-  return function animate(): void {
+  return function animate(): number {
     const time = clock.getElapsedTime();
 
     updateFloatingAnimations(time);
@@ -214,17 +193,16 @@ export function createAnimationLoop(
     trackballControls.target.set(target.x, target.y, target.z);
 
     // 떠다니는 모델들이 있을 때만 그림자 맵 업데이트 (성능 최적화)
-    if (
-      (floatingObjects.length > 0 || waterWaveObjects.length > 0) &&
-      time - lastUpdateTime > 0.1
-    ) {
+    if ((floatingObjects.length > 0 || waterWaveObjects.length > 0) && time - lastUpdateTime > 0.1) {
       renderer.shadowMap.needsUpdate = true;
       lastUpdateTime = time;
     }
 
-    requestAnimationFrame(animate);
+    const animationId = requestAnimationFrame(animate);
     controls.update();
     trackballControls.update();
     renderer.render(scene, camera);
+
+    return animationId;
   };
 }

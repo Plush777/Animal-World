@@ -2,21 +2,28 @@
   "name": "animal-world",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/websocket/server/server.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "vite --host --port 3333"
+    "dev": "vite --host --port 3333",
+    "server": "ts-node -P tsconfig.server.json src/websocket/server/server.ts",
+    "server:dev": "nodemon"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "three": "^0.179.1"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.55.0",
+    "@types/express": "^5.0.3",
     "@types/three": "^0.179.0",
+    "express": "^5.1.0",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
     "vite": "^7.0.6",
     "vite-plugin-html-inject": "^1.1.2"
   }

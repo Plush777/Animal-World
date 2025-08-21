@@ -1,6 +1,7 @@
 import { isGuestUser, supabase } from "../auth/auth-core";
 import { getCurrentLoggedInUser } from "../auth/auth-ui";
 import { authHtml } from "../data/authHtml";
+import { chatHtml } from "../data/chatHtml";
 import { reconnectMyPageEventListeners } from "../ui/modules/myPage";
 
 interface RouteHandler {
@@ -150,6 +151,17 @@ router.registerRoute("mypage-setting", {
     if (mypageSettingPopup) {
       mypageSettingPopup.innerHTML = "";
     }
+  },
+});
+
+router.registerRoute("world", {
+  show: () => {
+    const world = document.getElementById("chat") as HTMLElement;
+    world.innerHTML = chatHtml.chat;
+  },
+  hide: () => {
+    const world = document.getElementById("chat") as HTMLElement;
+    world.innerHTML = "";
   },
 });
 

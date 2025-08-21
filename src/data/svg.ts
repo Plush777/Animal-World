@@ -121,4 +121,27 @@ export const svg: { [key: string]: string } = {
 </svg>
 
   `,
+
+  chatClose: `
+    <svg fill="currentColor" width="24" height="24" viewBox="0 0 512 512">
+  <path
+    d="M237.879,158.339l-89.594,154.175c-9.969,16.844-1.938,32.986,17.844,32.986h179.766c19.75,0,27.797-16.143,17.812-32.986  l-89.578-152.955C264.16,142.652,247.848,141.448,237.879,158.339z"
+  />
+</svg>
+
+  `,
+
+  chatLeave: `
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 20 20" fill="none">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M15.6666 8L17.75 10.5L15.6666 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M15.6666 13L17.75 10.5L15.6666 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M16.5 10.5L10 10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+<line x1="4" y1="3.5" x2="13" y2="3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+<line x1="4" y1="17.5" x2="13" y2="17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+<path d="M13 3.5V7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+<path d="M13 13.5V17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+<path d="M4 3.5L4 17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+</svg>
+
+  `,
 };

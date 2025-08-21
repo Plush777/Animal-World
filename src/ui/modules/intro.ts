@@ -4,6 +4,7 @@
  */
 
 import { createAndShowLoadingUI, setTotalModels, updateProgressText, onLoadingError } from "./loading.js";
+import { getCurrentLoggedInUser } from "../../auth/auth-ui.js";
 
 /**
  * 로그인 상태 확인 함수
@@ -67,7 +68,6 @@ let joinButtonClickListener: ((event: Event) => void) | null = null;
  * 참여하기 버튼 설정
  */
 async function setupJoinButton(): Promise<void> {
-  console.log("setupJoinButton 함수 호출됨");
   const joinButton = document.querySelector("#join-button") as HTMLButtonElement;
   console.log("join-button 요소 찾기:", joinButton);
   if (joinButton) {
@@ -81,6 +81,16 @@ async function setupJoinButton(): Promise<void> {
     // 새로운 이벤트 리스너 생성 및 저장
     joinButtonClickListener = async () => {
       console.log("join-button 클릭됨!");
+
+      // 현재 사용자 정보 가져오기
+      const currentUser = getCurrentLoggedInUser();
+      const userName = currentUser?.user_metadata?.name || currentUser?.email || "게스트";
+
+      // 채팅 시스템 초기화
+      if ((window as any).initializeChatSystem) {
+        (window as any).initializeChatSystem(userName);
+      }
+
       // Canvas 로딩 완료 이벤트 리스너 등록 (참여하기 버튼 클릭 시점에 등록)
       document.addEventListener(
         "canvasLoadingComplete",
@@ -138,6 +148,11 @@ function initIntroModule(): void {
   // 전역에서 애니메이션 함수 접근 가능하도록 노출
   if (typeof window !== "undefined") {
     (window as any).setupJoinButton = setupJoinButton;
+  }
+
+  // 저장된 방 정보가 있으면 자동으로 방에 입장
+  if ((window as any).autoJoinStoredRoom) {
+    (window as any).autoJoinStoredRoom();
   }
 }
 

@@ -81,6 +81,10 @@
   background-color: var(--sky-500);
 }
 
+.chat-close-button svg {
+  pointer-events: none;
+}
+
 .chat-wrapper .chat-close-button svg {
   transform: rotate(180deg);
 }
@@ -135,4 +139,103 @@
 
 .chat-enter-button.short-key svg {
   color: var(--black);
+}
+
+/* 채팅 메시지 스타일 */
+.chat-message {
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.message-user {
+  font-weight: 600;
+  color: var(--sky-400);
+}
+
+.message-time {
+  color: var(--gray-400);
+  font-size: 11px;
+}
+
+.message-text {
+  color: var(--white);
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* 방 정보 스타일 */
+.chat-room-info {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+#room-info {
+  color: var(--sky-300);
+}
+
+/* 방 나가기 버튼 스타일 */
+.chat-leave-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  color: var(--white);
+  background-color: var(--red-500);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.chat-leave-button:hover {
+  background-color: var(--red-600);
+}
+
+.chat-leave-button svg {
+  pointer-events: none;
+}
+
+/* 월드 헤더 스타일 */
+.world-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: linear-gradient(135deg, var(--sky-500) 0%, var(--blue-600) 100%);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.world-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.world-header h1 {
+  color: var(--white);
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }

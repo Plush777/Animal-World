@@ -31,3 +31,7 @@
   align-items: center;
   width: 100%;
 }
+
+#server-list-popup .popup-title-box {
+  margin-bottom: 60px;
+}

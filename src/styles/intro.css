@@ -53,6 +53,7 @@
 .intro-bottom .button {
   min-width: 200px;
   margin: 0 auto;
+  width: fit-content;
 }
 
 .intro-bottom .button[id*="login"] {

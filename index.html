@@ -8,25 +8,9 @@
       <main class="main">
         <div class="intro-wrapper">
           <load src="src/components/intro/UserBox.html" />
-
-          <section class="intro-box">
-            <load src="src/components/intro/IntroLogo.html" />
-            <load src="src/components/intro/IntroBottom.html" />
-          </section>
-
-          <div class="video-wrapper">
-            <video class="light-video" autoplay muted loop>
-              <source src="/videos/intro-light.mp4" type="video/mp4" />
-            </video>
-
-            <video class="dark-video" autoplay muted loop>
-              <source src="/videos/intro-dark.mp4" type="video/mp4" />
-            </video>
-          </div>
-
-          <a class="threejs-logo" href="https://threejs.org/" target="_blank">
-            <img src="/images/logo/logo-threejs.png" alt="three.js logo" width="100" height="111" />
-          </a>
+          <load src="src/components/intro/IntroContentsBox.html" />
+          <load src="src/components/intro/IntroVideo.html" />
+          <load src="src/components/intro/IntroSupports.html" />
         </div>
 
         <canvas id="scene"></canvas>
@@ -44,6 +28,7 @@
       <script type="module" src="/src/canvas/main.ts"></script>
       <script type="module" src="/src/auth/auth.ts"></script>
       <script type="module" src="/src/ui/ui.ts"></script>
+      <script type="module" src="/src/websocket/client/main.ts"></script>
     </div>
   </body>
 </html>

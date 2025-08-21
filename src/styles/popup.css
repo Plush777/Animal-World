@@ -283,3 +283,15 @@
   color: var(--blue-600);
   font-weight: 600;
 }
+
+.server-list-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  height: calc(100vh - 312px);
+  overflow-y: auto;
+}
+
+.server-list-grid::-webkit-scrollbar {
+  display: none;
+}

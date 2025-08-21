@@ -11,5 +11,12 @@ export default defineConfig({
   },
   server: {
     open: true,
+    port: 3333,
+    proxy: {
+      "/socket.io": {
+        target: "http://localhost:8000",
+        ws: true,
+      },
+    },
   },
 });
