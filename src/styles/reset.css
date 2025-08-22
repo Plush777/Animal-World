@@ -226,6 +226,7 @@ input {
   => myPage.ts: mypageSetting.addEventListener
   
  */
-button span {
-  pointer-events: none;
+button span,
+button svg {
+  pointer-events: none !important;
 }

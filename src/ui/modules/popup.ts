@@ -7,11 +7,16 @@
  * 설정 팝업 열기/닫기
  */
 function setupSettingPopup(): void {
-  const settingButton = document.querySelector(".setting-button");
-  if (settingButton) {
-    settingButton.addEventListener("click", () => {
-      const settingPopup = document.querySelector(".popup.setting") as HTMLElement;
-      if (settingPopup) {
+  const app = document.querySelector("#app") as HTMLElement;
+
+  if (app) {
+    app.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      const target = e.target as HTMLElement;
+
+      if (target.classList.contains("setting-button")) {
+        const settingPopup = document.querySelector(".popup.setting") as HTMLElement;
         settingPopup.classList.toggle("active");
       }
     });
@@ -22,12 +27,19 @@ function setupSettingPopup(): void {
  * 팝업 닫기 버튼 설정
  */
 function setupPopupClose(): void {
-  const popupCloseButton = document.querySelector(".popup-close");
-  if (popupCloseButton) {
-    popupCloseButton.addEventListener("click", () => {
-      const popup = document.querySelector(".popup") as HTMLElement;
-      if (popup) {
-        popup.classList.remove("active");
+  const app = document.querySelector("#app") as HTMLElement;
+
+  if (app) {
+    app.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      const target = e.target as HTMLElement;
+
+      if (target.classList.contains("popup-close")) {
+        const popup = document.querySelector(".popup") as HTMLElement;
+        if (popup) {
+          popup.classList.remove("active");
+        }
       }
     });
   }
