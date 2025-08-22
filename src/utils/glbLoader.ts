@@ -12,9 +12,7 @@ export function loadGLBModel(
   return new Promise((resolve, reject) => {
     // 로딩 시작을 즉시 알림
     if (window.LoadingUI) {
-      window.LoadingUI.updateProgressText(
-        `${path.split("/").pop()?.replace(".glb", "")} 로딩 중...`
-      );
+      window.LoadingUI.updateProgressText(`${path.split("/").pop()?.replace(".glb", "")} 로딩 중...`);
     }
 
     gltfLoader.load(
@@ -25,7 +23,7 @@ export function loadGLBModel(
         try {
           // UI에 모델 로드 완료 알림
           if (window.LoadingUI) {
-            window.LoadingUI.onModelLoaded(path);
+            window.LoadingUI.onModelLoaded();
           }
 
           // 모델의 모든 메시에 그림자 설정 및 재질 조정
@@ -45,18 +43,12 @@ export function loadGLBModel(
               if (child.material) {
                 if (Array.isArray(child.material)) {
                   child.material.forEach((mat) => {
-                    if (
-                      mat instanceof THREE.MeshStandardMaterial ||
-                      mat instanceof THREE.MeshPhysicalMaterial
-                    ) {
+                    if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
                       mat.shadowSide = THREE.FrontSide;
                     }
                   });
                 } else {
-                  if (
-                    child.material instanceof THREE.MeshStandardMaterial ||
-                    child.material instanceof THREE.MeshPhysicalMaterial
-                  ) {
+                  if (child.material instanceof THREE.MeshStandardMaterial || child.material instanceof THREE.MeshPhysicalMaterial) {
                     child.material.shadowSide = THREE.FrontSide;
                   }
                 }
@@ -71,9 +63,7 @@ export function loadGLBModel(
               else if (path.includes("low_poly_floating_island")) {
                 console.log(`Floating Island 모델 발견: ${child.name}`);
                 console.log(`재질 색상:`, child.material.color);
-                console.log(
-                  `그림자 설정 - castShadow: ${child.castShadow}, receiveShadow: ${child.receiveShadow}`
-                );
+                console.log(`그림자 설정 - castShadow: ${child.castShadow}, receiveShadow: ${child.receiveShadow}`);
                 adjustFloatingIslandMaterial(child.material, child.name);
 
                 // Floating Island 모델에 대해 추가 그림자 설정
@@ -84,19 +74,13 @@ export function loadGLBModel(
                   if (Array.isArray(child.material)) {
                     child.material.forEach((mat) => {
                       mat.needsUpdate = true;
-                      if (
-                        mat instanceof THREE.MeshStandardMaterial ||
-                        mat instanceof THREE.MeshPhysicalMaterial
-                      ) {
+                      if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
                         mat.shadowSide = THREE.FrontSide;
                       }
                     });
                   } else {
                     child.material.needsUpdate = true;
-                    if (
-                      child.material instanceof THREE.MeshStandardMaterial ||
-                      child.material instanceof THREE.MeshPhysicalMaterial
-                    ) {
+                    if (child.material instanceof THREE.MeshStandardMaterial || child.material instanceof THREE.MeshPhysicalMaterial) {
                       child.material.shadowSide = THREE.FrontSide;
                     }
                   }
@@ -126,17 +110,13 @@ export function loadGLBModel(
                     child.material.forEach((mat) => {
                       // 밤 하늘 배경의 밝기와 색상 보존
                       if (mat.color) {
-                        console.log(
-                          `Night Sky Scene 원본 색상: ${mat.color.getHexString()}`
-                        );
+                        console.log(`Night Sky Scene 원본 색상: ${mat.color.getHexString()}`);
                       }
                       mat.needsUpdate = true;
                     });
                   } else {
                     if (child.material.color) {
-                      console.log(
-                        `Night Sky Scene 원본 색상: ${child.material.color.getHexString()}`
-                      );
+                      console.log(`Night Sky Scene 원본 색상: ${child.material.color.getHexString()}`);
                     }
                     child.material.needsUpdate = true;
                   }
@@ -164,18 +144,11 @@ export function loadGLBModel(
         }
       },
       (progress) => {
-        console.log(
-          `GLB 모델 로드 진행률: ${path}`,
-          ((progress.loaded / progress.total) * 100).toFixed(2) + "%"
-        );
+        console.log(`GLB 모델 로드 진행률: ${path}`, ((progress.loaded / progress.total) * 100).toFixed(2) + "%");
 
         // UI에 진행률 업데이트
         if (progress.total > 0 && window.LoadingUI) {
-          window.LoadingUI.onModelProgress(
-            progress.loaded,
-            progress.total,
-            path
-          );
+          window.LoadingUI.onModelProgress(progress.loaded, progress.total);
         }
 
         if (onProgress) onProgress(progress);
@@ -209,10 +182,7 @@ function adjustTreeMaterial(material: THREE.Material | THREE.Material[]): void {
 // 단일 나무 재질 조정 함수
 function adjustSingleTreeMaterial(material: THREE.Material): void {
   // MeshStandardMaterial 또는 MeshPhysicalMaterial인 경우
-  if (
-    material instanceof THREE.MeshStandardMaterial ||
-    material instanceof THREE.MeshPhysicalMaterial
-  ) {
+  if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial) {
     material.metalness = 0.0; // 메탈릭 없음
     material.roughness = 0.8; // 적당한 러프니스
     material.transparent = false;
@@ -221,11 +191,7 @@ function adjustSingleTreeMaterial(material: THREE.Material): void {
     // 나무를 초록색으로 설정
     if (material.color) {
       // 하얀색이나 회색인 경우 다양한 초록색 톤으로 변경
-      if (
-        material.color.r > 0.8 &&
-        material.color.g > 0.8 &&
-        material.color.b > 0.8
-      ) {
+      if (material.color.r > 0.8 && material.color.g > 0.8 && material.color.b > 0.8) {
         // 랜덤하게 다양한 초록색 톤 적용
         const greenTones = [
           [0.2, 0.8, 0.2], // 밝은 초록색
@@ -234,22 +200,16 @@ function adjustSingleTreeMaterial(material: THREE.Material): void {
           [0.1, 0.7, 0.1], // 진한 초록색
           [0.5, 1.0, 0.5], // 연한 라임 초록색
         ];
-        const randomTone =
-          greenTones[Math.floor(Math.random() * greenTones.length)];
+        const randomTone = greenTones[Math.floor(Math.random() * greenTones.length)];
         material.color.setRGB(randomTone[0], randomTone[1], randomTone[2]);
-      } else if (
-        material.color.r > 0.6 &&
-        material.color.g > 0.6 &&
-        material.color.b > 0.6
-      ) {
+      } else if (material.color.r > 0.6 && material.color.g > 0.6 && material.color.b > 0.6) {
         // 회색 톤인 경우도 초록색으로 변경
         const greenTones = [
           [0.2, 0.8, 0.2], // 밝은 초록색
           [0.3, 0.9, 0.3], // 더 밝은 초록색
           [0.4, 1.0, 0.4], // 연한 초록색
         ];
-        const randomTone =
-          greenTones[Math.floor(Math.random() * greenTones.length)];
+        const randomTone = greenTones[Math.floor(Math.random() * greenTones.length)];
         material.color.setRGB(randomTone[0], randomTone[1], randomTone[2]);
       }
     }
@@ -262,11 +222,7 @@ function adjustSingleTreeMaterial(material: THREE.Material): void {
 
     if (material.color) {
       // 하얀색이나 회색인 경우 다양한 초록색 톤으로 변경
-      if (
-        material.color.r > 0.8 &&
-        material.color.g > 0.8 &&
-        material.color.b > 0.8
-      ) {
+      if (material.color.r > 0.8 && material.color.g > 0.8 && material.color.b > 0.8) {
         const greenTones = [
           [0.2, 0.8, 0.2], // 밝은 초록색
           [0.3, 0.9, 0.3], // 더 밝은 초록색
@@ -274,21 +230,15 @@ function adjustSingleTreeMaterial(material: THREE.Material): void {
           [0.1, 0.7, 0.1], // 진한 초록색
           [0.5, 1.0, 0.5], // 연한 라임 초록색
         ];
-        const randomTone =
-          greenTones[Math.floor(Math.random() * greenTones.length)];
+        const randomTone = greenTones[Math.floor(Math.random() * greenTones.length)];
         material.color.setRGB(randomTone[0], randomTone[1], randomTone[2]);
-      } else if (
-        material.color.r > 0.6 &&
-        material.color.g > 0.6 &&
-        material.color.b > 0.6
-      ) {
+      } else if (material.color.r > 0.6 && material.color.g > 0.6 && material.color.b > 0.6) {
         const greenTones = [
           [0.2, 0.8, 0.2], // 밝은 초록색
           [0.3, 0.9, 0.3], // 더 밝은 초록색
           [0.4, 1.0, 0.4], // 연한 초록색
         ];
-        const randomTone =
-          greenTones[Math.floor(Math.random() * greenTones.length)];
+        const randomTone = greenTones[Math.floor(Math.random() * greenTones.length)];
         material.color.setRGB(randomTone[0], randomTone[1], randomTone[2]);
       }
     }
@@ -301,11 +251,7 @@ function adjustSingleTreeMaterial(material: THREE.Material): void {
 
     if (material.color) {
       // 하얀색이나 회색인 경우 다양한 초록색 톤으로 변경
-      if (
-        material.color.r > 0.8 &&
-        material.color.g > 0.8 &&
-        material.color.b > 0.8
-      ) {
+      if (material.color.r > 0.8 && material.color.g > 0.8 && material.color.b > 0.8) {
         const greenTones = [
           [0.2, 0.8, 0.2], // 밝은 초록색
           [0.3, 0.9, 0.3], // 더 밝은 초록색
@@ -313,21 +259,15 @@ function adjustSingleTreeMaterial(material: THREE.Material): void {
           [0.1, 0.7, 0.1], // 진한 초록색
           [0.5, 1.0, 0.5], // 연한 라임 초록색
         ];
-        const randomTone =
-          greenTones[Math.floor(Math.random() * greenTones.length)];
+        const randomTone = greenTones[Math.floor(Math.random() * greenTones.length)];
         material.color.setRGB(randomTone[0], randomTone[1], randomTone[2]);
-      } else if (
-        material.color.r > 0.6 &&
-        material.color.g > 0.6 &&
-        material.color.b > 0.6
-      ) {
+      } else if (material.color.r > 0.6 && material.color.g > 0.6 && material.color.b > 0.6) {
         const greenTones = [
           [0.2, 0.8, 0.2], // 밝은 초록색
           [0.3, 0.9, 0.3], // 더 밝은 초록색
           [0.4, 1.0, 0.4], // 연한 초록색
         ];
-        const randomTone =
-          greenTones[Math.floor(Math.random() * greenTones.length)];
+        const randomTone = greenTones[Math.floor(Math.random() * greenTones.length)];
         material.color.setRGB(randomTone[0], randomTone[1], randomTone[2]);
       }
     }
@@ -335,10 +275,7 @@ function adjustSingleTreeMaterial(material: THREE.Material): void {
 }
 
 // Floating Island 재질을 밝게 조정하는 함수
-function adjustFloatingIslandMaterial(
-  material: THREE.Material | THREE.Material[],
-  _meshName: string
-): void {
+function adjustFloatingIslandMaterial(material: THREE.Material | THREE.Material[], _meshName: string): void {
   if (Array.isArray(material)) {
     material.forEach((mat) => {
       adjustSingleFloatingIslandMaterial(mat, _meshName);
@@ -349,15 +286,9 @@ function adjustFloatingIslandMaterial(
 }
 
 // 단일 Floating Island 재질 조정 함수
-function adjustSingleFloatingIslandMaterial(
-  material: THREE.Material,
-  _meshName: string
-): void {
+function adjustSingleFloatingIslandMaterial(material: THREE.Material, _meshName: string): void {
   // MeshStandardMaterial 또는 MeshPhysicalMaterial인 경우
-  if (
-    material instanceof THREE.MeshStandardMaterial ||
-    material instanceof THREE.MeshPhysicalMaterial
-  ) {
+  if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial) {
     material.metalness = 0.0;
     material.roughness = 0.7;
     material.transparent = false;
@@ -372,11 +303,7 @@ function adjustSingleFloatingIslandMaterial(
 
       // 색상이 너무 어두운 경우에만 밝게 조정
       if (originalR < 0.3 && originalG < 0.3 && originalB < 0.3) {
-        material.color.setRGB(
-          Math.min(originalR * 1.5, 1.0),
-          Math.min(originalG * 1.5, 1.0),
-          Math.min(originalB * 1.5, 1.0)
-        );
+        material.color.setRGB(Math.min(originalR * 1.5, 1.0), Math.min(originalG * 1.5, 1.0), Math.min(originalB * 1.5, 1.0));
       }
     }
   }
@@ -392,11 +319,7 @@ function adjustSingleFloatingIslandMaterial(
       const originalB = material.color.b;
 
       if (originalR < 0.3 && originalG < 0.3 && originalB < 0.3) {
-        material.color.setRGB(
-          Math.min(originalR * 1.5, 1.0),
-          Math.min(originalG * 1.5, 1.0),
-          Math.min(originalB * 1.5, 1.0)
-        );
+        material.color.setRGB(Math.min(originalR * 1.5, 1.0), Math.min(originalG * 1.5, 1.0), Math.min(originalB * 1.5, 1.0));
       }
     }
   }
@@ -412,21 +335,14 @@ function adjustSingleFloatingIslandMaterial(
       const originalB = material.color.b;
 
       if (originalR < 0.3 && originalG < 0.3 && originalB < 0.3) {
-        material.color.setRGB(
-          Math.min(originalR * 1.5, 1.0),
-          Math.min(originalG * 1.5, 1.0),
-          Math.min(originalB * 1.5, 1.0)
-        );
+        material.color.setRGB(Math.min(originalR * 1.5, 1.0), Math.min(originalG * 1.5, 1.0), Math.min(originalB * 1.5, 1.0));
       }
     }
   }
 }
 
 // Water 재질을 조정하는 함수
-function adjustWaterMaterial(
-  material: THREE.Material | THREE.Material[],
-  _meshName: string
-): void {
+function adjustWaterMaterial(material: THREE.Material | THREE.Material[], _meshName: string): void {
   if (Array.isArray(material)) {
     material.forEach((mat) => {
       adjustSingleWaterMaterial(mat, _meshName);
@@ -437,10 +353,7 @@ function adjustWaterMaterial(
 }
 
 // Night Sky Scene 재질을 조정하는 함수
-function adjustNightSkyMaterial(
-  material: THREE.Material | THREE.Material[],
-  _meshName: string
-): void {
+function adjustNightSkyMaterial(material: THREE.Material | THREE.Material[], _meshName: string): void {
   if (Array.isArray(material)) {
     material.forEach((mat) => {
       adjustSingleNightSkyMaterial(mat, _meshName);
@@ -451,15 +364,9 @@ function adjustNightSkyMaterial(
 }
 
 // 단일 Night Sky Scene 재질 조정 함수
-function adjustSingleNightSkyMaterial(
-  material: THREE.Material,
-  _meshName: string
-): void {
+function adjustSingleNightSkyMaterial(material: THREE.Material, _meshName: string): void {
   // MeshStandardMaterial 또는 MeshPhysicalMaterial인 경우
-  if (
-    material instanceof THREE.MeshStandardMaterial ||
-    material instanceof THREE.MeshPhysicalMaterial
-  ) {
+  if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial) {
     material.metalness = 0.0;
     material.roughness = 0.9;
     material.transparent = false;
@@ -468,9 +375,7 @@ function adjustSingleNightSkyMaterial(
     // 밤 하늘 배경의 원래 색상 보존 - 색상 조정하지 않음
     if (material.color) {
       // 원래 색상을 그대로 유지
-      console.log(
-        `Night Sky Scene 색상 보존: ${material.color.getHexString()}`
-      );
+      console.log(`Night Sky Scene 색상 보존: ${material.color.getHexString()}`);
     }
   }
 
@@ -481,9 +386,7 @@ function adjustSingleNightSkyMaterial(
 
     if (material.color) {
       // 원래 색상을 그대로 유지
-      console.log(
-        `Night Sky Scene Lambert 색상 보존: ${material.color.getHexString()}`
-      );
+      console.log(`Night Sky Scene Lambert 색상 보존: ${material.color.getHexString()}`);
     }
   }
 
@@ -494,23 +397,15 @@ function adjustSingleNightSkyMaterial(
 
     if (material.color) {
       // 원래 색상을 그대로 유지
-      console.log(
-        `Night Sky Scene Basic 색상 보존: ${material.color.getHexString()}`
-      );
+      console.log(`Night Sky Scene Basic 색상 보존: ${material.color.getHexString()}`);
     }
   }
 }
 
 // 단일 Water 재질 조정 함수
-function adjustSingleWaterMaterial(
-  material: THREE.Material,
-  _meshName: string
-): void {
+function adjustSingleWaterMaterial(material: THREE.Material, _meshName: string): void {
   // MeshStandardMaterial 또는 MeshPhysicalMaterial인 경우
-  if (
-    material instanceof THREE.MeshStandardMaterial ||
-    material instanceof THREE.MeshPhysicalMaterial
-  ) {
+  if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial) {
     // 물 효과를 위한 재질 설정
     material.metalness = 0.0; // 메탈릭 효과 제거
     material.roughness = 0.8; // 거친 표면으로 반사 감소
@@ -523,19 +418,11 @@ function adjustSingleWaterMaterial(
     // 물 색상 설정 (파란색 계열)
     if (material.color) {
       // 기존 색상이 너무 어두운 경우 밝은 파란색으로 조정
-      if (
-        material.color.r < 0.2 &&
-        material.color.g < 0.2 &&
-        material.color.b < 0.2
-      ) {
+      if (material.color.r < 0.2 && material.color.g < 0.2 && material.color.b < 0.2) {
         material.color.setRGB(0.2, 0.6, 0.9); // 밝은 파란색
       } else {
         // 기존 색상을 보존하면서 약간 밝게 조정
-        material.color.setRGB(
-          Math.min(material.color.r * 1.2, 1.0),
-          Math.min(material.color.g * 1.2, 1.0),
-          Math.min(material.color.b * 1.2, 1.0)
-        );
+        material.color.setRGB(Math.min(material.color.r * 1.2, 1.0), Math.min(material.color.g * 1.2, 1.0), Math.min(material.color.b * 1.2, 1.0));
       }
     }
   }
@@ -548,18 +435,10 @@ function adjustSingleWaterMaterial(
     material.emissive = new THREE.Color(0x000000); // 발광 효과 제거
 
     if (material.color) {
-      if (
-        material.color.r < 0.2 &&
-        material.color.g < 0.2 &&
-        material.color.b < 0.2
-      ) {
+      if (material.color.r < 0.2 && material.color.g < 0.2 && material.color.b < 0.2) {
         material.color.setRGB(0.2, 0.6, 0.9);
       } else {
-        material.color.setRGB(
-          Math.min(material.color.r * 1.2, 1.0),
-          Math.min(material.color.g * 1.2, 1.0),
-          Math.min(material.color.b * 1.2, 1.0)
-        );
+        material.color.setRGB(Math.min(material.color.r * 1.2, 1.0), Math.min(material.color.g * 1.2, 1.0), Math.min(material.color.b * 1.2, 1.0));
       }
     }
   }
@@ -572,18 +451,10 @@ function adjustSingleWaterMaterial(
     material.lights = false; // 조명 반응 비활성화
 
     if (material.color) {
-      if (
-        material.color.r < 0.2 &&
-        material.color.g < 0.2 &&
-        material.color.b < 0.2
-      ) {
+      if (material.color.r < 0.2 && material.color.g < 0.2 && material.color.b < 0.2) {
         material.color.setRGB(0.2, 0.6, 0.9);
       } else {
-        material.color.setRGB(
-          Math.min(material.color.r * 1.2, 1.0),
-          Math.min(material.color.g * 1.2, 1.0),
-          Math.min(material.color.b * 1.2, 1.0)
-        );
+        material.color.setRGB(Math.min(material.color.r * 1.2, 1.0), Math.min(material.color.g * 1.2, 1.0), Math.min(material.color.b * 1.2, 1.0));
       }
     }
   }
