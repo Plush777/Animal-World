@@ -22,3 +22,6 @@ pnpm-debug.log*
 
 #dist
 dist
+
+# dev html
+/test-api.html
