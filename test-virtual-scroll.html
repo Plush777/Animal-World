@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>가상 스크롤 테스트</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #1a1a1a;
+        color: white;
+      }
+
+      .test-container {
+        width: 400px;
+        height: 300px;
+        border: 2px solid #333;
+        border-radius: 8px;
+        background-color: #2a2a2a;
+        margin-bottom: 20px;
+      }
+
+      .chat-message {
+        margin-bottom: 8px;
+        padding: 12px;
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.1);
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .message-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+        font-size: 14px;
+      }
+
+      .message-user {
+        font-weight: 600;
+        color: #7dd3fc;
+      }
+
+      .message-time {
+        color: #9ca3af;
+        font-size: 14px;
+      }
+
+      .message-text {
+        color: white;
+        font-size: 16px;
+        line-height: 1.4;
+        word-break: break-word;
+      }
+
+      .controls {
+        margin-bottom: 20px;
+      }
+
+      button {
+        background-color: #3b82f6;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-right: 10px;
+        margin-bottom: 10px;
+      }
+
+      button:hover {
+        background-color: #2563eb;
+      }
+
+      .info {
+        background-color: #374151;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>가상 스크롤 테스트</h1>
+
+    <div class="info">
+      <h3>테스트 방법:</h3>
+      <ul>
+        <li>"메시지 추가" 버튼을 클릭하여 메시지를 추가합니다</li>
+        <li>마우스 휠을 사용하여 부드러운 스크롤을 테스트합니다</li>
+        <li>"맨 위로" 버튼을 클릭하여 맨 위로 스크롤합니다</li>
+        <li>"맨 아래로" 버튼을 클릭하여 맨 아래로 스크롤합니다</li>
+      </ul>
+    </div>
+
+    <div class="controls">
+      <button onclick="addMessage()">메시지 추가</button>
+      <button onclick="scrollToTop()">맨 위로</button>
+      <button onclick="scrollToBottom()">맨 아래로</button>
+      <button onclick="clearMessages()">메시지 지우기</button>
+    </div>
+
+    <div id="chat-messages" class="test-container"></div>
+
+    <div class="info">
+      <h3>현재 상태:</h3>
+      <p>
+        메시지 개수:
+        <span id="message-count">0</span>
+      </p>
+      <p>
+        스크롤 위치:
+        <span id="scroll-position">0</span>
+      </p>
+      <p>
+        전체 높이:
+        <span id="total-height">0</span>
+      </p>
+    </div>
+
+    <script type="module">
+      import { ChatVirtualScroll } from "./src/ui/virtualScroll.ts";
+
+      let virtualScroll;
+      let messageCount = 0;
+
+      // 가상 스크롤 초기화
+      function initVirtualScroll() {
+        const container = document.getElementById("chat-messages");
+        if (container) {
+          virtualScroll = new ChatVirtualScroll(container);
+          updateInfo();
+        }
+      }
+
+      // 메시지 추가
+      window.addMessage = function () {
+        if (!virtualScroll) return;
+
+        messageCount++;
+        const li = document.createElement("li");
+        li.className = "chat-message";
+
+        const time = new Date().toLocaleTimeString();
+        const users = ["사용자1", "사용자2", "사용자3", "시스템"];
+        const user = users[Math.floor(Math.random() * users.length)];
+        const messages = [
+          "안녕하세요!",
+          "오늘 날씨가 좋네요.",
+          "가상 스크롤이 잘 작동하고 있습니다.",
+          "부드러운 스크롤 애니메이션을 확인해보세요.",
+          "이것은 테스트 메시지입니다.",
+          "메시지가 많아져도 성능이 좋습니다.",
+          "transform translateY를 사용한 부드러운 스크롤입니다.",
+        ];
+        const text = messages[Math.floor(Math.random() * messages.length)];
+
+        li.innerHTML = `
+                <div class="message-header">
+                    <span class="message-user">${user}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <p class="message-text">${text} (메시지 #${messageCount})</p>
+            `;
+
+        virtualScroll.addChatMessage(li);
+        updateInfo();
+      };
+
+      // 맨 위로 스크롤
+      window.scrollToTop = function () {
+        if (virtualScroll) {
+          virtualScroll.scrollToTop();
+        }
+      };
+
+      // 맨 아래로 스크롤
+      window.scrollToBottom = function () {
+        if (virtualScroll) {
+          virtualScroll.scrollToBottom();
+        }
+      };
+
+      // 메시지 지우기
+      window.clearMessages = function () {
+        if (virtualScroll) {
+          virtualScroll.destroy();
+          initVirtualScroll();
+          messageCount = 0;
+          updateInfo();
+        }
+      };
+
+      // 정보 업데이트
+      function updateInfo() {
+        if (virtualScroll) {
+          document.getElementById("message-count").textContent = virtualScroll.getItemCount();
+          document.getElementById("scroll-position").textContent = Math.round(virtualScroll.getScrollTop());
+          document.getElementById("total-height").textContent = virtualScroll.getTotalHeight();
+        }
+      }
+
+      // 초기화
+      initVirtualScroll();
+
+      // 주기적으로 정보 업데이트
+      setInterval(updateInfo, 100);
+    </script>
+  </body>
+</html>

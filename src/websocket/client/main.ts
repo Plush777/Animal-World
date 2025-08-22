@@ -2,6 +2,7 @@ import { io, Socket } from "socket.io-client";
 import { chatHtml } from "../../data/chatHtml";
 import { sceneHtml } from "../../data/sceneHtml";
 import { supabase, isGuestUser } from "../../auth/auth-core";
+import { ChatVirtualScroll } from "../../ui/virtualScroll";
 
 // 타입 정의
 interface RoomInfo {
@@ -22,6 +23,7 @@ interface ChatUIElements {
   input: HTMLInputElement | null;
   messages: HTMLUListElement | null;
   container: HTMLDivElement | null;
+  virtualScroll: ChatVirtualScroll | null;
 }
 
 // 채팅 시스템 클래스
@@ -35,6 +37,7 @@ class ChatSystem {
     input: null,
     messages: null,
     container: null,
+    virtualScroll: null,
   };
 
   // 채팅 UI HTML 템플릿
@@ -56,6 +59,11 @@ class ChatSystem {
     this.ui.form = document.querySelector<HTMLFormElement>("#chat-form");
     this.ui.input = document.querySelector<HTMLInputElement>("#chat-input");
     this.ui.messages = document.querySelector<HTMLUListElement>("#chat-messages");
+
+    // 가상 스크롤 초기화
+    if (this.ui.messages) {
+      this.ui.virtualScroll = new ChatVirtualScroll(this.ui.messages);
+    }
 
     if ((window as any).initChatModule) {
       (window as any).initChatModule();
@@ -129,8 +137,14 @@ class ChatSystem {
       <p class="message-text">${text}</p>
     `;
 
-    this.ui.messages.appendChild(li);
-    this.ui.messages.scrollTop = this.ui.messages.scrollHeight;
+    // 가상 스크롤 사용
+    if (this.ui.virtualScroll) {
+      this.ui.virtualScroll.addChatMessage(li);
+    } else {
+      // 폴백: 기존 방식
+      this.ui.messages.appendChild(li);
+      this.ui.messages.scrollTop = this.ui.messages.scrollHeight;
+    }
   }
 
   // 시스템 메시지 추가

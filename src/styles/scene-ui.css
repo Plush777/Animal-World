@@ -1,25 +1,12 @@
-#scene {
-  opacity: 0;
-  transition: opacity 0.5s ease-in-out;
-}
-
-#scene.loaded {
-  opacity: 1;
-}
-
 .chat-wrapper {
   position: absolute;
   left: 20px;
   bottom: 20px;
   width: 100%;
-  max-width: 440px;
+  max-width: 450px;
   border-radius: 12px;
   background-color: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(10px);
-}
-
-.chat-wrapper.active .chat-log-box {
-  height: 250px;
 }
 
 .chat-inner {
@@ -36,7 +23,14 @@
 }
 
 .chat-log-box {
-  overflow-y: auto;
+  height: 250px;
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-log-box::-webkit-scrollbar {
+  display: none;
+  scrollbar-width: none;
 }
 
 .chat-input-box {
@@ -113,7 +107,7 @@
   top: auto;
   left: 50%;
   transform: translateX(-50%);
-  bottom: -35px;
+  bottom: -30px;
 }
 
 .world-header-box .only-icon-button {
@@ -151,12 +145,15 @@
   color: var(--black);
 }
 
-/* 채팅 메시지 스타일 */
 .chat-message {
-  margin-bottom: 8px;
-  padding: 8px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 12px;
   border-radius: 8px;
   background-color: rgba(255, 255, 255, 0.1);
+  width: calc(100% - 16px);
+  box-sizing: border-box;
 }
 
 .message-header {
@@ -164,27 +161,26 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 4px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .message-user {
   font-weight: 600;
-  color: var(--sky-400);
+  color: var(--sky-300);
 }
 
 .message-time {
-  color: var(--gray-400);
-  font-size: 11px;
+  color: var(--gray-300);
+  font-size: 14px;
 }
 
 .message-text {
   color: var(--white);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.4;
   word-break: break-word;
 }
 
-/* 방 정보 스타일 */
 .chat-room-info {
   display: flex;
   align-items: center;
@@ -194,11 +190,6 @@
   font-weight: 500;
 }
 
-#room-info {
-  color: var(--sky-300);
-}
-
-/* 방 나가기 버튼 스타일 */
 .chat-leave-button {
   display: flex;
   align-items: center;
@@ -216,15 +207,6 @@
   color: var(--white);
 }
 
-/* 월드 헤더 스타일 */
-#world-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-}
-
 .world-header-content {
   position: relative;
   display: flex;
@@ -232,20 +214,42 @@
   padding: 0 16px;
 }
 
-#world-header h1 {
-  display: flex;
-  height: 48px;
-  align-items: center;
-  padding: 0 12px;
+.virtual-scroll-container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  transition: transform 250ms ease-out;
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* 가상 스크롤바 스타일 */
+.virtual-scrollbar {
   position: absolute;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  color: var(--black);
-  font-size: 20px;
-  font-weight: 700;
-  border-radius: 0 0 10px 10px;
-  background-color: #ffffff8f;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
+  right: 0;
+  width: 8px;
+  margin-top: 8px;
+  height: calc(100% - 16px);
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  z-index: 10;
+}
+
+.virtual-scrollbar-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.virtual-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.5);
 }
