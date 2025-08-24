@@ -361,7 +361,7 @@ async function loadUsersList(): Promise<void> {
       return;
     }
 
-    showLoadingState(popupBody, "general");
+    // showLoadingState(popupBody, "general");
 
     // 채팅 시스템에서 현재 방의 사용자 목록 요청
     const chatSystem = (window as any).chatSystem;
