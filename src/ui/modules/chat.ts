@@ -1,16 +1,18 @@
+//ui.ts 호출 순서 주의
 function initChatModule(): void {
-  const chat = document.getElementById("chat") as HTMLElement;
+  const app = document.querySelector("#app") as HTMLElement;
 
-  if (chat) {
-    chat.addEventListener("click", (e) => {
-      e.stopPropagation();
+  if (app) {
+    app.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
+      const closeButton = document.querySelector(".chat-close-button") as HTMLElement;
 
-      if (target.classList.contains("chat-close-button")) {
-        const chatWrapper = document.querySelector(".chat-wrapper") as HTMLElement;
-        if (chatWrapper) {
-          chatWrapper.classList.toggle("active");
-        }
+      e.stopPropagation();
+
+      const chatWrapper = document.querySelector(".chat-wrapper") as HTMLElement;
+      if (chatWrapper && target === closeButton) {
+        console.log(target);
+        chatWrapper.classList.toggle("active");
       }
     });
   }

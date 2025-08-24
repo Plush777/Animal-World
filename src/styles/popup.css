@@ -8,9 +8,11 @@
 }
 
 .popup.setting {
-  top: 80px;
-  right: 0;
   width: 350px;
+}
+
+.popup.user-list {
+  width: 300px;
 }
 
 .popup-header {
@@ -46,6 +48,7 @@
 }
 
 .popup-body {
+  position: relative;
   padding: 12px;
   border: 2px solid var(--gray-700);
   border-top: 0;
@@ -60,6 +63,7 @@
 }
 
 .popup-section {
+  position: relative;
   display: flex;
   flex-direction: column;
   row-gap: 8px;
@@ -89,6 +93,21 @@
 .popup-section-item-title {
   font-size: 13px;
   font-weight: 400;
+}
+
+.user-list-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-list-item {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-300);
+  background-color: var(--white);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-700);
 }
 
 .range-bar {
@@ -284,14 +303,15 @@
   font-weight: 600;
 }
 
-.server-list-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  height: calc(100vh - 312px);
-  overflow-y: auto;
+.popup.user-list .popup-section {
+  min-height: 300px;
 }
 
-.server-list-grid::-webkit-scrollbar {
-  display: none;
+.popup.setting [class*="virtual-scrollbar"] {
+  top: 0;
+  /* height: 100% !important; */
+}
+
+.world-header-box [class*="virtual-scroll-container"] {
+  padding: 12px;
 }

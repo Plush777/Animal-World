@@ -13,7 +13,7 @@ export const chatHtml: { [key: string]: any } = {
                     </div>
                 </header>
                 <div class="chat-body">
-                    <ul id="chat-messages" class="chat-log-box"></ul>
+                    <div id="chat-messages" class="chat-log-box"></div>
                     <div class="chat-input-box">
                         <form id="chat-form">
                             <input

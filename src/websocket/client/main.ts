@@ -18,6 +18,16 @@ interface ChatMessage {
   timestamp?: string;
 }
 
+interface RoomUser {
+  socketId: string;
+  nickname?: string;
+}
+
+interface RoomUsersList {
+  roomId: string | null;
+  users: RoomUser[];
+}
+
 interface ChatUIElements {
   form: HTMLFormElement | null;
   input: HTMLInputElement | null;
@@ -32,6 +42,7 @@ class ChatSystem {
   public isInitialized: boolean = false;
   public currentRoom: string | null = null;
   public currentUser: string | null = null;
+  public currentRoomUsers: RoomUser[] = [];
   public ui: ChatUIElements = {
     form: null,
     input: null,
@@ -127,15 +138,31 @@ class ChatSystem {
     const li = document.createElement("li");
     li.className = "chat-message";
 
-    const time = timestamp ? new Date(timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+    // 시스템 메시지인지 확인
+    const isSystemMessage = user === "시스템";
 
-    li.innerHTML = `
-      <div class="message-header">
-        <span class="message-user">${user}</span>
-        <span class="message-time">${time}</span>
-      </div>
-      <p class="message-text">${text}</p>
-    `;
+    if (isSystemMessage) {
+      // 시스템 메시지: 기존 HTML 그대로 사용
+      const time = timestamp ? new Date(timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+
+      li.innerHTML = `
+        <div class="message-header">
+          <span class="message-user">${user}</span>
+          <span class="message-time">${time}</span>
+        </div>
+        <p class="message-text">${text}</p>
+      `;
+    } else {
+      // 실제 사용자 메시지: 시간 제거하고 별도 클래스 추가
+      li.className = "chat-message user-message";
+
+      li.innerHTML = `
+        <div class="message-header">
+          <span class="message-user">${user}</span>
+        </div>
+        <p class="message-text">${text}</p>
+      `;
+    }
 
     // 가상 스크롤 사용
     if (this.ui.virtualScroll) {
@@ -160,23 +187,8 @@ class ChatSystem {
     }
 
     this.currentRoom = roomId;
-    this.updateURL(roomId);
     this.updateHeader(roomId);
     this.saveRoomInfoToStorage(roomId, userCount, maxUsers);
-  }
-
-  // URL 업데이트
-  private updateURL(roomId: string): void {
-    const roomNumber = roomId.replace("room_", "");
-    const newURL = `/#world?number=${roomNumber}`;
-
-    if (window.history?.pushState) {
-      window.history.pushState({ roomId, type: "room" }, "", newURL);
-    } else {
-      window.location.hash = `world?number=${roomNumber}`;
-    }
-
-    console.log(`URL 업데이트: ${newURL}`);
   }
 
   // 헤더 업데이트
@@ -244,6 +256,11 @@ class ChatSystem {
       this.addSystemMessage(`${userNickname}님이 월드 채널 ${roomNumber}에 입장하셨습니다. (${data.userCount}/${data.maxUsers}명)`);
 
       console.log(`방 배정 완료: ${data.roomId} (${data.userCount}/${data.maxUsers}명)`);
+
+      // 방 배정 완료 후 사용자 목록 요청
+      setTimeout(() => {
+        this.requestRoomUsers();
+      }, 100);
     });
 
     this.socket.on("userJoined", (data: { roomId: string; userCount: number; message: string }) => {
@@ -251,6 +268,11 @@ class ChatSystem {
       const currentMaxUsers = this.getCurrentMaxUsers();
       this.updateRoomInfo(data.roomId, data.userCount, currentMaxUsers);
       this.addSystemMessage(data.message);
+
+      // 사용자 입장 시 사용자 목록 업데이트
+      setTimeout(() => {
+        this.requestRoomUsers();
+      }, 100);
     });
 
     this.socket.on("userLeft", (data: { roomId: string; userCount: number; message: string }) => {
@@ -258,6 +280,11 @@ class ChatSystem {
       const currentMaxUsers = this.getCurrentMaxUsers();
       this.updateRoomInfo(data.roomId, data.userCount, currentMaxUsers);
       this.addSystemMessage(data.message);
+
+      // 사용자 퇴장 시 사용자 목록 업데이트
+      setTimeout(() => {
+        this.requestRoomUsers();
+      }, 100);
     });
 
     this.socket.on("message", (data: ChatMessage) => {
@@ -289,12 +316,22 @@ class ChatSystem {
     this.socket.on("reconnect_attempt", (attemptNumber) => {
       console.log(`서버 재연결 시도 중... (${attemptNumber}회)`);
     });
+
+    // 현재 방의 사용자 목록 수신
+    this.socket.on("roomUsersList", (data: RoomUsersList) => {
+      this.currentRoomUsers = data.users;
+      console.log("서버에서 받은 사용자 목록:", data);
+      console.log("현재 방 사용자 목록 업데이트:", this.currentRoomUsers);
+
+      // 사용자 목록 업데이트 이벤트 발생
+      this.dispatchRoomUsersUpdateEvent();
+    });
   }
 
   // 현재 maxUsers 값 가져오기
   private getCurrentMaxUsers(): number {
     const storedRoomInfo = this.loadRoomInfoFromStorage();
-    return storedRoomInfo?.maxUsers || 50; // 기본값 50
+    return storedRoomInfo?.maxUsers || 10; // 기본값 10
   }
 
   // 사용자 설정
@@ -367,7 +404,6 @@ class ChatSystem {
     }
 
     this.cleanupUI();
-    this.resetURL();
     this.clearRoomInfoFromStorage();
     this.resetCanvasToInitialState();
     this.showIntroWrapper();
@@ -405,15 +441,6 @@ class ChatSystem {
     this.currentRoom = null;
 
     console.log("UI 정리 완료");
-  }
-
-  // URL 초기화
-  private resetURL(): void {
-    if (window.history?.pushState) {
-      window.history.pushState({ type: "home" }, "", "/");
-    } else {
-      window.location.hash = "";
-    }
   }
 
   // 캔버스 초기화
@@ -588,15 +615,15 @@ class ChatSystem {
     if (user === "게스트") {
       this.getCurrentUserNickname().then((nickname: string) => {
         this.setUser(nickname);
-        this.initializeChatSystemWithUser(nickname);
+        this.initializeChatSystemWithUser();
       });
     } else {
       this.setUser(user);
-      this.initializeChatSystemWithUser(user);
+      this.initializeChatSystemWithUser();
     }
   }
 
-  private initializeChatSystemWithUser(user: string): void {
+  private initializeChatSystemWithUser(): void {
     document.addEventListener(
       "canvasLoadingComplete",
       () => {
@@ -607,6 +634,33 @@ class ChatSystem {
       },
       { once: true }
     );
+  }
+
+  // 현재 방의 사용자 목록 요청
+  requestRoomUsers(): void {
+    if (this.socket && this.socket.connected) {
+      console.log("사용자 목록 요청 전송 (현재 방:", this.currentRoom, ")");
+      this.socket.emit("getRoomUsers");
+    } else {
+      console.warn("소켓이 연결되지 않아 사용자 목록을 요청할 수 없습니다.");
+      // 소켓이 연결되지 않은 경우 빈 목록으로 이벤트 발생
+      this.currentRoomUsers = [];
+      this.dispatchRoomUsersUpdateEvent();
+    }
+  }
+
+  // 사용자 목록 업데이트 이벤트 디스패치
+  private dispatchRoomUsersUpdateEvent(): void {
+    const event = new CustomEvent("roomUsersUpdated", {
+      detail: {
+        users: this.currentRoomUsers,
+        roomId: this.currentRoom,
+      },
+    });
+    console.log("사용자 목록 업데이트 이벤트 발생:", event.detail);
+    console.log("이벤트 디스패치 전 currentRoomUsers:", this.currentRoomUsers);
+    document.dispatchEvent(event);
+    console.log("roomUsersUpdated 이벤트 디스패치 완료");
   }
 
   autoJoinStoredRoom(): void {
@@ -637,6 +691,7 @@ class ChatSystem {
 const chatSystem = new ChatSystem();
 
 // 전역에서 접근 가능하도록 노출
+(window as any).chatSystem = chatSystem;
 (window as any).initializeChatSystem = (user: string) => chatSystem.initializeChatSystem(user);
 (window as any).leaveRoom = () => chatSystem.leaveRoom();
 (window as any).forceGoHome = () => chatSystem.forceGoHome();
@@ -691,9 +746,6 @@ window.addEventListener("load", () => {
         console.log("페이지 로드 시 URL에서 방 번호 발견:", roomNumber);
       } else if (storedRoomInfo) {
         console.log("페이지 로드 시 저장된 방 정보 발견:", storedRoomInfo);
-        const storedRoomNumber = storedRoomInfo.roomId.replace("room_", "");
-        const newURL = `/#world?number=${storedRoomNumber}`;
-        window.history.replaceState({ roomId: storedRoomInfo.roomId, type: "room" }, "", newURL);
       } else {
         chatSystem.cleanupUI();
       }

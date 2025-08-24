@@ -10,19 +10,6 @@ export const CONSTANTS = {
   GUEST_INTRO_RESTRICTION_MESSAGE: "게스트 계정은 한 줄 소개를 수정할 수 없어요.",
 } as const;
 
-export function getMyPageElements() {
-  return {
-    nameInput: document.getElementById("mypage-name") as HTMLInputElement,
-    introTextarea: document.getElementById("mypage-intro-text") as HTMLTextAreaElement,
-    countText: document.querySelector(".mypage-intro-text-count-text") as HTMLSpanElement,
-    wrapper: document.querySelector(".mypage-setting-wrapper") as HTMLElement,
-    uploadButton: document.querySelector(".mypage-img-button-group .button-sky") as HTMLButtonElement,
-    removeButton: document.querySelector(".mypage-img-button-group .button-blue") as HTMLButtonElement,
-    saveButton: document.querySelector("#mypage-setting .popup-bottom-button-group .next-button") as HTMLButtonElement,
-    cancelButton: document.querySelector("#mypage-setting .popup-bottom-button-group .esc-button") as HTMLButtonElement,
-  };
-}
-
 // 로딩 UI 표시 함수
 export function showMyPageLoading(): void {
   const loadingContainer = document.getElementById("mypage-section-loading") as HTMLElement;

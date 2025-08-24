@@ -29,7 +29,7 @@ const io = new Server(httpServer, {
 class RoomManager {
   private rooms: Map<string, Set<string>> = new Map(); // roomId -> Set of socketIds
   private userRooms: Map<string, string> = new Map(); // socketId -> roomId
-  public maxUsersPerRoom = 50;
+  public maxUsersPerRoom = 10;
 
   // 사용자를 방에 배정
   assignUserToRoom(socketId: string): string {
@@ -178,6 +178,36 @@ class RoomManager {
       maxUsersPerRoom: this.maxUsersPerRoom,
     };
   }
+
+  // 특정 방의 사용자 목록 반환
+  getRoomUsers(roomId: string): Array<{ socketId: string; nickname?: string }> {
+    const users = this.rooms.get(roomId);
+    if (!users) {
+      console.log(`방 ${roomId}에 사용자가 없음`);
+      return [];
+    }
+
+    console.log(`방 ${roomId}의 소켓 ID들:`, Array.from(users));
+
+    // socket.io의 모든 소켓에서 해당 방의 사용자 정보를 가져오기
+    const roomUsers: Array<{ socketId: string; nickname?: string }> = [];
+    for (const socketId of users) {
+      const socket = io.sockets.sockets.get(socketId);
+      if (socket) {
+        const userInfo = {
+          socketId,
+          nickname: socket.data.nickname || "익명 사용자",
+        };
+        roomUsers.push(userInfo);
+        console.log(`사용자 정보 추가:`, userInfo);
+      } else {
+        console.log(`소켓 ${socketId}를 찾을 수 없음`);
+      }
+    }
+
+    console.log(`방 ${roomId}의 최종 사용자 목록:`, roomUsers);
+    return roomUsers;
+  }
 }
 
 const roomManager = new RoomManager();
@@ -191,7 +221,7 @@ io.on("connection", (socket) => {
   // 사용자 정보 저장을 위한 이벤트 리스너
   socket.on("setUserInfo", ({ nickname }) => {
     socket.data.nickname = nickname;
-    console.log(`사용자 정보 설정: ${nickname}`);
+    console.log(`사용자 정보 설정: ${nickname} (소켓 ID: ${socket.id})`);
 
     // 현재 사용자의 방 정보 가져오기
     const currentRoom = roomManager.getUserRoom(socket.id);
@@ -306,6 +336,29 @@ io.on("connection", (socket) => {
         roomId: assignedRoom,
         userCount: roomManager.getRoomUserCount(assignedRoom),
         message: `${socket.data.nickname}님이 월드 채널 ${roomNumberStr}에 입장하셨습니다.`,
+      });
+    }
+  });
+
+  // 현재 방의 사용자 목록 요청 처리
+  socket.on("getRoomUsers", () => {
+    console.log(`사용자 ${socket.id}가 방 사용자 목록 요청`);
+    const currentRoom = roomManager.getUserRoom(socket.id);
+    console.log(`사용자 ${socket.id}의 현재 방:`, currentRoom);
+
+    if (currentRoom) {
+      const roomUsers = roomManager.getRoomUsers(currentRoom);
+      console.log(`방 ${currentRoom}의 사용자 목록 전송:`, roomUsers);
+      socket.emit("roomUsersList", {
+        roomId: currentRoom,
+        users: roomUsers,
+      });
+    } else {
+      console.log(`사용자 ${socket.id}가 방에 배정되지 않음`);
+      console.log("현재 모든 방 정보:", roomManager.getAllRooms());
+      socket.emit("roomUsersList", {
+        roomId: null,
+        users: [],
       });
     }
   });
