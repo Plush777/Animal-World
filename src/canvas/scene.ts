@@ -35,13 +35,9 @@ export function createScene(): THREE.Scene {
 }
 
 export function createCamera(): THREE.PerspectiveCamera {
-  const camera = new THREE.PerspectiveCamera(
-    40,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000000
-  );
-  camera.position.set(456, 249, 462);
+  const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000000);
+  // 카메라 위치를 캐릭터가 잘 보이도록 조정
+  camera.position.set(0, 2, 5); // 원래 위치로 복원
   camera.lookAt(0, 0, 0);
 
   console.log("Camera created:", camera);
@@ -49,10 +45,7 @@ export function createCamera(): THREE.PerspectiveCamera {
 }
 
 // 카메라 정보를 콘솔에 출력하는 디버깅 함수
-export function logCameraInfo(
-  camera: THREE.PerspectiveCamera,
-  label: string = "Camera"
-): void {
+export function logCameraInfo(camera: THREE.PerspectiveCamera, label: string = "Camera"): void {
   console.log(`=== ${label} Info ===`);
   console.log(`Position:`, camera.position);
   console.log(`Rotation:`, camera.rotation);
@@ -95,10 +88,7 @@ export function setupLighting(scene: THREE.Scene): void {
   const ambientLight = new THREE.AmbientLight(lightColor, ambientIntensity);
   scene.add(ambientLight);
 
-  const directionalLight = new THREE.DirectionalLight(
-    lightColor,
-    directionalIntensity
-  );
+  const directionalLight = new THREE.DirectionalLight(lightColor, directionalIntensity);
   directionalLight.position.set(30, 120, 0);
   directionalLight.castShadow = true;
 
@@ -137,14 +127,7 @@ export function createCircularGradientGround(scene: THREE.Scene): void {
   canvas.height = 1024;
 
   // 원형 그라데이션 생성 (중앙에서 바깥쪽으로)
-  const gradient = ctx.createRadialGradient(
-    canvas.width / 2,
-    canvas.height / 2,
-    0,
-    canvas.width / 2,
-    canvas.height / 2,
-    canvas.width / 2
-  );
+  const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
 
   // 시간에 따라 다른 그라데이션 색상 적용
   if (isDayTime()) {
@@ -202,20 +185,17 @@ function createShadowPlane(scene: THREE.Scene): void {
   scene.add(shadowPlane);
 }
 
-export function setupOrbitControls(
-  camera: THREE.PerspectiveCamera,
-  renderer: THREE.WebGLRenderer
-): OrbitControls {
+export function setupOrbitControls(camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer): OrbitControls {
   const controls = new OrbitControls(camera, renderer.domElement);
 
   controls.enableDamping = true; // 부드러운 움직임
   controls.dampingFactor = 0.05;
   controls.screenSpacePanning = false;
-  controls.minDistance = 500; // 최소 거리
-  controls.maxDistance = 740; // 최대 거리
+  // controls.minDistance = 500; // 최소 거리
+  // controls.maxDistance = 740; // 최대 거리
 
-  controls.minPolarAngle = Math.PI / 3; //위로 올라가는거 제한
-  controls.maxPolarAngle = Math.PI / 2.5; // 수평선 아래로 내려가지 않도록
+  // controls.minPolarAngle = Math.PI / 3; //위로 올라가는거 제한
+  // controls.maxPolarAngle = Math.PI / 2.5; // 수평선 아래로 내려가지 않도록
   controls.enableZoom = false;
 
   controls.addEventListener("change", () => {
@@ -230,24 +210,14 @@ export function setupOrbitControls(
 }
 
 // 카메라 위치 변경 이벤트 처리
-export function setupCameraEventListeners(
-  camera: THREE.PerspectiveCamera,
-  controls: OrbitControls
-): void {
+export function setupCameraEventListeners(camera: THREE.PerspectiveCamera, controls: OrbitControls): void {
   document.addEventListener("changeCameraPosition", (event: Event) => {
     const customEvent = event as CustomEvent;
     const { x, y, z, duration = 2000 } = customEvent.detail;
 
     import("./animation")
       .then((animationModule) => {
-        animationModule.startCameraAnimation(
-          camera,
-          controls,
-          x,
-          y,
-          z,
-          duration
-        );
+        animationModule.startCameraAnimation(camera, controls, x, y, z, duration);
       })
       .catch((error) => {
         console.error("카메라 애니메이션 시작 중 오류:", error);
@@ -255,10 +225,7 @@ export function setupCameraEventListeners(
   });
 }
 
-export function setupResizeHandler(
-  camera: THREE.PerspectiveCamera,
-  renderer: THREE.WebGLRenderer
-): void {
+export function setupResizeHandler(camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer): void {
   window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -301,22 +268,12 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
       ? new THREE.Vector3(0, 0, 0) // 낮
       : new THREE.Vector3(0, 400, 0); // 밤
 
-    const sceneScale = isDay
-      ? new THREE.Vector3(1, 1, 1)
-      : new THREE.Vector3(7.6, 7.6, 7.6);
+    const sceneScale = isDay ? new THREE.Vector3(1, 1, 1) : new THREE.Vector3(7.6, 7.6, 7.6);
 
-    const sceneRotation = isDay
-      ? new THREE.Euler(0, 0, 0)
-      : new THREE.Euler(0, 0, 0);
+    const sceneRotation = isDay ? new THREE.Euler(0, 0, 0) : new THREE.Euler(0, 0, 0);
 
     // 씬 모델 로드
-    const sceneModel = await loadModel(
-      scene,
-      sceneModelPath,
-      scenePosition,
-      sceneScale,
-      sceneRotation
-    );
+    const sceneModel = await loadModel(scene, sceneModelPath, scenePosition, sceneScale, sceneRotation);
 
     if (sceneModel && !isDay && !sceneModelPath.includes("night_sky_scene")) {
       adjustSceneForNightTime(sceneModel);
@@ -401,21 +358,11 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
       console.error("lighthouse 모델 로드 실패");
     }
 
-    const waterPosition = isDay
-      ? new THREE.Vector3(0, -100, 0)
-      : new THREE.Vector3(0, -85, 0);
+    const waterPosition = isDay ? new THREE.Vector3(0, -100, 0) : new THREE.Vector3(0, -85, 0);
 
-    const waterScale = isDay
-      ? new THREE.Vector3(55, 55, 55)
-      : new THREE.Vector3(48, 48, 48);
+    const waterScale = isDay ? new THREE.Vector3(55, 55, 55) : new THREE.Vector3(48, 48, 48);
 
-    const waterModel = await loadModel(
-      scene,
-      "/models/water.glb",
-      waterPosition,
-      waterScale,
-      new THREE.Euler(0, 0, 0)
-    );
+    const waterModel = await loadModel(scene, "/models/water.glb", waterPosition, waterScale, new THREE.Euler(0, 0, 0));
 
     // water.glb 모델에서 pSic1_WaterL_0 오브젝트를 찾아 물결 애니메이션 및 조명 조정 적용
     if (waterModel) {
@@ -471,9 +418,7 @@ function adjustWaterLighting(waterObject: any, isDay: boolean): void {
 function adjustSceneForNightTime(sceneModel: THREE.Group): void {
   sceneModel.traverse((child) => {
     if (child instanceof THREE.Mesh && child.material) {
-      const materials = Array.isArray(child.material)
-        ? child.material
-        : [child.material];
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
 
       materials.forEach((mat) => {
         if (mat.color) {
@@ -488,10 +433,7 @@ function adjustSceneForNightTime(sceneModel: THREE.Group): void {
   });
 }
 
-function adjustForestGroundLighting(
-  forestGroundModel: THREE.Group,
-  isDay: boolean
-): void {
+function adjustForestGroundLighting(forestGroundModel: THREE.Group, isDay: boolean): void {
   forestGroundModel.traverse((child) => {
     if (child instanceof THREE.Mesh && child.material) {
       const material = child.material;
@@ -528,9 +470,7 @@ function adjustForestGroundLighting(
 function adjustNightSkySceneOpacity(nightSkyModel: THREE.Group): void {
   nightSkyModel.traverse((child) => {
     if (child instanceof THREE.Mesh && child.material) {
-      const materials = Array.isArray(child.material)
-        ? child.material
-        : [child.material];
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
 
       materials.forEach((mat) => {
         if (mat.emissive) {
@@ -542,10 +482,7 @@ function adjustNightSkySceneOpacity(nightSkyModel: THREE.Group): void {
   });
 }
 
-function controlLighthouseLight(
-  lighthouseModel: THREE.Group,
-  isDay: boolean
-): void {
+function controlLighthouseLight(lighthouseModel: THREE.Group, isDay: boolean): void {
   let lightObject9: THREE.Object3D | null = null;
 
   lighthouseModel.traverse((child: THREE.Object3D) => {
@@ -561,8 +498,6 @@ function controlLighthouseLight(
       (lightObject9 as THREE.Object3D).visible = true;
     }
   } else {
-    console.error(
-      "lighthouse 모델에서 Node-Mesh_9 오브젝트를 찾을 수 없습니다."
-    );
+    console.error("lighthouse 모델에서 Node-Mesh_9 오브젝트를 찾을 수 없습니다.");
   }
 }

@@ -3,17 +3,56 @@
  * 설정 팝업, 캐릭터 선택 등 팝업 관련 기능 처리
  */
 
-import { showLoadingState, showErrorState } from "./state";
+import { showErrorState } from "./state";
 import { PopupVirtualScroll } from "../virtualScroll";
+import { sceneHtml } from "../../data/sceneHtml";
 
 // 전역 변수로 이벤트 리스너 관리
 let userListUpdateHandler: ((event: CustomEvent) => void) | null = null;
-let isUserListPopupActive = false;
+let isUserListButtonActive = false;
 let userListLoadTimeout: NodeJS.Timeout | null = null;
 
 // 가상 스크롤 인스턴스들
 let userListVirtualScroll: PopupVirtualScroll | null = null;
 let settingVirtualScroll: PopupVirtualScroll | null = null;
+
+// 스크롤바 thumb 가시성 감지 및 클래스 관리 함수
+function setupScrollbarThumbVisibilityObserver(thumbClass: string): void {
+  const checkScrollbarThumbVisibility = () => {
+    const thumbElement = document.querySelector(`.${thumbClass}`) as HTMLElement;
+    if (thumbElement) {
+      const computedStyle = window.getComputedStyle(thumbElement);
+      // thumb를 감싸고 있는 virtual-scrollbar 요소 찾기
+      const scrollbarElement = thumbElement.closest(`.${thumbClass.replace("-thumb", "")}`) as HTMLElement;
+      if (scrollbarElement) {
+        if (computedStyle.display === "none") {
+          scrollbarElement.classList.add("virtual-scrollbar-hidden");
+        } else {
+          scrollbarElement.classList.remove("virtual-scrollbar-hidden");
+        }
+      }
+    }
+  };
+
+  // 초기 상태 확인
+  setTimeout(checkScrollbarThumbVisibility, 100);
+
+  // MutationObserver를 사용하여 스크롤바 thumb 요소의 변화 감지
+  const observer = new MutationObserver(() => {
+    checkScrollbarThumbVisibility();
+  });
+
+  // 스크롤바 컨테이너를 관찰 (thumbClass에서 -thumb 부분을 제거하여 컨테이너 클래스 추출)
+  const containerClass = thumbClass.replace("-thumb", "");
+  const scrollbarContainer = document.querySelector(`.${containerClass}`);
+  if (scrollbarContainer) {
+    observer.observe(scrollbarContainer, {
+      attributes: true,
+      attributeFilter: ["style"],
+      subtree: true,
+    });
+  }
+}
 
 function setupSettingPopup(): void {
   const app = document.querySelector("#app") as HTMLElement;
@@ -23,11 +62,11 @@ function setupSettingPopup(): void {
       const target = e.target as HTMLElement;
 
       if (target.classList.contains("setting-button")) {
-        const settingPopup = document.querySelector(".popup.setting") as HTMLElement;
-        settingPopup.classList.toggle("active");
+        const settingButton = document.querySelector(".setting-button") as HTMLElement;
+        settingButton.classList.toggle("active");
 
         // 팝업이 열릴 때 가상 스크롤 초기화
-        if (settingPopup.classList.contains("active")) {
+        if (settingButton.classList.contains("active")) {
           initializeSettingVirtualScroll();
           // 스크롤 위치 초기화
           if (settingVirtualScroll) {
@@ -42,11 +81,10 @@ function setupSettingPopup(): void {
         }
       }
 
-      const settingPopup = document.querySelector(".popup.setting") as HTMLElement;
       const settingButton = document.querySelector(".setting-button") as HTMLElement;
 
-      if (settingPopup?.classList.contains("active") && target !== settingButton && !target.closest(".popup.setting")) {
-        settingPopup?.classList.remove("active");
+      if (settingButton?.classList.contains("active") && target !== settingButton && !target.closest(".popup.setting")) {
+        settingButton?.classList.remove("active");
         // 팝업이 닫힐 때 가상 스크롤 정리
         if (settingVirtualScroll) {
           settingVirtualScroll.destroy();
@@ -63,14 +101,14 @@ function setupUserListPopup(): void {
   if (app) {
     app.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
-      const userListPopup = document.querySelector(".popup.user-list") as HTMLElement;
+      const userListButton = document.querySelector(".world-user-list-button") as HTMLElement;
 
       if (target.classList.contains("world-user-list-button")) {
-        userListPopup?.classList.toggle("active");
-        isUserListPopupActive = userListPopup?.classList.contains("active") || false;
+        userListButton?.classList.toggle("active");
+        isUserListButtonActive = userListButton?.classList.contains("active") || false;
 
         // 팝업이 열릴 때만 사용자 목록 로드 및 가상 스크롤 초기화
-        if (isUserListPopupActive) {
+        if (isUserListButtonActive) {
           initializeUserListVirtualScroll();
           loadUsersList();
         } else {
@@ -86,11 +124,9 @@ function setupUserListPopup(): void {
         }
       }
 
-      const userListButton = document.querySelector(".world-user-list-button") as HTMLElement;
-
-      if (userListPopup?.classList.contains("active") && target !== userListButton && !target.closest(".popup.user-list")) {
-        userListPopup?.classList.remove("active");
-        isUserListPopupActive = false;
+      if (userListButton?.classList.contains("active") && target !== userListButton && !target.closest(".popup.user-list")) {
+        userListButton?.classList.remove("active");
+        isUserListButtonActive = false;
         // 팝업이 닫힐 때 가상 스크롤 정리 및 타임아웃 제거
         if (userListVirtualScroll) {
           userListVirtualScroll.destroy();
@@ -140,6 +176,9 @@ function initializeUserListVirtualScroll(): void {
     scrollbarClass: "user-list-virtual-scrollbar",
     scrollbarThumbClass: "user-list-virtual-scrollbar-thumb",
   });
+
+  // 스크롤바 thumb 가시성 감지 설정
+  setupScrollbarThumbVisibilityObserver("user-list-virtual-scrollbar-thumb");
 }
 
 // 설정 팝업 가상 스크롤 초기화
@@ -178,6 +217,9 @@ function initializeSettingVirtualScroll(): void {
     scrollbarThumbClass: "setting-virtual-scrollbar-thumb",
   });
 
+  // 스크롤바 thumb 가시성 감지 설정
+  setupScrollbarThumbVisibilityObserver("setting-virtual-scrollbar-thumb");
+
   // 설정 아이템들을 가상 스크롤에 추가
   addSettingItems();
 }
@@ -190,47 +232,7 @@ function addSettingItems(): void {
   settingVirtualScroll.clearItems();
 
   // 사운드 설정 섹션 HTML (chat div처럼 각 섹션을 개별적으로 처리)
-  const soundSectionHTML = `
-    <section class="popup-section">
-      <h3 class="popup-section-title">Sound setting</h3>
-      <div class="popup-section-item-box">
-        <div class="popup-section-item">
-          <strong class="popup-section-item-title">배경음 음량</strong>
-          <input type="range" class="range-bar" />
-        </div>
-        <div class="popup-section-item">
-          <strong class="popup-section-item-title">효과음 음량</strong>
-          <input type="range" class="range-bar" />
-        </div>
-      </div>
-    </section>
-    <section class="popup-section">
-      <h3 class="popup-section-title">Sound setting</h3>
-      <div class="popup-section-item-box">
-        <div class="popup-section-item">
-          <strong class="popup-section-item-title">배경음 음량</strong>
-          <input type="range" class="range-bar" />
-        </div>
-        <div class="popup-section-item">
-          <strong class="popup-section-item-title">효과음 음량</strong>
-          <input type="range" class="range-bar" />
-        </div>
-      </div>
-    </section>
-    <section class="popup-section">
-      <h3 class="popup-section-title">Sound setting</h3>
-      <div class="popup-section-item-box">
-        <div class="popup-section-item">
-          <strong class="popup-section-item-title">배경음 음량</strong>
-          <input type="range" class="range-bar" />
-        </div>
-        <div class="popup-section-item">
-          <strong class="popup-section-item-title">효과음 음량</strong>
-          <input type="range" class="range-bar" />
-        </div>
-      </div>
-    </section>
-  `;
+  const soundSectionHTML = sceneHtml.settings;
 
   // 임시 컨테이너를 생성하여 HTML을 파싱
   const tempContainer = document.createElement("div");
@@ -271,7 +273,7 @@ function addSettingItems(): void {
 // 실시간 사용자 목록 업데이트 함수
 function updateUserListRealTime(): void {
   // 사용자 목록 팝업이 열려있을 때만 업데이트
-  if (isUserListPopupActive) {
+  if (isUserListButtonActive) {
     loadUsersList();
   }
 }
@@ -305,7 +307,7 @@ function renderUserList(users: Array<{ nickname?: string }>): void {
 
     // 가상스크롤의 totalHeight를 수동으로 조정 (실제 사용자 아이템 높이 + 간격 고려)
     if (userListVirtualScroll) {
-      const actualUserItemHeight = 300; // 실제 사용자 아이템 높이
+      const actualUserItemHeight = 294; // 실제 사용자 아이템 높이
       const itemGap = 30; // 아이템 간 간격
       const totalUsers = users.length;
       const totalHeight = actualUserItemHeight * totalUsers + itemGap * (totalUsers - 1);
@@ -357,11 +359,9 @@ async function loadUsersList(): Promise<void> {
     const popupBody = document.querySelector(".popup.user-list .popup-body") as HTMLElement;
 
     if (!popupBody) {
-      console.error("world-user-list-box 요소를 찾을 수 없습니다.");
+      console.error("popup-body 요소를 찾을 수 없습니다.");
       return;
     }
-
-    // showLoadingState(popupBody, "general");
 
     // 채팅 시스템에서 현재 방의 사용자 목록 요청
     const chatSystem = (window as any).chatSystem;
@@ -461,23 +461,23 @@ function setupPopupClose(): void {
 
       if (target.classList.contains("popup-close")) {
         // 모든 활성화된 팝업을 닫기
-        const activePopups = document.querySelectorAll(".popup.active");
-        activePopups.forEach((popup) => {
-          popup.classList.remove("active");
+        const activePopups = document.querySelectorAll(".header-right .only-icon-button.active");
+        activePopups.forEach((button) => {
+          button.classList.remove("active");
 
           // 팝업 종류에 따라 가상 스크롤 정리
-          if (popup.classList.contains("user-list")) {
+          if (button.classList.contains("user-list")) {
             if (userListVirtualScroll) {
               userListVirtualScroll.destroy();
               userListVirtualScroll = null;
             }
-            isUserListPopupActive = false;
+            isUserListButtonActive = false;
             // 사용자 목록 팝업이 닫힐 때 타임아웃 제거
             if (userListLoadTimeout) {
               clearTimeout(userListLoadTimeout);
               userListLoadTimeout = null;
             }
-          } else if (popup.classList.contains("setting")) {
+          } else if (button.classList.contains("setting")) {
             if (settingVirtualScroll) {
               settingVirtualScroll.destroy();
               settingVirtualScroll = null;

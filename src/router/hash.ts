@@ -144,12 +144,27 @@ router.registerRoute("mypage-setting", {
 
     if (mypageSettingPopup) {
       reconnectMyPageEventListeners();
+
+      // HTML이 삽입된 후 popup 요소를 찾아서 active 클래스 추가
+      setTimeout(() => {
+        const popup = document.querySelector(".popup.mypage-setting") as HTMLElement;
+        if (popup) {
+          popup.classList.add("active");
+        }
+      }, 50);
     }
   },
   hide: () => {
     const mypageSettingPopup = document.querySelector("#mypage-setting") as HTMLElement;
+    const popup = document.querySelector(".popup.mypage-setting") as HTMLElement;
+
     if (mypageSettingPopup) {
-      mypageSettingPopup.innerHTML = "";
+      if (popup) {
+        popup.classList.remove("active");
+      }
+      setTimeout(() => {
+        mypageSettingPopup.innerHTML = "";
+      }, 500);
     }
   },
 });

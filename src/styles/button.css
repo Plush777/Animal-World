@@ -104,3 +104,11 @@
   font-size: 12px;
   height: 40px;
 }
+
+.header-right .only-icon-button.active {
+  background-color: var(--blue-500);
+}
+
+.header-right .only-icon-button.active svg {
+  color: var(--white);
+}

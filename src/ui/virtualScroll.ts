@@ -24,7 +24,7 @@ export class VirtualScroll {
   private container: HTMLElement;
   private itemHeight: number;
   private smoothScroll: boolean;
-  private scrollContainer: HTMLElement | null = null;
+  protected scrollContainer: HTMLElement | null = null;
   private scrollbar: HTMLElement | null = null;
   private scrollbarThumb: HTMLElement | null = null;
   private scrollDuration: number;
@@ -39,12 +39,12 @@ export class VirtualScroll {
   private enableTouchScroll: boolean;
   private touchSensitivity: number;
   private maxScrollSpeed: number;
-  private scrollMargin: number;
+  protected scrollMargin: number;
 
-  private items: HTMLElement[] = [];
-  private scrollTop: number = 0;
-  private containerHeight: number = 0;
-  private totalHeight: number = 0;
+  protected items: HTMLElement[] = [];
+  protected scrollTop: number = 0;
+  protected containerHeight: number = 0;
+  protected totalHeight: number = 0;
 
   private scrollAnimationId: number | null = null;
   private isDragging: boolean = false;
@@ -215,7 +215,7 @@ export class VirtualScroll {
     this.lastTouchTime = currentTime;
   }
 
-  private handleTouchEnd(e: TouchEvent): void {
+  private handleTouchEnd(_e: TouchEvent): void {
     if (!this.isTouching) return;
 
     this.isTouching = false;
@@ -332,7 +332,7 @@ export class VirtualScroll {
     }
   }
 
-  private updateScrollbarThumb(): void {
+  protected updateScrollbarThumb(): void {
     if (!this.scrollbarThumb || !this.scrollbar) return;
 
     const scrollbarHeight = this.scrollbar.clientHeight;
@@ -529,10 +529,13 @@ export class VirtualScroll {
 
 // 채팅 메시지용 특화된 가상 스크롤 클래스
 export class ChatVirtualScroll extends VirtualScroll {
+  private systemMessageHeight: number = 70; // 시스템 메시지 높이
+  private userMessageHeight: number = 27; // 사용자 메시지 높이
+
   constructor(container: HTMLElement, options?: Partial<VirtualScrollOptions>) {
     super({
       container,
-      itemHeight: 75, // 채팅 메시지 높이
+      itemHeight: 75, // 기본 채팅 메시지 높이 (시스템 메시지용)
       smoothScroll: true,
       scrollDuration: 250,
       showScrollbar: true, // 채팅 메시지용 가상 스크롤도 스크롤바 표시
@@ -542,8 +545,69 @@ export class ChatVirtualScroll extends VirtualScroll {
 
   // 채팅 메시지 추가 (자동으로 맨 아래로 스크롤)
   addChatMessage(messageElement: HTMLElement): void {
+    // 메시지 타입에 따라 높이 결정
+    const isUserMessage = messageElement.classList.contains("user-message");
+    const messageHeight = isUserMessage ? this.userMessageHeight : this.systemMessageHeight;
+
+    // 아이템 추가 시 높이 계산을 위해 메시지 요소에 높이 정보 저장
+    (messageElement as any).messageHeight = messageHeight;
+
     this.addItem(messageElement);
     this.scrollToBottom();
+  }
+
+  // 아이템 추가 (오버라이드)
+  addItem(element: HTMLElement): void {
+    this.items.push(element);
+
+    // 메시지 타입에 따라 높이 계산
+    const messageHeight = (element as any).messageHeight || this.systemMessageHeight;
+
+    // 이전 아이템들의 높이 합계 계산
+    let totalHeightBefore = 0;
+    for (let i = 0; i < this.items.length - 1; i++) {
+      const itemHeight = (this.items[i] as any).messageHeight || this.systemMessageHeight;
+      totalHeightBefore += itemHeight;
+    }
+
+    this.totalHeight = totalHeightBefore + messageHeight;
+
+    if (this.scrollContainer) {
+      this.scrollContainer.appendChild(element);
+
+      // 아이템 위치 설정 - 누적 높이로 계산
+      element.style.top = `${totalHeightBefore}px`;
+
+      // 스크롤 컨테이너 높이 업데이트
+      this.scrollContainer.style.height = `${this.totalHeight + this.scrollMargin}px`;
+    }
+    this.updateScrollbarThumb();
+  }
+
+  // 아이템 제거 (오버라이드)
+  removeItem(index: number): void {
+    if (index < 0 || index >= this.items.length) return;
+
+    const item = this.items[index];
+    if (this.scrollContainer && item.parentNode === this.scrollContainer) {
+      this.scrollContainer.removeChild(item);
+    }
+
+    this.items.splice(index, 1);
+
+    // 높이 재계산
+    this.totalHeight = 0;
+    this.items.forEach((item, _i) => {
+      const itemHeight = (item as any).messageHeight || this.systemMessageHeight;
+      this.totalHeight += itemHeight;
+      item.style.top = `${this.totalHeight - itemHeight}px`;
+    });
+
+    if (this.scrollContainer) {
+      this.scrollContainer.style.height = `${this.totalHeight + this.scrollMargin}px`;
+    }
+
+    this.updateScrollbarThumb();
   }
 
   // 새 메시지가 추가되었을 때 자동 스크롤 여부 결정

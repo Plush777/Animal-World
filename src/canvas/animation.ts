@@ -171,7 +171,8 @@ export function createAnimationLoop(
   scene: THREE.Scene,
   camera: THREE.PerspectiveCamera,
   renderer: THREE.WebGLRenderer,
-  controls: OrbitControls | TrackballControls
+  controls: OrbitControls | TrackballControls,
+  characterManager?: any
 ): () => number {
   const clock = new THREE.Clock();
   let lastUpdateTime = 0;
@@ -188,6 +189,11 @@ export function createAnimationLoop(
     updateFloatingAnimations(time);
     updateWaterWaveAnimations(time);
     updateCameraAnimation(); // 카메라 애니메이션 업데이트 추가
+
+    // 캐릭터 업데이트
+    if (characterManager) {
+      characterManager.update();
+    }
 
     const target = controls.target;
     trackballControls.target.set(target.x, target.y, target.z);

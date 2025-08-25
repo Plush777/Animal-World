@@ -23,5 +23,6 @@ pnpm-debug.log*
 #dist
 dist
 
-# dev html
+# dev files
 /test-api.html
+/CHARACTER_USAGE.md
