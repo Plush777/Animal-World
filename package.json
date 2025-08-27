@@ -15,7 +15,8 @@
   "dependencies": {
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "three": "^0.179.1"
+    "three": "^0.179.1",
+    "ammojs-typed": "^1.0.6"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.55.0",

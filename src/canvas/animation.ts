@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
+import { updateCharacterController } from "./physicsEngine"; // 추가
 
 interface FloatingAnimation {
   object: THREE.Object3D;
@@ -33,6 +34,9 @@ interface CameraAnimation {
 const floatingObjects: FloatingAnimation[] = [];
 const waterWaveObjects: WaterWaveAnimation[] = [];
 let cameraAnimation: CameraAnimation | null = null;
+
+// 캐릭터 이동 방향 추적을 위한 변수들
+let targetRotation = 0;
 
 export function addFloatingAnimation(object: THREE.Object3D, amplitude: number = 10, frequency: number = 1, phase: number = 0): void {
   floatingObjects.push({
@@ -172,10 +176,12 @@ export function createAnimationLoop(
   camera: THREE.PerspectiveCamera,
   renderer: THREE.WebGLRenderer,
   controls: OrbitControls | TrackballControls,
-  characterManager?: any
+  characterManager?: any,
+  physicsWorld?: any,
+  keys?: any,
+  getPhysicsCharacterController?: () => any
 ): () => number {
   const clock = new THREE.Clock();
-  let lastUpdateTime = 0;
 
   const trackballControls = new TrackballControls(camera, renderer.domElement);
   trackballControls.noRotate = true;
@@ -185,29 +191,140 @@ export function createAnimationLoop(
 
   return function animate(): number {
     const time = clock.getElapsedTime();
+    // deltaTime 가져오기 (현재 사용 안함 - 고정 타임스텝 사용)
+    clock.getDelta();
 
     updateFloatingAnimations(time);
     updateWaterWaveAnimations(time);
     updateCameraAnimation(); // 카메라 애니메이션 업데이트 추가
 
-    // 캐릭터 업데이트
+    // 물리 시뮬레이션 업데이트 - 호환성을 위해 유지 (기존 시스템과 병행)
+    if (physicsWorld) {
+      try {
+        // 고정 타임스텝 사용으로 안정성 보장
+        const fixedTimeStep = 1 / 60; // 60 FPS 고정
+        physicsWorld.stepSimulation(fixedTimeStep, 1, fixedTimeStep);
+      } catch (error) {
+        console.error("물리 시뮬레이션 에러:", error);
+      }
+    }
+
+    // 캐릭터 컨트롤러 업데이트 (부드러운 컨트롤러 우선)
+    const characterController = getPhysicsCharacterController ? getPhysicsCharacterController() : null;
+    if (characterController && keys) {
+      try {
+        let characterPos = null;
+        let moveInfo = null;
+
+        // 부드러운 캐릭터 컨트롤러인지 확인
+        if (characterController.update && typeof characterController.update === "function") {
+          // 새로운 부드러운 컨트롤러
+          characterController.update(keys, 1 / 60);
+          characterPos = characterController.getPosition();
+
+          // 이동 정보 계산 (키 입력 기반)
+          const isMoving =
+            keys["KeyW"] ||
+            keys["KeyS"] ||
+            keys["KeyA"] ||
+            keys["KeyD"] ||
+            keys["ArrowUp"] ||
+            keys["ArrowDown"] ||
+            keys["ArrowLeft"] ||
+            keys["ArrowRight"];
+
+          let moveX = 0,
+            moveZ = 0;
+          if (keys["KeyA"] || keys["ArrowLeft"]) moveX = -1;
+          if (keys["KeyD"] || keys["ArrowRight"]) moveX = 1;
+          if (keys["KeyW"] || keys["ArrowUp"]) moveZ = -1;
+          if (keys["KeyS"] || keys["ArrowDown"]) moveZ = 1;
+
+          moveInfo = { moveX, moveZ, isMoving };
+        } else {
+          // 기존 물리 컨트롤러
+          moveInfo = updateCharacterController(characterController, keys, 1 / 60);
+          characterPos = characterController.mesh ? characterController.mesh.position : null;
+        }
+
+        // 카메라 고정 - 캐릭터를 따라가지 않음
+        // if (controls && controls.target && characterPos) {
+        //   controls.target.lerp(characterPos, 0.1); // 부드럽게 따라가기
+        // }
+
+        // 시각적 캐릭터 모델을 컨트롤러 위치와 동기화
+        if (characterManager && characterPos) {
+          const allCharacters = characterManager.getAllCharacters();
+          if (allCharacters.length > 0) {
+            const visualCharacter = allCharacters[0];
+
+            // 시각적 모델을 컨트롤러 위치로 이동
+            visualCharacter.model.position.set(
+              characterPos.x,
+              characterPos.y - 1.0, // 캐릭터 발이 지면에 닿도록 조정
+              characterPos.z
+            );
+
+            // 캐릭터 회전 처리 (이동 방향에 따라)
+            if (moveInfo && moveInfo.isMoving) {
+              const moveX = moveInfo.moveX;
+              const moveZ = moveInfo.moveZ;
+
+              // 이동 방향에 따른 회전 각도 계산
+              if (moveX !== 0 || moveZ !== 0) {
+                targetRotation = Math.atan2(moveX, moveZ);
+              }
+            }
+
+            // 부드러운 회전 적용
+            if (targetRotation !== undefined) {
+              const currentRotation = visualCharacter.model.rotation.y;
+              const rotationDiff = targetRotation - currentRotation;
+
+              // 각도 차이를 -π ~ π 범위로 정규화
+              let normalizedDiff = ((rotationDiff + Math.PI) % (2 * Math.PI)) - Math.PI;
+
+              // 부드러운 회전 적용 (lerp)
+              const rotationSpeed = 0.15;
+              visualCharacter.model.rotation.y += normalizedDiff * rotationSpeed;
+            }
+
+            // 시각적 모델이 보이도록 설정
+            visualCharacter.model.visible = true;
+          }
+        }
+      } catch (error) {
+        console.error("캐릭터 컨트롤러 에러:", error);
+      }
+    }
+
+    // 캐릭터 매니저 업데이트 (시각적 모델 업데이트)
     if (characterManager) {
-      characterManager.update();
+      try {
+        // 캐릭터 컨트롤러가 없을 때만 keys를 전달
+        characterManager.update(characterController ? null : keys);
+      } catch (error) {
+        console.error("캐릭터 매니저 업데이트 에러:", error);
+      }
     }
 
     const target = controls.target;
     trackballControls.target.set(target.x, target.y, target.z);
 
     // 떠다니는 모델들이 있을 때만 그림자 맵 업데이트 (성능 최적화)
-    if ((floatingObjects.length > 0 || waterWaveObjects.length > 0) && time - lastUpdateTime > 0.1) {
+    if ((floatingObjects.length > 0 || waterWaveObjects.length > 0) && time % 0.1 < 0.016) {
       renderer.shadowMap.needsUpdate = true;
-      lastUpdateTime = time;
     }
 
     const animationId = requestAnimationFrame(animate);
-    controls.update();
-    trackballControls.update();
-    renderer.render(scene, camera);
+
+    try {
+      controls.update();
+      trackballControls.update();
+      renderer.render(scene, camera);
+    } catch (error) {
+      console.error("렌더링 에러:", error);
+    }
 
     return animationId;
   };

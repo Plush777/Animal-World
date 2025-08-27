@@ -1,32 +1,31 @@
-// 캐릭터 기본 설정 (THREE 객체에 의존하지 않음)
 export const characterScale = {
   default: {
-    position: { x: 0, y: 100, z: 0 }, // 물 위로 올려서 위치
-    scale: { x: 5, y: 5, z: 5 }, // 크기를 5배로 확대
+    position: { x: 0, y: 0.05, z: 0 },
+    scale: { x: 5, y: 5, z: 5 },
   },
-  // 개별 캐릭터별 설정 (필요시)
+
   dog: {
-    position: { x: 0, y: 100, z: 0 },
+    position: { x: 0, y: 0.05, z: 0 },
     scale: { x: 5, y: 5, z: 5 },
   },
   fox: {
-    position: { x: 40, y: 110, z: 70 },
+    position: { x: 40, y: 0.05, z: 70 },
     scale: { x: 10, y: 10, z: 10 },
   },
   cat: {
-    position: { x: 0, y: 100, z: 0 },
+    position: { x: 0, y: 0.05, z: 0 },
     scale: { x: 5, y: 5, z: 5 },
   },
   hamster: {
-    position: { x: 0, y: 100, z: 0 },
+    position: { x: 0, y: 0.05, z: 0 },
     scale: { x: 5, y: 5, z: 5 },
   },
   rabbit: {
-    position: { x: 0, y: 100, z: 0 },
+    position: { x: 0, y: 0.05, z: 0 },
     scale: { x: 5, y: 5, z: 5 },
   },
   wolf: {
-    position: { x: 0, y: 100, z: 0 },
+    position: { x: 0, y: 0.05, z: 0 },
     scale: { x: 5, y: 5, z: 5 },
   },
 };

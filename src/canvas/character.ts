@@ -1,6 +1,13 @@
 import * as THREE from "three";
 import { loadGLBModel, addGLBModelToScene } from "../utils/glbLoader";
 
+// Ammo.js 타입 정의
+declare global {
+  interface Window {
+    Ammo: any;
+  }
+}
+
 // 캐릭터 타입 정의
 export interface Character {
   id: string;
@@ -11,9 +18,9 @@ export interface Character {
   position: THREE.Vector3;
   rotation: THREE.Euler;
   scale: THREE.Vector3;
-  speed: number;
-  isMoving: boolean;
-  targetPosition?: THREE.Vector3;
+  // 물리 관련 속성 추가
+  physicsBody?: any; // Ammo.js ghost object
+  physicsController?: any; // Ammo.js character controller
 }
 
 // 캐릭터 매니저 클래스
@@ -21,10 +28,99 @@ export class CharacterManager {
   private characters: Map<string, Character> = new Map();
   private scene: THREE.Scene;
   private clock: THREE.Clock;
+  private physicsWorld: any; // Ammo.js physics world
 
-  constructor(scene: THREE.Scene) {
+  // GLTF_SceneRootNode 경계 설정
+  private sceneBounds: {
+    minX: number;
+    maxX: number;
+    minZ: number;
+    maxZ: number;
+  } = {
+    minX: -50,
+    maxX: 50,
+    minZ: -50,
+    maxZ: 50,
+  };
+
+  constructor(scene: THREE.Scene, physicsWorld?: any) {
     this.scene = scene;
     this.clock = new THREE.Clock();
+    this.physicsWorld = physicsWorld;
+  }
+
+  // 씬 경계 설정
+  public setSceneBounds(minX: number, maxX: number, minZ: number, maxZ: number): void {
+    this.sceneBounds = { minX, maxX, minZ, maxZ };
+    console.log(`씬 경계 설정: X(${minX} ~ ${maxX}), Z(${minZ} ~ ${maxZ})`);
+  }
+
+  // 씬 경계 체크
+  private checkSceneBounds(position: THREE.Vector3): THREE.Vector3 {
+    const clampedPosition = position.clone();
+
+    // X축 경계 체크
+    if (clampedPosition.x < this.sceneBounds.minX) {
+      clampedPosition.x = this.sceneBounds.minX;
+      console.log(`X축 경계 제한: ${position.x.toFixed(2)} -> ${clampedPosition.x.toFixed(2)}`);
+    } else if (clampedPosition.x > this.sceneBounds.maxX) {
+      clampedPosition.x = this.sceneBounds.maxX;
+      console.log(`X축 경계 제한: ${position.x.toFixed(2)} -> ${clampedPosition.x.toFixed(2)}`);
+    }
+
+    // Z축 경계 체크
+    if (clampedPosition.z < this.sceneBounds.minZ) {
+      clampedPosition.z = this.sceneBounds.minZ;
+      console.log(`Z축 경계 제한: ${position.z.toFixed(2)} -> ${clampedPosition.z.toFixed(2)}`);
+    } else if (clampedPosition.z > this.sceneBounds.maxZ) {
+      clampedPosition.z = this.sceneBounds.maxZ;
+      console.log(`Z축 경계 제한: ${position.z.toFixed(2)} -> ${clampedPosition.z.toFixed(2)}`);
+    }
+
+    return clampedPosition;
+  }
+
+  // 모든 오브젝트 이름 출력 (디버깅용)
+  public logAllObjectNames(): void {
+    console.log("=== 모든 오브젝트 이름 출력 ===");
+    this.scene.traverse((object) => {
+      if (object instanceof THREE.Mesh) {
+        console.log(
+          `오브젝트: ${object.name}, 위치: ${object.position.x.toFixed(2)}, ${object.position.y.toFixed(2)}, ${object.position.z.toFixed(2)}`
+        );
+      }
+    });
+    console.log("=== 오브젝트 이름 출력 완료 ===");
+  }
+
+  // 씬 경계 정보 출력 (디버깅용)
+  public logSceneBounds(): void {
+    console.log("=== 씬 경계 정보 ===");
+    console.log(`X축: ${this.sceneBounds.minX} ~ ${this.sceneBounds.maxX}`);
+    console.log(`Z축: ${this.sceneBounds.minZ} ~ ${this.sceneBounds.maxZ}`);
+    console.log("=== 씬 경계 정보 완료 ===");
+  }
+
+  // 경계 시각화 (디버깅용)
+  public visualizeBounds(): void {
+    // 기존 경계 시각화 제거
+    this.scene.children.forEach((child) => {
+      if (child.name === "bounds_visualization") {
+        this.scene.remove(child);
+      }
+    });
+
+    // 새로운 경계 시각화 생성
+    const boundsGeometry = new THREE.EdgesGeometry(
+      new THREE.BoxGeometry(this.sceneBounds.maxX - this.sceneBounds.minX, 10, this.sceneBounds.maxZ - this.sceneBounds.minZ)
+    );
+    const boundsMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+    const boundsLines = new THREE.LineSegments(boundsGeometry, boundsMaterial);
+    boundsLines.name = "bounds_visualization";
+    boundsLines.position.set((this.sceneBounds.minX + this.sceneBounds.maxX) / 2, 5, (this.sceneBounds.minZ + this.sceneBounds.maxZ) / 2);
+
+    this.scene.add(boundsLines);
+    console.log("경계 시각화 추가됨");
   }
 
   // 캐릭터 모델 로드
@@ -79,11 +175,17 @@ export class CharacterManager {
         }
       });
 
-      // 모델 설정 - 위치를 카메라 앞으로 조정
+      // 모델 설정 - 위치를 명확하게 설정
       model.position.copy(position);
       model.scale.copy(scale);
       model.castShadow = true;
       model.receiveShadow = true;
+
+      // 캐릭터가 지면 위에 확실히 위치하도록 조정
+      if (model.position.y < 10) {
+        model.position.y = 10;
+        console.log(`캐릭터 ${characterId} 위치를 지면 위로 조정: y = ${model.position.y}`);
+      }
 
       console.log("모델 설정 완료:", {
         position: model.position,
@@ -126,8 +228,6 @@ export class CharacterManager {
         position: position.clone(),
         rotation: new THREE.Euler(0, 0, 0),
         scale: scale.clone(),
-        speed: 0.5, // 더 적절한 이동 속도로 조정
-        isMoving: false,
       };
 
       // 기본 애니메이션 재생 (있는 경우)
@@ -144,38 +244,6 @@ export class CharacterManager {
       console.error(`캐릭터 로드 실패: ${characterId}`, error);
       return null;
     }
-  }
-
-  // 캐릭터 이동
-  moveCharacter(characterId: string, targetPosition: THREE.Vector3): void {
-    const character = this.characters.get(characterId);
-    if (!character) {
-      console.error(`캐릭터를 찾을 수 없습니다: ${characterId}`);
-      return;
-    }
-
-    character.targetPosition = targetPosition.clone();
-    character.isMoving = true;
-
-    // 이동 방향 계산
-    const direction = targetPosition.clone().sub(character.position);
-    const angle = Math.atan2(direction.x, direction.z);
-    character.rotation.y = angle;
-
-    // 이동 애니메이션 재생 (있는 경우)
-    this.playAnimation(characterId, "walk");
-  }
-
-  // 캐릭터 정지
-  stopCharacter(characterId: string): void {
-    const character = this.characters.get(characterId);
-    if (!character) return;
-
-    character.isMoving = false;
-    character.targetPosition = undefined;
-
-    // 정지 애니메이션 재생 (있는 경우)
-    this.playAnimation(characterId, "idle");
   }
 
   // 애니메이션 재생
@@ -219,14 +287,6 @@ export class CharacterManager {
     character.model.scale.copy(scale);
   }
 
-  // 캐릭터 속도 설정
-  setCharacterSpeed(characterId: string, speed: number): void {
-    const character = this.characters.get(characterId);
-    if (!character) return;
-
-    character.speed = speed;
-  }
-
   // 캐릭터 가져오기
   getCharacter(characterId: string): Character | undefined {
     return this.characters.get(characterId);
@@ -255,91 +315,198 @@ export class CharacterManager {
     console.log(`캐릭터 제거됨: ${characterId}`);
   }
 
-  // 업데이트 (애니메이션 및 이동 처리)
-  update(): void {
-    const deltaTime = this.clock.getDelta();
+  // 캐릭터에 물리 바디 추가
+  addPhysicsToCharacter(characterId: string): void {
+    console.log(`물리 바디 추가 시작: ${characterId}`);
+
+    const character = this.characters.get(characterId);
+    if (!character) {
+      console.error(`캐릭터를 찾을 수 없습니다: ${characterId}`);
+      return;
+    }
+
+    if (!this.physicsWorld) {
+      console.error("물리 월드가 초기화되지 않았습니다.");
+      return;
+    }
+
+    const Ammo = window.Ammo;
+    if (!Ammo) {
+      console.warn("Ammo.js가 로드되지 않았습니다.");
+      return;
+    }
+
+    // 캐릭터의 바운딩 박스 계산
+    const box = new THREE.Box3().setFromObject(character.model);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    console.log(`캐릭터 바운딩 박스: 크기=${size.x.toFixed(2)}, ${size.y.toFixed(2)}, ${size.z.toFixed(2)}`);
+
+    // 캡슐 모양의 물리 바디 생성 (캐릭터 크기에 맞춤)
+    const radius = Math.max(size.x, size.z) * 0.3;
+    const height = size.y * 0.8;
+
+    console.log(`물리 바디 크기: 반지름=${radius.toFixed(2)}, 높이=${height.toFixed(2)}`);
+
+    // Ammo ghostObject 생성 (보이지 않는 물리 바디)
+    const shape = new Ammo.btCapsuleShape(radius, height);
+    const ghostObject = new Ammo.btPairCachingGhostObject();
+    const transform = new Ammo.btTransform();
+    transform.setIdentity();
+
+    // 현재 캐릭터 모델 위치를 기준으로 물리 바디 위치 설정
+    transform.setOrigin(
+      new Ammo.btVector3(
+        character.model.position.x,
+        character.model.position.y + size.y * 0.5, // 모델 바닥에서 중심까지의 높이
+        character.model.position.z
+      )
+    );
+
+    ghostObject.setWorldTransform(transform);
+    ghostObject.setCollisionShape(shape);
+
+    // *** 중요: CF_NO_CONTACT_RESPONSE 플래그 제거하여 충돌 감지 활성화 ***
+    ghostObject.setCollisionFlags(16); // CF_CHARACTER_OBJECT만 설정
+
+    // Character controller 생성
+    const stepHeight = 0.35;
+    const characterController = new Ammo.btKinematicCharacterController(ghostObject, shape, stepHeight);
+    characterController.setGravity(-9.8); // 음수로 설정 (아래쪽으로)
+
+    // 물리 월드에 추가
+    this.physicsWorld.addCollisionObject(ghostObject, 2, 1);
+    this.physicsWorld.addAction(characterController);
+
+    // 캐릭터에 물리 바디 저장
+    character.physicsBody = ghostObject;
+    character.physicsController = characterController;
+
+    console.log(`캐릭터 ${characterId}에 물리 바디 추가 완료`);
+    console.log(
+      `모델 위치: (${character.model.position.x.toFixed(2)}, ${character.model.position.y.toFixed(2)}, ${character.model.position.z.toFixed(2)})`
+    );
+  }
+
+  // 캐릭터 물리 업데이트
+  updateCharacterPhysics(characterId: string, keys: any, deltaTime: number): void {
+    const character = this.characters.get(characterId);
+    if (!character || !character.physicsController || !character.physicsBody) {
+      return;
+    }
+
+    const Ammo = window.Ammo;
+    if (!Ammo) return;
+
+    // deltaTime이 너무 작거나 0인 경우 최소값으로 설정
+    const effectiveDeltaTime = Math.max(deltaTime, 1 / 60); // 최소 16.67ms
+
+    const walkDirection = new Ammo.btVector3(0, 0, 0);
+    const speed = 25; // deltaTime을 곱하지 말고 고정 속도 사용
+
+    let isMoving = false;
+
+    // 키 입력 처리
+    if (keys["KeyW"] || keys["ArrowUp"]) {
+      walkDirection.setZ(-speed);
+      isMoving = true;
+    }
+    if (keys["KeyS"] || keys["ArrowDown"]) {
+      walkDirection.setZ(speed);
+      isMoving = true;
+    }
+    if (keys["KeyA"] || keys["ArrowLeft"]) {
+      walkDirection.setX(-speed);
+      isMoving = true;
+    }
+    if (keys["KeyD"] || keys["ArrowRight"]) {
+      walkDirection.setX(speed);
+      isMoving = true;
+    }
+
+    // 움직임이 있을 때만 로그 출력
+    if (isMoving) {
+      console.log(
+        `움직임 감지: 방향(${walkDirection.x().toFixed(1)}, ${walkDirection.z().toFixed(1)}), 속도=${speed}, deltaTime=${effectiveDeltaTime.toFixed(
+          4
+        )}`
+      );
+    }
+
+    // 워크 방향 적용
+    character.physicsController.setWalkDirection(walkDirection);
+
+    // 점프 처리
+    if (keys["Space"]) {
+      character.physicsController.jump();
+      console.log("점프!");
+    }
+
+    // 물리 바디 위치 가져오기
+    const transform = character.physicsBody.getWorldTransform();
+    const origin = transform.getOrigin();
+
+    // 이전 위치 저장 (움직임 확인용)
+    const prevPosition = character.model.position.clone();
+
+    // 바운딩 박스 계산
+    const box = new THREE.Box3().setFromObject(character.model);
+    const size = box.getSize(new THREE.Vector3());
+
+    // 모델 위치 업데이트
+    character.model.position.set(
+      origin.x(),
+      origin.y() - size.y * 0.4, // 발 위치에 맞춤
+      origin.z()
+    );
+
+    // 실제 움직임이 있었는지 확인
+    const moved = prevPosition.distanceTo(character.model.position);
+
+    if (isMoving || moved > 0.01) {
+      console.log(`캐릭터 ${characterId} 위치 업데이트:`);
+      console.log(`  물리 바디: (${origin.x().toFixed(2)}, ${origin.y().toFixed(2)}, ${origin.z().toFixed(2)})`);
+      console.log(
+        `  모델 위치: (${character.model.position.x.toFixed(2)}, ${character.model.position.y.toFixed(2)}, ${character.model.position.z.toFixed(2)})`
+      );
+      console.log(`  이동 거리: ${moved.toFixed(3)}`);
+    }
+
+    // 워크 방향 정리
+    walkDirection.setValue(0, 0, 0);
+  }
+
+  // 물리 월드 설정
+  setPhysicsWorld(physicsWorld: any): void {
+    this.physicsWorld = physicsWorld;
+  }
+
+  // 업데이트 (애니메이션과 물리 처리)
+  update(keys?: any): void {
+    // 고정 deltaTime 사용 (더 안정적)
+    const fixedDeltaTime = 1 / 60; // 60 FPS 기준
 
     this.characters.forEach((character) => {
       // 애니메이션 믹서 업데이트
       if (character.mixer) {
-        character.mixer.update(deltaTime);
+        character.mixer.update(fixedDeltaTime);
       }
 
-      // 이동 처리
-      if (character.isMoving && character.targetPosition) {
-        const direction = character.targetPosition.clone().sub(character.position);
-        const distance = direction.length();
-
-        if (distance > 0.1) {
-          // 이동
-          direction.normalize();
-          const movement = direction.multiplyScalar(character.speed * deltaTime);
-          character.position.add(movement);
-          character.model.position.copy(character.position);
-
-          // 이동 방향으로 회전
-          const angle = Math.atan2(direction.x, direction.z);
-          character.rotation.y = angle;
-          character.model.rotation.y = angle;
-        } else {
-          // 목표 지점 도달
-          character.position.copy(character.targetPosition);
-          character.model.position.copy(character.position);
-          character.isMoving = false;
-          character.targetPosition = undefined;
-
-          // 정지 애니메이션 재생
-          this.playAnimation(character.id, "idle");
-        }
+      // 물리 업데이트 (키 입력이 있고 물리 컨트롤러가 있는 경우)
+      if (keys && character.physicsController) {
+        this.updateCharacterPhysics(character.id, keys, fixedDeltaTime);
       }
     });
-  }
 
-  // 키보드 입력으로 캐릭터 조작
-  handleKeyboardInput(characterId: string, keys: Set<string>): void {
-    const character = this.characters.get(characterId);
-    if (!character) return;
-
-    const moveSpeed = character.speed; // 기본 속도 사용
-    let moved = false;
-    let targetPosition = character.position.clone();
-
-    // WASD 키 입력 처리 (소문자만 처리, 대소문자 구분 없음)
-    if (keys.has("w")) {
-      targetPosition.z -= moveSpeed;
-      moved = true;
-    }
-    if (keys.has("s")) {
-      targetPosition.z += moveSpeed;
-      moved = true;
-    }
-    if (keys.has("a")) {
-      targetPosition.x -= moveSpeed;
-      moved = true;
-    }
-    if (keys.has("d")) {
-      targetPosition.x += moveSpeed;
-      moved = true;
-    }
-
-    if (moved) {
-      // 이동 방향으로 즉시 회전
-      const direction = targetPosition.clone().sub(character.position);
-      if (direction.length() > 0.01) {
-        const angle = Math.atan2(direction.x, direction.z);
-        character.rotation.y = angle;
-        character.model.rotation.y = angle;
+    // 디버깅 로그 빈도 줄이기
+    if (keys && Math.random() < 0.02) {
+      // 2% 확률
+      const pressedKeys = Object.keys(keys).filter((key) => keys[key]);
+      if (pressedKeys.length > 0) {
+        console.log("CharacterManager update - 활성 키:", pressedKeys);
+        console.log("관리 중인 캐릭터 수:", this.characters.size);
       }
-
-      // 즉시 위치 업데이트 (부드러운 이동 대신 즉시 반응)
-      character.position.copy(targetPosition);
-      character.model.position.copy(targetPosition);
-
-      // 이동 애니메이션 재생
-      this.playAnimation(characterId, "walk");
-    } else {
-      // 정지 시 idle 애니메이션 재생
-      this.playAnimation(characterId, "idle");
     }
   }
 }

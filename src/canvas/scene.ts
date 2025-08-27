@@ -36,9 +36,9 @@ export function createScene(): THREE.Scene {
 
 export function createCamera(): THREE.PerspectiveCamera {
   const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000000);
-  // 카메라 위치를 캐릭터가 잘 보이도록 조정
-  camera.position.set(0, 2, 5); // 원래 위치로 복원
-  camera.lookAt(0, 0, 0);
+  // 카메라 위치를 캐릭터가 잘 보이도록 조정 (지면 근처)
+  camera.position.set(70, 60, 115); // 캐릭터 근처로 위치 조정
+  camera.lookAt(70, 45, 100); // 캐릭터가 있을 위치를 바라봄
 
   console.log("Camera created:", camera);
   return camera;
@@ -191,12 +191,15 @@ export function setupOrbitControls(camera: THREE.PerspectiveCamera, renderer: TH
   controls.enableDamping = true; // 부드러운 움직임
   controls.dampingFactor = 0.05;
   controls.screenSpacePanning = false;
-  // controls.minDistance = 500; // 최소 거리
-  // controls.maxDistance = 740; // 최대 거리
 
-  // controls.minPolarAngle = Math.PI / 3; //위로 올라가는거 제한
-  // controls.maxPolarAngle = Math.PI / 2.5; // 수평선 아래로 내려가지 않도록
-  controls.enableZoom = false;
+  // 캐릭터 중심으로 카메라 조작 설정
+  controls.target.set(70, 45, 100); // 캐릭터 위치를 중심으로 설정
+  // controls.minDistance = 10; // 최소 거리
+  // controls.maxDistance = 50; // 최대 거리
+  controls.enableZoom = true; // 줌 활성화
+
+  // controls.minPolarAngle = Math.PI / 6; // 위로 올라가는 제한
+  // controls.maxPolarAngle = Math.PI / 2.2; // 수평선 아래로 내려가지 않도록
 
   controls.addEventListener("change", () => {
     console.log("카메라 위치:", {

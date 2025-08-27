@@ -27,13 +27,20 @@
 - https://skfb.ly/6VnJ9 (Lowpoly Trees)
 - Lighthouse by Jarlan Perez [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/d4j9R8L8xpE)
 
-#### 🐶 avatar
+#### 🐶 character
 
 - https://skfb.ly/oFEPp (Cat - PS1 Low Poly (Rigged))
 - Hamster by Poly by Google [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/3YtzEQ5TVUP)
 - https://skfb.ly/6UnCF (Low Poly Dog)
 - https://skfb.ly/opQpx (low poly fox)
 - Wolf by jeremy [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/2PDe5PSncTC)
+
+#### 🛠️ Physics Engine
+
+- https://github.com/kripken/ammo.js
+- https://medium.com/@bluemagnificent/intro-to-javascript-3d-physics-using-ammo-js-and-three-js-dd48df81f591
+- https://medium.com/@bluemagnificent/moving-objects-in-javascript-3d-physics-using-ammo-js-and-three-js-6e39eff6d9e5
+- https://medium.com/@bluemagnificent/collision-detection-in-javascript-3d-physics-using-ammo-js-and-three-js-31a5569291ef
 
 #### 🔗 site
 
