@@ -25,7 +25,7 @@ export class TerrainRaycaster {
   private collectTerrainMeshes(): void {
     this.terrainMeshes = [];
     const forestCenter = new THREE.Vector3(70, 0, 100);
-    const collectionRadius = 250; // 숲 중심에서 250 단위 반경
+    const collectionRadius = 500; // 등대까지 포함하도록 대폭 확장
 
     this.scene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -56,7 +56,67 @@ export class TerrainRaycaster {
   private isTerrainMesh(mesh: THREE.Mesh): boolean {
     // 1. 이름 기반 필터링
     const name = mesh.name.toLowerCase();
-    const terrainKeywords = ["ground", "floor", "terrain", "base", "forest", "land", "plane", "island", "mesh"];
+    const terrainKeywords = [
+      "ground",
+      "floor",
+      "terrain",
+      "base",
+      "forest",
+      "land",
+      "plane",
+      "island",
+      "mesh",
+      "step",
+      "stair",
+      "platform",
+      "bridge",
+      "path",
+      "road",
+      "wall",
+      "rock",
+      "stone",
+      "block",
+      "cube",
+      "box",
+      "surface",
+      "level",
+      "stage",
+      "lighthouse",
+    ];
+
+    // 나무 및 장식용 오브젝트 처리 - 투명하게 만들고 밟을 수 있게
+    const decorativeKeywords = [
+      "tree",
+      "leaf",
+      "branch",
+      "trunk",
+      "bark",
+      "foliage",
+      "canopy",
+      "flower",
+      "grass",
+      "bush",
+      "plant",
+      "vegetation",
+      "root",
+      "stem",
+      "pine",
+      "oak",
+      "shrub",
+      "fern",
+      "moss",
+      "ivy",
+      "wood",
+      "log",
+      "twig",
+    ];
+
+    const isDecorative = decorativeKeywords.some((keyword) => name.includes(keyword));
+    if (isDecorative) {
+      // 나무/수풀 오브젝트를 완전히 투명하게 만들고 충돌 비활성화
+      this.makeObjectPassable(mesh);
+      return false; // 지형에서는 제외하여 통과 가능
+    }
     const isNameMatch = terrainKeywords.some((keyword) => name.includes(keyword));
 
     // 2. 크기 기반 필터링
@@ -67,13 +127,13 @@ export class TerrainRaycaster {
     mesh.geometry.boundingBox.getSize(size);
 
     // 지형다운 크기 (가로세로가 어느 정도 있고, 너무 얇지 않은)
-    const hasReasonableSize = size.x > 0.5 && size.z > 0.5 && size.y > 0.1;
-    const isFlattish = (size.x * size.z) / Math.max(size.y, 0.1) > 1; // 가로세로가 높이보다 큰 평평한 형태
+    const hasReasonableSize = size.x > 0.3 && size.z > 0.3 && size.y > 0.05; // 기준 완화
+    const isFlattish = (size.x * size.z) / Math.max(size.y, 0.1) > 0.5; // 더 관대한 기준
 
     // 3. 위치 기반 필터링 (너무 높지 않은 곳에 있는)
     const worldPosition = new THREE.Vector3();
     mesh.getWorldPosition(worldPosition);
-    const isReasonableHeight = worldPosition.y > -50 && worldPosition.y < 200;
+    const isReasonableHeight = worldPosition.y > -100 && worldPosition.y < 300; // 범위 확장
 
     return (isNameMatch || (hasReasonableSize && isFlattish)) && isReasonableHeight;
   }
@@ -88,14 +148,14 @@ export class TerrainRaycaster {
   public getTerrainHeight(x: number, z: number, useSmoothing: boolean = true): number {
     const positionKey = `${x.toFixed(1)}_${z.toFixed(1)}`;
 
-    // 다중 샘플 레이캐스팅
+    // 단순한 샘플 레이캐스팅 - 성능 최적화
     const heights: number[] = [];
     const sampleOffsets = [
       { x: 0, z: 0 }, // 중앙
-      { x: 0.5, z: 0 }, // 오른쪽
-      { x: -0.5, z: 0 }, // 왼쪽
-      { x: 0, z: 0.5 }, // 앞
-      { x: 0, z: -0.5 }, // 뒤
+      { x: 0.4, z: 0 }, // 오른쪽
+      { x: -0.4, z: 0 }, // 왼쪽
+      { x: 0, z: 0.4 }, // 앞
+      { x: 0, z: -0.4 }, // 뒤
     ];
 
     sampleOffsets.forEach((offset) => {
@@ -117,26 +177,39 @@ export class TerrainRaycaster {
 
     if (heights.length === 0) {
       // 기본 높이 반환
-      const forestCenter = new THREE.Vector3(70, 0, 100);
       const distanceToForest = Math.sqrt((x - 70) ** 2 + (z - 100) ** 2);
-      return distanceToForest < 150 ? 150 : 5; // 숲 근처면 150, 아니면 5
+      // 위치별 기본 높이 설정
+      if (distanceToForest < 100) {
+        return 150; // 숲 중심부
+      } else if (distanceToForest < 200) {
+        return 120; // 숲 주변부
+      } else if (distanceToForest < 300) {
+        return 80; // 외곽 지역
+      } else {
+        return 50; // 먼 지역
+      }
     }
 
-    // 평균 높이 계산
-    const averageHeight = heights.reduce((sum, h) => sum + h, 0) / heights.length;
+    // 평균 높이 계산 (이상값 제거)
+    const filteredHeights = heights.filter((h) => h > -100 && h < 500);
+    if (filteredHeights.length === 0) {
+      return 150;
+    }
 
-    // 스무딩 적용
+    const averageHeight = filteredHeights.reduce((sum, h) => sum + h, 0) / filteredHeights.length;
+
+    // 간단한 스무딩 - 성능 최적화
     if (useSmoothing && this.smoothingEnabled) {
       const lastHeight = this.lastHeightMap.get(positionKey);
       if (lastHeight !== undefined) {
         const heightDiff = Math.abs(averageHeight - lastHeight);
 
         if (heightDiff > this.heightChangeThreshold) {
-          // 급격한 변화를 스무딩
-          const smoothingFactor = 0.3;
+          // 단순한 스무딩
+          const smoothingFactor = 0.5;
           const smoothedHeight = lastHeight + (averageHeight - lastHeight) * smoothingFactor;
           this.lastHeightMap.set(positionKey, smoothedHeight);
-          return smoothedHeight + 1.0; // 지면에서 1 단위 위
+          return smoothedHeight + 1.0;
         }
       }
 
@@ -159,9 +232,11 @@ export class TerrainRaycaster {
     slope: number;
     canMove: boolean;
     isOnValidTerrain: boolean;
+    hasStairs: boolean;
+    wallHeight: number;
   } {
     const heights: number[] = [];
-    const gridSize = 5; // 5x5 그리드
+    const gridSize = 7; // 7x7 그리드로 더 세밀한 감지
     const step = radius / (gridSize - 1);
 
     // 그리드 패턴으로 지형 샘플링
@@ -189,6 +264,8 @@ export class TerrainRaycaster {
         slope: 0,
         canMove: true,
         isOnValidTerrain: false,
+        hasStairs: false,
+        wallHeight: 0,
       };
     }
 
@@ -197,10 +274,23 @@ export class TerrainRaycaster {
     const minHeight = Math.min(...heights);
     const maxHeight = Math.max(...heights);
     const slope = maxHeight - minHeight;
+    const wallHeight = maxHeight - currentHeight;
 
-    // 이동 가능 여부 판단
-    const canMove = slope < 8; // 8 단위 이하의 경사만 이동 가능
-    const isOnValidTerrain = heights.length > gridSize * gridSize * 0.3; // 30% 이상 지형 감지
+    // 계단 감지 - 점진적인 높이 증가
+    const hasStairs = this.detectStairs(heights);
+
+    // 이동 가능 여부 판단 - 계단이 있으면 더 관대하게
+    let canMove = slope < 12; // 기본 경사 제한 완화
+    if (hasStairs) {
+      canMove = slope < 20; // 계단이 있으면 더 가파른 경사도 허용
+    }
+
+    // 벽 감지 - 너무 높이 올라가면 이동 불가
+    if (wallHeight > 3.0 && !hasStairs) {
+      canMove = false;
+    }
+
+    const isOnValidTerrain = heights.length > gridSize * gridSize * 0.2; // 20%로 완화
 
     return {
       currentHeight,
@@ -208,7 +298,33 @@ export class TerrainRaycaster {
       slope,
       canMove,
       isOnValidTerrain,
+      hasStairs,
+      wallHeight,
     };
+  }
+
+  /**
+   * 계단 감지 알고리즘
+   */
+  private detectStairs(heights: number[]): boolean {
+    if (heights.length < 3) return false;
+
+    // 높이를 정렬하여 점진적 증가 패턴 감지
+    const sortedHeights = [...heights].sort((a, b) => a - b);
+
+    let stepCount = 0;
+    const stepThreshold = 0.5; // 계단 최소 높이
+    const maxStepHeight = 2.0; // 계단 최대 높이
+
+    for (let i = 1; i < sortedHeights.length; i++) {
+      const heightDiff = sortedHeights[i] - sortedHeights[i - 1];
+      if (heightDiff >= stepThreshold && heightDiff <= maxStepHeight) {
+        stepCount++;
+      }
+    }
+
+    // 전체 높이 데이터의 30% 이상이 계단 패턴이면 계단으로 인식
+    return stepCount > heights.length * 0.3;
   }
 
   /**
@@ -275,5 +391,35 @@ export class TerrainRaycaster {
     });
 
     console.log("===============================");
+  }
+
+  /**
+   * 나무/장식용 오브젝트를 완전히 통과 가능하게 만들기
+   */
+  private makeObjectPassable(mesh: THREE.Mesh): void {
+    if (mesh.material) {
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((mat) => {
+          if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
+            mat.transparent = true;
+            mat.opacity = 0.1; // 거의 투명
+            mat.needsUpdate = true;
+          }
+        });
+      } else {
+        const material = mesh.material as THREE.Material;
+        if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshBasicMaterial) {
+          material.transparent = true;
+          material.opacity = 0.1; // 거의 투명
+          material.needsUpdate = true;
+        }
+      }
+    }
+
+    // 물리적 충돌도 비활성화 - 렌더링만 유지
+    mesh.visible = true; // 보이기는 하지만
+    mesh.userData.passable = true; // 통과 가능 마킹
+
+    console.log(`장식용 오브젝트 통과 가능 처리: ${mesh.name}`);
   }
 }

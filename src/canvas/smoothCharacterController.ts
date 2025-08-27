@@ -26,20 +26,20 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   private terrainRaycaster: TerrainRaycaster;
   private scene: THREE.Scene;
 
-  // 이동 설정
-  private moveSpeed: number = 15;
-  private jumpPower: number = 8;
-  private gravity: number = 20;
+  // 이동 설정 - 더 빠르고 반응적으로
+  private moveSpeed: number = 50; // 적당한 속도
+  private jumpPower: number = 70; // 점프력 더욱 증가 (지형 올라가기 가능)
+  private gravity: number = 45; // 중력 약간 줄여서 더 높이 올라갈 수 있게
 
-  // 지형 적응 설정
-  private groundCheckDistance: number = 2.0;
-  private maxStepHeight: number = 1.5;
-  private slopeLimit: number = 8; // 최대 경사각도
+  // 지형 적응 설정 - 더 관대하게
+  private groundCheckDistance: number = 4.0; // 지면 감지 거리 더 증가
+  private maxStepHeight: number = 6.0; // 계단 높이 대폭 증가
+  private stairDetectionRadius: number = 2.5; // 계단 감지 반경 확장
 
-  // 스무딩 설정
-  private positionSmoothing: number = 0.85; // 위치 스무딩 강도
-  private velocityDamping: number = 0.9; // 속도 감쇠
-  private groundSnapDistance: number = 0.5; // 지면 스냅 거리
+  // 스무딩 설정 - 더 빠른 반응
+  private velocityDamping: number = 0.9; // 더 부드러운 감쇠
+  private groundSnapDistance: number = 1.5; // 지면 스냅 거리 더 증가
+  private landingSpeedThreshold: number = 3.0; // 착지 속도 임계값 완화
 
   // 상태 추적
   private lastGroundHeight: number = 150;
@@ -108,29 +108,60 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     if (moveVector.length() > 0) {
       moveVector.normalize();
 
-      // 이동하려는 위치에서 지형 분석
+      // 이동하려는 위치에서 빠른 지형 분석 (버벅임 방지)
       const futureX = this.position.x + moveVector.x * this.moveSpeed * deltaTime;
       const futureZ = this.position.z + moveVector.z * this.moveSpeed * deltaTime;
 
-      const terrainAnalysis = this.terrainRaycaster.analyzeTerrainAroundPosition(futureX, futureZ, 2);
+      // 간단한 벽 충돌 검사 - 성능 최적화
+      const currentHeight = this.terrainRaycaster.getTerrainHeight(this.position.x, this.position.z);
+      const futureHeight = this.terrainRaycaster.getTerrainHeight(futureX, futureZ);
+      const basicHeightDiff = futureHeight - currentHeight;
 
-      // 경사가 너무 가파르면 이동 제한
-      if (!terrainAnalysis.canMove) {
-        console.log(`이동 제한: 경사 ${terrainAnalysis.slope.toFixed(1)}° > ${this.slopeLimit}°`);
-        return;
+      // 개선된 벽 감지 - 점프 중일 때는 더 관대하게
+      const heightThreshold = this.isOnGround ? this.maxStepHeight : this.maxStepHeight * 2;
+      if (basicHeightDiff > heightThreshold) {
+        // 점프 중이 아니거나 너무 높으면 이동 불가
+        if (this.isOnGround) {
+          this.velocity.x *= 0.1;
+          this.velocity.z *= 0.1;
+          return;
+        }
       }
 
-      // 경사에 따른 속도 조절
-      let speedMultiplier = 1.0;
-      if (terrainAnalysis.slope > 3) {
-        speedMultiplier = Math.max(0.4, 1 - terrainAnalysis.slope / 15);
+      // 개선된 계단 감지 및 처리
+      if (basicHeightDiff > 0.1 && basicHeightDiff <= this.maxStepHeight) {
+        // 계단 처리 - 더 정확한 감지
+        if (this.isValidStair(futureX, futureZ, basicHeightDiff) || this.isOnGround) {
+          // 지면에 있을 때 계단 등반 또는 점프 중 착지
+          this.position.y += basicHeightDiff; // 즉시 올라감
+          console.log(`계단 등반: 높이 ${basicHeightDiff.toFixed(1)}`);
+        } else if (this.isOnGround) {
+          // 지면에서 계단이 아니면 벽으로 처리
+          this.velocity.x *= 0.3; // 완전히 막지 않고 속도만 줄임
+          this.velocity.z *= 0.3;
+          console.log(`경사면: 높이 ${basicHeightDiff.toFixed(1)}`);
+        }
       }
 
-      // 수평 속도 적용
-      this.velocity.x = moveVector.x * this.moveSpeed * speedMultiplier;
-      this.velocity.z = moveVector.z * this.moveSpeed * speedMultiplier;
+      // 개선된 경사 하강 처리 - 다리 아래 통과 허용
+      if (basicHeightDiff < -this.maxStepHeight) {
+        // 하강이지만 점프 중이거나 다리 아래 통과하는 경우 허용
+        if (!this.isOnGround || this.velocity.y > 0) {
+          // 공중에 있거나 상승 중이면 자유롭게 이동
+          console.log(`공중 이동 허용: 하강 ${Math.abs(basicHeightDiff).toFixed(1)}`);
+        } else {
+          // 지면에서 급격한 하강은 속도 제한
+          this.velocity.x *= 0.7; // 덜 제한적으로
+          this.velocity.z *= 0.7;
+          console.log(`급경사 하강: ${Math.abs(basicHeightDiff).toFixed(1)}`);
+        }
+      }
+
+      // 수평 속도 직접 적용 (버벅임 방지)
+      this.velocity.x = moveVector.x * this.moveSpeed;
+      this.velocity.z = moveVector.z * this.moveSpeed;
     } else {
-      // 이동하지 않을 때 수평 속도 감쇠
+      // 이동하지 않을 때 빠른 감쇠
       this.velocity.x *= this.velocityDamping;
       this.velocity.z *= this.velocityDamping;
     }
@@ -139,37 +170,26 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   private adaptToTerrain(deltaTime: number): void {
     // 현재 위치에서 지형 높이 감지
     const currentGroundHeight = this.terrainRaycaster.getTerrainHeight(this.position.x, this.position.z);
-    const terrainAnalysis = this.terrainRaycaster.analyzeTerrainAroundPosition(this.position.x, this.position.z, 1.5);
 
     // 지면과의 거리 계산
     const distanceToGround = this.position.y - currentGroundHeight;
 
-    // 지면 접촉 상태 판단
+    // 개선된 지면 접촉 상태 판단 - 점프 중에도 지형 근처에서 착지 감지
     const wasOnGround = this.isOnGround;
-    this.isOnGround = distanceToGround <= this.groundCheckDistance && Math.abs(this.velocity.y) < 5;
+    this.isOnGround =
+      distanceToGround <= this.groundCheckDistance && (Math.abs(this.velocity.y) < this.landingSpeedThreshold || this.velocity.y <= 10); // 상승 중에도 지면 근처면 착지 준비
 
     if (this.isOnGround) {
       this.groundContactTime += deltaTime;
       this.airTime = 0;
 
-      // 지면에 있을 때 자연스럽게 지형에 맞춤
-      if (distanceToGround < this.groundSnapDistance) {
-        // 부드러운 지면 스냅
-        const targetY = currentGroundHeight;
-        const heightDiff = Math.abs(targetY - this.lastGroundHeight);
-
-        if (heightDiff < this.maxStepHeight) {
-          // 작은 높이 변화는 즉시 적용
-          this.position.y = THREE.MathUtils.lerp(this.position.y, targetY, this.positionSmoothing);
-        } else {
-          // 큰 높이 변화는 점진적으로 적용
-          const smoothingRate = this.positionSmoothing * 0.3;
-          this.position.y = THREE.MathUtils.lerp(this.position.y, targetY, smoothingRate);
-        }
-
+      // 지면에 있을 때 즉시 지형에 맞춤 (빠른 착지)
+      if (distanceToGround < this.groundSnapDistance || (this.velocity.y < 0 && distanceToGround < this.groundSnapDistance * 2)) {
+        // 즉시 지면에 스냅
+        this.position.y = currentGroundHeight;
         this.lastGroundHeight = currentGroundHeight;
 
-        // 지면에 착지했을 때 Y축 속도 제거
+        // 지면에 착지했을 때 Y축 속도 즉시 제거
         if (this.velocity.y < 0) {
           this.velocity.y = 0;
         }
@@ -186,20 +206,23 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   }
 
   private handleVerticalMovement(keys: any, deltaTime: number): void {
-    // 점프 처리
-    if (keys["Space"] && this.isOnGround && this.groundContactTime > 0.1) {
+    // 개선된 점프 처리 - 더 관대한 조건
+    if (keys["Space"] && this.isOnGround && this.groundContactTime > 0.05) {
       this.velocity.y = this.jumpPower;
       this.isOnGround = false;
       this.groundContactTime = 0;
-      console.log(`점프! 현재 높이: ${this.position.y.toFixed(1)}`);
+      console.log(`점프! 현재 높이: ${this.position.y.toFixed(1)}, 점프력: ${this.jumpPower}`);
     }
 
-    // 공중에 있을 때 중력 적용
+    // 공중에 있을 때 중력 적용 - 조정된 중력
     if (!this.isOnGround) {
       this.velocity.y -= this.gravity * deltaTime;
 
-      // 최대 낙하 속도 제한
-      this.velocity.y = Math.max(this.velocity.y, -30);
+      // 최대 낙하 속도 제한 (적당한 착지 속도)
+      this.velocity.y = Math.max(this.velocity.y, -70);
+    } else {
+      // 지면에 있을 때 Y속도 완전히 제거
+      this.velocity.y = Math.max(this.velocity.y, 0); // 하강 속도만 제거, 상승은 유지
     }
   }
 
@@ -208,29 +231,33 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     const newPosition = this.position.clone();
     newPosition.add(this.velocity.clone().multiplyScalar(deltaTime));
 
-    // 수평 이동 검증
+    // 수평 이동 간단 검증 (성능 최적화)
     if (this.velocity.x !== 0 || this.velocity.z !== 0) {
-      const terrainAnalysis = this.terrainRaycaster.analyzeTerrainAroundPosition(newPosition.x, newPosition.z, 1);
-
-      if (terrainAnalysis.isOnValidTerrain) {
-        this.position.x = newPosition.x;
-        this.position.z = newPosition.z;
-      } else {
-        // 유효하지 않은 지형으로 이동하려 할 때 수평 속도 제거
-        this.velocity.x = 0;
-        this.velocity.z = 0;
-      }
+      // 바로 위치 적용 (버벅임 방지)
+      this.position.x = newPosition.x;
+      this.position.z = newPosition.z;
     }
 
     // 수직 이동 적용
     this.position.y = newPosition.y;
 
-    // 지형 아래로 떨어지지 않도록 방지
+    // 개선된 지형 관통 방지 - 점프로 지형 올라가기 허용
     const minHeight = this.terrainRaycaster.getTerrainHeight(this.position.x, this.position.z);
-    if (this.position.y < minHeight) {
-      this.position.y = minHeight;
-      this.velocity.y = Math.max(0, this.velocity.y);
-      this.isOnGround = true;
+    const heightDifference = this.position.y - minHeight;
+
+    // 지형 관통만 방지하고, 점프 중일 때는 더 관대하게
+    if (heightDifference < -2.0) {
+      // 지형 2 단위 아래로 떨어질 때만 수정 (더 관대하게)
+      // 상승 중이 아니라면 지형에 맞춤
+      if (this.velocity.y <= 0) {
+        this.position.y = minHeight;
+        this.velocity.y = 0;
+        this.isOnGround = true;
+        console.log(`지형 관통 방지: 높이 ${minHeight.toFixed(1)}로 수정`);
+      }
+    } else if (heightDifference < 0 && this.velocity.y > 0) {
+      // 점프 중이고 약간 지형 아래에 있으면 점프력으로 올라가기 허용
+      console.log(`점프로 지형 통과 중: 높이차 ${heightDifference.toFixed(1)}`);
     }
 
     // 경계 검사 (옵션)
@@ -248,6 +275,47 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
 
     this.position.x = THREE.MathUtils.clamp(this.position.x, bounds.minX, bounds.maxX);
     this.position.z = THREE.MathUtils.clamp(this.position.z, bounds.minZ, bounds.maxZ);
+  }
+
+  /**
+   * 계단인지 벽인지 정확하게 판단 - 개선된 버전
+   */
+  private isValidStair(x: number, z: number, heightDiff: number): boolean {
+    // 높이 차이가 작으면 무조건 계단으로 인정
+    if (heightDiff <= 2.0) {
+      return true;
+    }
+
+    // 계단 주변 더 많은 지점에서 검사 (더 넓은 범위)
+    const checkPoints = [
+      { x: x, z: z }, // 중앙
+      { x: x + this.stairDetectionRadius, z: z }, // 오른쪽
+      { x: x - this.stairDetectionRadius, z: z }, // 왼쪽
+      { x: x, z: z + this.stairDetectionRadius }, // 앞
+      { x: x, z: z - this.stairDetectionRadius }, // 뒤
+      // 대각선 방향 추가
+      { x: x + this.stairDetectionRadius * 0.7, z: z + this.stairDetectionRadius * 0.7 },
+      { x: x - this.stairDetectionRadius * 0.7, z: z - this.stairDetectionRadius * 0.7 },
+      { x: x + this.stairDetectionRadius * 0.7, z: z - this.stairDetectionRadius * 0.7 },
+      { x: x - this.stairDetectionRadius * 0.7, z: z + this.stairDetectionRadius * 0.7 },
+    ];
+
+    let validStairCount = 0;
+    const currentHeight = this.terrainRaycaster.getTerrainHeight(this.position.x, this.position.z);
+
+    for (const point of checkPoints) {
+      const pointHeight = this.terrainRaycaster.getTerrainHeight(point.x, point.z);
+      const pointHeightDiff = pointHeight - currentHeight;
+
+      // 비슷한 높이의 지형이 여러 개 있으면 계단 (더 관대한 임계값)
+      if (Math.abs(pointHeightDiff - heightDiff) < 2.0) {
+        validStairCount++;
+      }
+    }
+
+    // 전체 검사 지점의 30% 이상이 비슷한 높이면 계단 (더 관대함)
+    const stairThreshold = checkPoints.length * 0.3;
+    return validStairCount >= stairThreshold;
   }
 
   public setPosition(x: number, y: number, z: number): void {
@@ -291,5 +359,14 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
       airTime: this.airTime.toFixed(2),
       lastGroundHeight: this.lastGroundHeight.toFixed(2),
     };
+  }
+
+  /**
+   * 디버깅용 지형 정보 출력
+   */
+  public debugTerrainInfo(): void {
+    this.terrainRaycaster.debugTerrainMeshes();
+    const currentPos = this.getPosition();
+    this.terrainRaycaster.testRaycastAtPosition(currentPos.x, currentPos.z);
   }
 }
