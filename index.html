@@ -4,12 +4,12 @@
   <body>
     <noscript>컨텐츠를 표시하기 위해서는 자바스크립트를 활성화해주세요.</noscript>
     <load src="src/components/config/ThemeScript.html" />
-    <!-- Ammo.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/ammojs-typed@1.0.6/ammo.js"></script>
+
     <div id="app">
       <main class="main">
         <div class="intro-wrapper">
-          <load src="src/components/intro/UserBox.html" />
+          <div id="userbox-user-logout-element"></div>
           <load src="src/components/intro/IntroContentsBox.html" />
           <load src="src/components/intro/IntroVideo.html" />
           <load src="src/components/intro/IntroSupports.html" />
@@ -17,12 +17,15 @@
 
         <canvas id="scene"></canvas>
 
-        <load src="src/components/ui/scene/Chat.html" />
+        <div id="chat"></div>
       </main>
 
       <!-- popup -->
-      <load src="src/pages/popup/CharacterSettingPopup.html" />
-      <load src="src/pages/popup/MyPageSetting.html" />
+      <div id="character-setting"></div>
+      <div id="mypage-setting"></div>
+
+      <!-- action buttons -->
+      <div id="action-buttons"></div>
 
       <script type="module" src="/src/router/hash.ts"></script>
       <script type="module" src="/src/canvas/main.ts"></script>

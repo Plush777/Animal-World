@@ -15,7 +15,7 @@
 
 ### 🌏 Models
 
-#### 🖼️ background object
+#### 🖼️ object
 
 - https://skfb.ly/oJYSS (Starry night sky HDRi background photosphere)
 - https://skfb.ly/oIINq (FREE - SkyBox In The Cloud)
@@ -26,6 +26,7 @@
 - https://skfb.ly/HIBy (Low Poly Trees)
 - https://skfb.ly/6VnJ9 (Lowpoly Trees)
 - Lighthouse by Jarlan Perez [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/d4j9R8L8xpE)
+- https://skfb.ly/6WVnq (Cloud & Sun Lowpoly)
 
 #### 🐶 character
 

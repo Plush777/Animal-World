@@ -22,8 +22,6 @@ import {
   createTriangleMeshShape,
   createStaticRigidBody,
   createBoxShapeFromGeometry,
-  // createCharacterController, // 현재 사용하지 않음
-  findGroundHeight,
   analyzeTerrainAroundCharacter,
 } from "./physicsEngine";
 
@@ -31,9 +29,13 @@ import { TerrainRaycaster } from "./terrainRaycaster";
 import { TerrainAdaptiveCharacterController, SmoothCharacterController } from "./smoothCharacterController";
 
 import { initializeTheme, startAutoThemeUpdater } from "../ui/theme";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 // THREE.js를 전역에서 사용할 수 있도록 노출
 (window as any).THREE = THREE;
+
+// GLTFLoader를 전역에서 사용할 수 있도록 노출
+(window as any).gltfLoader = new GLTFLoader();
 
 // 전역 변수로 캔버스 관련 객체들 저장
 let globalScene: THREE.Scene | null = null;

@@ -194,12 +194,12 @@ export function setupOrbitControls(camera: THREE.PerspectiveCamera, renderer: TH
 
   // 캐릭터 중심으로 카메라 조작 설정
   controls.target.set(70, 45, 100); // 캐릭터 위치를 중심으로 설정
-  // controls.minDistance = 10; // 최소 거리
-  // controls.maxDistance = 50; // 최대 거리
+  controls.minDistance = 400; // 최소 거리
+  controls.maxDistance = 570; // 최대 거리
   controls.enableZoom = true; // 줌 활성화
 
-  // controls.minPolarAngle = Math.PI / 6; // 위로 올라가는 제한
-  // controls.maxPolarAngle = Math.PI / 2.2; // 수평선 아래로 내려가지 않도록
+  controls.minPolarAngle = Math.PI / 3; //위로 올라가는거 제한
+  controls.maxPolarAngle = Math.PI / 2.5; // 수평선 아래로 내려가지 않도록
 
   controls.addEventListener("change", () => {
     console.log("카메라 위치:", {
@@ -375,6 +375,132 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
           adjustWaterLighting(child, isDay);
         }
       });
+    }
+
+    // water_cloud.glb 모델 로드 - 캐릭터가 물 위를 구름을 타고 이동하는 효과
+    console.log("🌩️ water_cloud.glb 로드 시도 중...");
+    const waterCloudModel = await loadModel(
+      scene,
+      "/models/water_cloud.glb",
+      new THREE.Vector3(0, 0, 0), // 위치는 캐릭터에 따라 동적으로 변경될 예정
+      new THREE.Vector3(12, 12, 12), // 크기를 더 크게 설정
+      new THREE.Euler(0, 0, 0)
+    );
+
+    if (waterCloudModel) {
+      // 구름 모델의 재질 최적화
+      waterCloudModel.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          console.log("🌩️ 구름 메시 발견:", child.name, "재질:", child.material);
+
+          if (child.material) {
+            const materials = Array.isArray(child.material) ? child.material : [child.material];
+            materials.forEach((mat) => {
+              // 더 나은 가시성을 위한 재질 설정
+              mat.transparent = true;
+              mat.opacity = 0.85; // 적당한 투명도
+
+              // 색상을 흰색으로 설정
+              if (mat.color) {
+                mat.color.setHex(0xffffff);
+              }
+
+              // 발광 효과로 더 눈에 띄게
+              if (mat.emissive) {
+                mat.emissive.setHex(0x888888); // 강한 발광
+              }
+
+              // 그림자 설정 (성능을 위해 간소화)
+              child.castShadow = false; // 구름은 그림자를 받지만 만들지 않음
+              child.receiveShadow = true;
+
+              mat.needsUpdate = true;
+            });
+          }
+        }
+      });
+
+      // 초기에는 보이지 않게 설정
+      waterCloudModel.visible = false;
+
+      // 구름 이름 설정 (디버깅용)
+      waterCloudModel.name = "WaterCloudEffect";
+
+      // 충돌 감지 비활성화 (중요! 캐릭터가 구름을 오브젝트로 인식하지 않도록)
+      waterCloudModel.userData.noCollision = true;
+      waterCloudModel.userData.isWaterCloud = true;
+      waterCloudModel.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.userData.noCollision = true;
+          child.userData.isWaterCloud = true;
+        }
+      });
+
+      // 백업 구름 생성 (더 크고 눈에 띄게)
+      const backupCloudGeometry = new THREE.SphereGeometry(10, 16, 12); // 더 큰 크기
+      const backupCloudMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        opacity: 0.9, // 더 불투명하게
+        transparent: true,
+        emissive: 0xaaaaaa, // 더 강한 발광
+        roughness: 0.3, // 더 매끄럽게
+        metalness: 0.0,
+      });
+      const backupCloud = new THREE.Mesh(backupCloudGeometry, backupCloudMaterial);
+      backupCloud.visible = false;
+      backupCloud.name = "BackupWaterCloud";
+      backupCloud.castShadow = false;
+      backupCloud.receiveShadow = true;
+
+      // 백업 구름도 충돌 감지 비활성화
+      backupCloud.userData.noCollision = true;
+      backupCloud.userData.isWaterCloud = true;
+
+      scene.add(backupCloud);
+
+      // 전역에서 접근 가능하도록 설정
+      (window as any).waterCloudModel = waterCloudModel;
+      (window as any).backupCloudModel = backupCloud;
+
+      console.log("✅ water_cloud.glb 모델 로드 완료!");
+      console.log("🌩️ 구름 모델 정보:", {
+        position: waterCloudModel.position,
+        scale: waterCloudModel.scale,
+        visible: waterCloudModel.visible,
+        children: waterCloudModel.children.length,
+        name: waterCloudModel.name,
+      });
+
+      // 로드 완료 이벤트 발생 (다른 시스템에서 감지할 수 있도록)
+      window.dispatchEvent(
+        new CustomEvent("waterCloudModelLoaded", {
+          detail: { waterCloudModel, backupCloud },
+        })
+      );
+
+      console.log("🌩️ 구름 효과 시스템 준비 완료 - 물에 들어가면 구름이 나타납니다!");
+    } else {
+      console.error("❌ water_cloud.glb 모델 로드 실패!");
+
+      // 모델 로드에 실패해도 백업 구름은 생성
+      console.log("🔄 백업 구름만 생성합니다...");
+      const fallbackCloud = new THREE.Mesh(
+        new THREE.SphereGeometry(8, 16, 12),
+        new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          opacity: 0.8,
+          transparent: true,
+          emissive: 0x777777,
+        })
+      );
+      fallbackCloud.visible = false;
+      fallbackCloud.name = "FallbackWaterCloud";
+      scene.add(fallbackCloud);
+
+      (window as any).waterCloudModel = fallbackCloud; // 백업을 메인으로 사용
+      (window as any).backupCloudModel = fallbackCloud;
+
+      console.log("✅ 백업 구름 생성 완료!");
     }
 
     console.log("모든 모델이 성공적으로 로드되었습니다.");
