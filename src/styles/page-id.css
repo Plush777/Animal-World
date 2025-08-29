@@ -1,3 +1,19 @@
+#world-header,
+#chat,
+#action-buttons,
+#reset-button {
+  transition: 0.5s ease-in-out;
+}
+
+#world-header.ui-hidden,
+#chat.ui-hidden,
+#action-buttons.ui-hidden,
+#reset-button.ui-hidden {
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
 #scene {
   opacity: 0;
   transition: opacity 0.5s ease-in-out;

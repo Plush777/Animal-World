@@ -38,6 +38,21 @@ function initAllUIModules(): void {
       }
     });
   }
+
+  // Enter 키를 눌렀을 때 채팅 입력 필드에 포커스
+  document.addEventListener("keydown", (e) => {
+    // Enter 키가 눌렸고, 현재 포커스된 요소가 입력 필드가 아닐 때
+    if (e.key === "Enter" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+      const chatInput = document.querySelector(".chat-input") as HTMLInputElement;
+      const chatWrapper = document.querySelector(".chat-wrapper") as HTMLElement;
+
+      // 채팅창이 활성화되어 있고 입력 필드가 존재할 때만 포커스
+      if (chatInput && chatWrapper && chatWrapper.classList.contains("active")) {
+        e.preventDefault();
+        chatInput.focus();
+      }
+    }
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {

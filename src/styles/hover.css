@@ -23,4 +23,17 @@
     color: var(--blue-600);
     background-color: var(--gray-100);
   }
+
+  .reset-button button:hover {
+    background-color: var(--blue-500);
+  }
+
+  .chat-leave-button:hover {
+    background-color: var(--red-600) !important;
+  }
+
+  .chat-enter-button.short-key:hover,
+  .header-right button:hover {
+    background-color: var(--gray-100);
+  }
 }

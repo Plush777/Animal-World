@@ -313,3 +313,102 @@
   height: 32px;
   font-size: 16px;
 }
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  column-gap: 8px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 40px;
+  z-index: 100;
+}
+
+.action-buttons button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.reset-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 16px;
+  z-index: 100;
+}
+
+.reset-button button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--blue-400);
+}
+
+.reset-button svg {
+  color: var(--white);
+}
+
+.reset-button span {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -20px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--white);
+  white-space: nowrap;
+}
+
+.reset-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+input[type="checkbox"] + label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+input[type="checkbox"] + label svg {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--yellow-400);
+  width: 18px;
+  height: 18px;
+}
+
+input[type="checkbox"] + label svg path {
+  stroke-width: 5px;
+}
+
+input[type="checkbox"] + label span {
+  padding-left: 20px;
+}
+
+input[type="checkbox"]:checked + label svg {
+  display: block;
+}
+
+input[type="checkbox"] + label::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid var(--gray-400);
+  background-color: var(--white);
+}

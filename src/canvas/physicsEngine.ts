@@ -361,6 +361,13 @@ export function updateCharacterController(character: any, keys: any, _deltaTime:
   const walkDirection = new Ammo.btVector3(0, 0, 0);
   const speed = 3; // 속도를 더 안정적으로 조정
 
+  // 채팅 입력 필드가 활성화되어 있으면 이동 처리 건너뛰기
+  const activeElement = document.activeElement;
+  const isChatInputActive = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
+  if (isChatInputActive) {
+    return { moveX: 0, moveZ: 0, isMoving: false };
+  }
+
   // 키 입력 처리
   let isMoving = false;
   let moveX = 0;
@@ -406,8 +413,13 @@ export function updateCharacterController(character: any, keys: any, _deltaTime:
 
   // 점프 처리
   if (keys["Space"]) {
-    character.controller.jump();
-    console.log("점프!");
+    // 채팅 입력 필드가 활성화되어 있으면 점프 차단
+    const activeElement = document.activeElement;
+    const isChatInputActive = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
+    if (!isChatInputActive) {
+      character.controller.jump();
+      console.log("점프!");
+    }
   }
 
   // 업데이트 후 위치 가져오기

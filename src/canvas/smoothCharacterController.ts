@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { TerrainRaycaster } from "./terrainRaycaster";
 import { isDayTime } from "./time";
+import { sceneHtml } from "../data/sceneHtml";
 
 /**
  * Three.js Raycaster 기반 부드러운 캐릭터 컨트롤러
@@ -52,6 +53,19 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   private waterLevel: number = 0;
   private waterBuoyancy: number = 0;
   private preWaterHeight: number = 0; // 물 진입 전 캐릭터 높이 저장
+  private resetButtonVisible: boolean = false; // 리셋 버튼 표시 상태
+
+  // 공중 오브젝트 상호작용 상태
+  private floatingObjects: Array<{
+    name: string;
+    position: THREE.Vector3;
+    radius: number;
+    height: number;
+  }> = [];
+  private isNearFloatingObject: boolean = false;
+  private currentFloatingObject: any = null;
+  private actionButtonVisible: boolean = false;
+  private isControlLocked: boolean = false; // 캐릭터 조작 잠금 상태
 
   // 구름 관련 상태
   private waterCloudModel: THREE.Object3D | null = null;
@@ -99,6 +113,98 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     }
   }
 
+  /**
+   * 랜덤 시작 위치 생성 (6개의 고정된 좌표 중에서 선택)
+   */
+  private generateRandomStartPosition(): THREE.Vector3 {
+    // 6개의 고정된 시작 좌표
+    const startPositions = [
+      { x: 104.56, y: 88.87, z: 139.81 },
+      { x: 169.63, y: 66.87, z: 189.27 },
+      { x: 73.5, y: 110.65, z: 63.0 },
+      { x: 134.81, y: 88.87, z: 68.44 },
+      { x: 185.08, y: 44.65, z: 230.37 },
+      { x: 38.86, y: 44.77, z: 216.85 },
+    ];
+
+    // 랜덤으로 하나의 좌표 선택
+    const randomIndex = Math.floor(Math.random() * startPositions.length);
+    const selectedPosition = startPositions[randomIndex];
+
+    console.log(
+      `🎯 선택된 시작 위치 ${randomIndex + 1}번: (${selectedPosition.x.toFixed(2)}, ${selectedPosition.y.toFixed(2)}, ${selectedPosition.z.toFixed(
+        2
+      )})`
+    );
+
+    return new THREE.Vector3(selectedPosition.x, selectedPosition.y, selectedPosition.z);
+  }
+
+  /**
+   * 공중 오브젝트와의 상호작용 체크
+   */
+  private checkFloatingObjectInteraction(position: THREE.Vector3): { isNear: boolean; object: any } {
+    for (const obj of this.floatingObjects) {
+      const distance = position.distanceTo(obj.position);
+
+      // 기본 상호작용 반경
+      const baseRadius = obj.radius + 15;
+
+      // 캐릭터와 오브젝트 사이의 방향 벡터 계산
+      const directionToObject = new THREE.Vector3();
+      directionToObject.subVectors(obj.position, position).normalize();
+
+      // 캐릭터의 현재 이동 방향 (또는 기본 방향)
+      const characterDirection = this.lastMoveDirection.length() > 0.1 ? this.lastMoveDirection : new THREE.Vector3(0, 0, -1);
+
+      // 캐릭터 방향과 오브젝트 방향 사이의 각도 계산
+      const dotProduct = characterDirection.dot(directionToObject);
+      const angle = Math.acos(Math.abs(dotProduct));
+
+      // 각도에 따른 반경 조정 (뒤쪽과 양옆에 더 큰 감지 영역)
+      let adjustedRadius = baseRadius;
+      if (angle > Math.PI / 2) {
+        // 뒤쪽 (180도) - 1.5배
+        adjustedRadius = baseRadius * 1.5;
+      } else if (angle > Math.PI / 4) {
+        // 양옆 (90도) - 1.3배
+        adjustedRadius = baseRadius * 1.3;
+      }
+      // 앞쪽은 기본 반경 유지
+
+      if (distance <= adjustedRadius) {
+        return { isNear: true, object: obj };
+      }
+    }
+    return { isNear: false, object: null };
+  }
+
+  /**
+   * 공중 오브젝트와의 충돌 체크 (이동 차단용) - 상호작용 감지와 동일한 방법 사용
+   */
+  private checkFloatingObjectCollision(position: THREE.Vector3): { collision: boolean; object: any; direction: THREE.Vector3 } {
+    // 상호작용 감지와 동일한 방법 사용하되, 더 작은 반경으로 충돌 감지
+    for (const obj of this.floatingObjects) {
+      const distance = position.distanceTo(obj.position);
+
+      // low_poly_triple_trees의 경우 더 큰 충돌 반경 적용
+      let collisionRadius;
+      if (obj.name === "low_poly_triple_trees") {
+        collisionRadius = obj.radius * 0.8; // triple_trees는 더 큰 충돌 반경
+      } else {
+        collisionRadius = obj.radius * 0.7; // 다른 오브젝트들은 기존 반경
+      }
+
+      if (distance <= collisionRadius) {
+        // 충돌 방향 계산
+        const direction = new THREE.Vector3();
+        direction.subVectors(position, obj.position).normalize();
+        return { collision: true, object: obj, direction };
+      }
+    }
+    return { collision: false, object: null, direction: new THREE.Vector3() };
+  }
+
   // 캐릭터가 물 안에 있는지 확인 - 지형 기반 판단으로 개선
   private checkWaterStatus(position: THREE.Vector3): { inWater: boolean; waterLevel: number; buoyancy: number } {
     const waterZones = this.getWaterZones();
@@ -129,7 +235,10 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   constructor(scene: THREE.Scene, terrainRaycaster: TerrainRaycaster, startPosition: THREE.Vector3) {
     this.scene = scene;
     this.terrainRaycaster = terrainRaycaster;
-    this.position = startPosition.clone();
+
+    // 랜덤 시작 위치 생성 (물이 아닌 지형 위에만)
+    const randomStartPosition = this.generateRandomStartPosition();
+    this.position = randomStartPosition;
     this.velocity = new THREE.Vector3(0, 0, 0);
 
     // 시각적 메시 생성 (디버깅용, 투명하게)
@@ -151,6 +260,9 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     // 초기 지형 높이 설정
     this.lastGroundHeight = this.terrainRaycaster.getTerrainHeight(this.position.x, this.position.z);
     this.position.y = this.lastGroundHeight;
+
+    // 공중 오브젝트들 초기화 (지연 초기화)
+    this.initializeFloatingObjectsDelayed();
 
     console.log(`부드러운 캐릭터 컨트롤러 생성: (${this.position.x.toFixed(1)}, ${this.position.y.toFixed(1)}, ${this.position.z.toFixed(1)})`);
   }
@@ -193,6 +305,89 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
       console.error("구름 모델 로드 중 오류:", error);
       return this.createFallbackCloud();
     }
+  }
+
+  /**
+   * 오브젝트의 실제 바운딩 박스를 기반으로 반경 계산
+   */
+  private calculateObjectRadius(modelKey: string, defaultRadius: number): number {
+    const model = (window as any)[modelKey];
+    if (!model) {
+      console.warn(`${modelKey} 모델을 찾을 수 없습니다. 기본 반경 ${defaultRadius} 사용`);
+      return defaultRadius;
+    }
+
+    // 바운딩 박스 계산
+    const boundingBox = new THREE.Box3();
+    boundingBox.setFromObject(model);
+
+    // 바운딩 박스의 크기 계산
+    const size = new THREE.Vector3();
+    boundingBox.getSize(size);
+
+    // 가장 큰 축을 기준으로 반경 계산 (X, Z 축 중 큰 값)
+    const maxRadius = Math.max(size.x, size.z) / 2;
+
+    // 여유분 추가 (기본 반경의 20% 추가)
+    const adjustedRadius = maxRadius + defaultRadius * 0.2;
+
+    console.log(
+      `${modelKey} 바운딩 박스 크기: ${size.x.toFixed(1)} x ${size.y.toFixed(1)} x ${size.z.toFixed(1)}, 계산된 반경: ${adjustedRadius.toFixed(1)}`
+    );
+
+    return adjustedRadius;
+  }
+
+  /**
+   * 지연 초기화 - 모델이 로드된 후에 반경 계산
+   */
+  private initializeFloatingObjectsDelayed(): void {
+    // 기본값으로 초기화
+    this.floatingObjects = [
+      {
+        name: "low_poly_floating_island",
+        position: new THREE.Vector3(-100, 90, 330),
+        radius: 60,
+        height: 90,
+      },
+      {
+        name: "low_poly_trees",
+        position: new THREE.Vector3(320, 80, 0),
+        radius: 55,
+        height: 80,
+      },
+      {
+        name: "low_poly_triple_trees",
+        position: new THREE.Vector3(-400, 60, 100),
+        radius: 150,
+        height: 60,
+      },
+    ];
+
+    // 모델이 로드될 때까지 대기 후 반경 재계산
+    const checkModelsLoaded = () => {
+      const floatingIslandModel = (window as any).floatingIslandModel;
+      const floatingTreesModel = (window as any).floatingTreesModel;
+      const tripleTreesModel = (window as any).tripleTreesModel;
+
+      if (floatingIslandModel && floatingTreesModel && tripleTreesModel) {
+        // 모든 모델이 로드되었으면 반경 재계산
+        this.floatingObjects[0].radius = this.calculateObjectRadius("floatingIslandModel", 60);
+        this.floatingObjects[1].radius = this.calculateObjectRadius("floatingTreesModel", 55);
+        this.floatingObjects[2].radius = this.calculateObjectRadius("tripleTreesModel", 220);
+
+        console.log("공중 오브젝트들 바운딩 박스 기반 반경 계산 완료:", this.floatingObjects.length, "개");
+        this.floatingObjects.forEach((obj) => {
+          console.log(`- ${obj.name}: 위치 (${obj.position.x}, ${obj.position.y}, ${obj.position.z}), 반경: ${obj.radius}, 높이: ${obj.height}`);
+        });
+      } else {
+        // 아직 로드되지 않았으면 100ms 후 다시 시도
+        setTimeout(checkModelsLoaded, 100);
+      }
+    };
+
+    // 즉시 체크 시작
+    checkModelsLoaded();
   }
 
   /**
@@ -281,23 +476,202 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     // 1. 물 상태 업데이트
     this.updateWaterState(deltaTime);
 
-    // 2. 수평 이동 처리
+    // 2. 공중 오브젝트 상호작용 체크
+    this.updateFloatingObjectInteraction();
+
+    // 3. 키보드 입력 처리
+    this.handleKeyPress(keys);
+
+    // 4. 수평 이동 처리
     this.handleHorizontalMovement(keys, deltaTime);
 
-    // 3. 지형 분석 및 적응
+    // 5. 지형 분석 및 적응
     this.adaptToTerrain(deltaTime);
 
-    // 4. 수직 이동 처리
+    // 6. 수직 이동 처리
     this.handleVerticalMovement(keys, deltaTime);
 
-    // 5. 최종 위치 업데이트
+    // 7. 최종 위치 업데이트
     this.updateFinalPosition(deltaTime);
 
-    // 6. 구름 위치 업데이트
+    // 8. 구름 위치 업데이트
     this.updateCloudPosition();
 
-    // 7. 메시 위치 동기화
+    // 9. 메시 위치 동기화
     this.mesh.position.copy(this.position);
+  }
+
+  /**
+   * 공중 오브젝트 상호작용 업데이트
+   */
+  private updateFloatingObjectInteraction(): void {
+    const interaction = this.checkFloatingObjectInteraction(this.position);
+
+    if (interaction.isNear && interaction.object) {
+      if (!this.isNearFloatingObject) {
+        console.log(
+          `공중 오브젝트 근처 도달: ${interaction.object.name} (위치: ${this.position.x.toFixed(1)}, ${this.position.y.toFixed(
+            1
+          )}, ${this.position.z.toFixed(1)})`
+        );
+        this.isNearFloatingObject = true;
+        this.currentFloatingObject = interaction.object;
+        this.isControlLocked = true; // 캐릭터 조작 잠금
+        this.showActionButton();
+      }
+    } else {
+      if (this.isNearFloatingObject) {
+        console.log(`공중 오브젝트에서 벗어남 (위치: ${this.position.x.toFixed(1)}, ${this.position.y.toFixed(1)}, ${this.position.z.toFixed(1)})`);
+        this.isNearFloatingObject = false;
+        this.currentFloatingObject = null;
+        this.isControlLocked = false; // 캐릭터 조작 해제
+        this.hideActionButton();
+      }
+    }
+  }
+
+  /**
+   * 액션 버튼 표시
+   */
+  private showActionButton(): void {
+    if (!this.actionButtonVisible) {
+      const actionButtonsDiv = document.getElementById("action-buttons");
+      if (actionButtonsDiv) {
+        // 올라가기와 돌아가기 버튼을 함께 표시
+        const actionButtonsHtml = sceneHtml.actionButtons.object;
+        actionButtonsDiv.innerHTML = actionButtonsHtml;
+
+        // 올라가기 버튼 클릭 이벤트 추가
+        const moveButton = document.getElementById("move-button");
+        if (moveButton) {
+          moveButton.addEventListener("click", () => this.handleMoveToFloatingObject());
+        }
+
+        // 돌아가기 버튼 클릭 이벤트 추가
+        const backButton = document.getElementById("back-button");
+        if (backButton) {
+          backButton.addEventListener("click", () => this.handleBackFromFloatingObject());
+        }
+
+        this.actionButtonVisible = true;
+        console.log("액션 버튼 표시됨 (올라가기/돌아가기)");
+      }
+    }
+  }
+
+  /**
+   * 액션 버튼 숨김
+   */
+  private hideActionButton(): void {
+    if (this.actionButtonVisible) {
+      const actionButtonsDiv = document.getElementById("action-buttons");
+      if (actionButtonsDiv) {
+        actionButtonsDiv.innerHTML = "";
+        this.actionButtonVisible = false;
+        console.log("액션 버튼 숨김됨");
+      }
+    }
+  }
+
+  /**
+   * 리셋 버튼 표시
+   */
+  private showResetButton(): void {
+    if (!this.resetButtonVisible) {
+      const resetButtonDiv = document.getElementById("reset-button");
+      if (resetButtonDiv) {
+        // sceneHtml.ts에 있는 actionButtons.reset의 html을 넣어줌
+        const resetButtonHtml = sceneHtml.actionButtons.reset;
+        resetButtonDiv.innerHTML = resetButtonHtml;
+
+        // 리셋 버튼 클릭 이벤트 추가
+        const resetPositionButton = document.getElementById("reset-position-button");
+        if (resetPositionButton) {
+          resetPositionButton.addEventListener("click", () => this.handleResetPosition());
+        }
+
+        this.resetButtonVisible = true;
+        console.log("리셋 버튼 표시됨");
+      }
+    }
+  }
+
+  /**
+   * 리셋 버튼 숨김
+   */
+  private hideResetButton(): void {
+    if (this.resetButtonVisible) {
+      const resetButtonDiv = document.getElementById("reset-button");
+      if (resetButtonDiv) {
+        resetButtonDiv.innerHTML = "";
+        this.resetButtonVisible = false;
+        console.log("리셋 버튼 숨김됨");
+      }
+    }
+  }
+
+  /**
+   * 리셋 위치로 이동 처리
+   */
+  private handleResetPosition(): void {
+    console.log("리셋 버튼 클릭됨 - 지정된 위치로 이동");
+
+    // 지정된 위치로 이동 (x: 104.56, y: 88.87, z: 139.81)
+    this.setPosition(104.56, 88.87, 139.81);
+
+    // 리셋 버튼 숨김
+    this.hideResetButton();
+
+    console.log("캐릭터가 리셋 위치로 이동했습니다.");
+  }
+
+  /**
+   * 공중 오브젝트로 이동 처리
+   */
+  private handleMoveToFloatingObject(): void {
+    if (this.currentFloatingObject) {
+      console.log(`공중 오브젝트로 이동: ${this.currentFloatingObject.name}`);
+
+      // 캐릭터를 공중 오브젝트 위로 이동
+      const targetY = this.currentFloatingObject.height + 5; // 오브젝트 높이 + 여유분
+      this.position.y = targetY;
+      this.velocity.y = 0;
+
+      // 버튼 숨김
+      this.hideActionButton();
+
+      console.log(`캐릭터가 ${this.currentFloatingObject.name} 위로 이동했습니다.`);
+    }
+  }
+
+  /**
+   * 공중 오브젝트에서 돌아가기 처리
+   */
+  private handleBackFromFloatingObject(): void {
+    console.log("공중 오브젝트에서 돌아가기 선택됨");
+
+    // 캐릭터 조작 잠금 해제
+    this.isControlLocked = false;
+
+    // 버튼 숨김
+    this.hideActionButton();
+
+    console.log("캐릭터 조작이 다시 활성화되었습니다.");
+  }
+
+  /**
+   * 키보드 입력으로 공중 오브젝트 이동 처리
+   */
+  public handleKeyPress(keys: any): void {
+    // M 키를 눌렀을 때 공중 오브젝트로 이동
+    if (keys["KeyM"] && this.isNearFloatingObject && this.currentFloatingObject) {
+      this.handleMoveToFloatingObject();
+    }
+
+    // B 키를 눌렀을 때 돌아가기
+    if (keys["KeyB"] && this.isNearFloatingObject && this.isControlLocked) {
+      this.handleBackFromFloatingObject();
+    }
   }
 
   /**
@@ -384,6 +758,9 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
       this.waterCloudModel.visible = true;
       console.log("✅ 구름 모델 표시 완료!");
     }
+
+    // 리셋 버튼 표시
+    this.showResetButton();
   }
 
   /**
@@ -404,6 +781,9 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     this.velocity.y = 0;
 
     console.log(`캐릭터 높이 복원: ${terrainHeight.toFixed(1)} (지형 기준)`);
+
+    // 리셋 버튼 숨김
+    this.hideResetButton();
   }
 
   /**
@@ -466,6 +846,22 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   }
 
   private handleHorizontalMovement(keys: any, deltaTime: number): void {
+    // 캐릭터 조작이 잠겨있으면 이동 처리 건너뛰기
+    if (this.isControlLocked) {
+      this.velocity.x *= this.velocityDamping;
+      this.velocity.z *= this.velocityDamping;
+      return;
+    }
+
+    // 채팅 입력 필드가 활성화되어 있으면 이동 처리 건너뛰기
+    const activeElement = document.activeElement;
+    const isChatInputActive = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
+    if (isChatInputActive) {
+      this.velocity.x *= this.velocityDamping;
+      this.velocity.z *= this.velocityDamping;
+      return;
+    }
+
     const moveVector = new THREE.Vector3(0, 0, 0);
 
     if (keys["KeyW"] || keys["ArrowUp"]) moveVector.z = -1;
@@ -481,6 +877,72 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
 
       const futureX = this.position.x + moveVector.x * this.moveSpeed * deltaTime;
       const futureZ = this.position.z + moveVector.z * this.moveSpeed * deltaTime;
+
+      // 공중 오브젝트와의 충돌 체크 (상호작용 감지와 동일한 방법 사용)
+      const futurePosition = new THREE.Vector3(futureX, this.position.y, futureZ);
+      const collisionCheck = this.checkFloatingObjectCollision(futurePosition);
+
+      if (collisionCheck.collision) {
+        // low_poly_triple_trees의 경우 더 강력한 충돌 차단
+        if (collisionCheck.object.name === "low_poly_triple_trees") {
+          console.log(`🌳 low_poly_triple_trees 충돌 감지 - 모든 방향 이동 차단됨`);
+          // triple_trees의 경우 모든 방향 이동을 강력하게 차단
+          this.velocity.x *= 0.05;
+          this.velocity.z *= 0.05;
+          return; // 이동 처리 완전 중단
+        } else {
+          // 다른 오브젝트들은 기존 로직 적용
+          const moveDirection = new THREE.Vector3(moveVector.x, 0, moveVector.z);
+          const dotProduct = moveDirection.dot(collisionCheck.direction);
+
+          // 충돌 방향으로의 이동만 차단 (양옆, 뒤로는 이동 가능)
+          if (dotProduct > 0.5) {
+            // 충돌 방향으로 45도 이내의 각도로 이동하려는 경우
+            console.log(`공중 오브젝트 충돌 감지: ${collisionCheck.object.name} - 충돌 방향 이동 차단됨`);
+            // 충돌 방향으로의 속도만 감소
+            const collisionDirectionX = collisionCheck.direction.x;
+            const collisionDirectionZ = collisionCheck.direction.z;
+
+            if (Math.abs(moveVector.x) > 0.1 && Math.sign(moveVector.x) === Math.sign(collisionDirectionX)) {
+              this.velocity.x *= 0.1;
+            }
+            if (Math.abs(moveVector.z) > 0.1 && Math.sign(moveVector.z) === Math.sign(collisionDirectionZ)) {
+              this.velocity.z *= 0.1;
+            }
+          }
+        }
+      }
+
+      // 현재 위치에서도 충돌 체크 (이미 충돌 중인 경우)
+      const currentCollisionCheck = this.checkFloatingObjectCollision(this.position);
+      if (currentCollisionCheck.collision) {
+        // low_poly_triple_trees의 경우 더 강력한 충돌 차단
+        if (currentCollisionCheck.object.name === "low_poly_triple_trees") {
+          console.log(`🌳 low_poly_triple_trees 내부 충돌 감지 - 모든 방향 이동 완전 차단됨`);
+          // triple_trees 내부에서는 모든 방향 이동을 완전히 차단
+          this.velocity.x *= 0.01;
+          this.velocity.z *= 0.01;
+          return; // 이동 처리 완전 중단
+        } else {
+          // 다른 오브젝트들은 기존 로직 적용
+          const moveDirection = new THREE.Vector3(moveVector.x, 0, moveVector.z);
+          const dotProduct = moveDirection.dot(currentCollisionCheck.direction);
+
+          if (dotProduct > 0.5) {
+            console.log(`공중 오브젝트 내부 충돌 감지: ${currentCollisionCheck.object.name} - 충돌 방향 이동 차단됨`);
+            // 충돌 방향으로의 속도만 더 강하게 감소
+            const collisionDirectionX = currentCollisionCheck.direction.x;
+            const collisionDirectionZ = currentCollisionCheck.direction.z;
+
+            if (Math.abs(moveVector.x) > 0.1 && Math.sign(moveVector.x) === Math.sign(collisionDirectionX)) {
+              this.velocity.x *= 0.05;
+            }
+            if (Math.abs(moveVector.z) > 0.1 && Math.sign(moveVector.z) === Math.sign(collisionDirectionZ)) {
+              this.velocity.z *= 0.05;
+            }
+          }
+        }
+      }
 
       // 물에서는 지형 충돌 검사 건너뛰기
       if (!this.isInWater) {
@@ -541,6 +1003,49 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
       this.airTime = 0;
       this.velocity.y = 0;
     } else {
+      // 공중 오브젝트와의 충돌 체크 (상호작용 감지와 동일한 방법 사용)
+      const collisionCheck = this.checkFloatingObjectCollision(this.position);
+      if (collisionCheck.collision) {
+        // low_poly_triple_trees의 경우 더 강력한 충돌 처리
+        if (collisionCheck.object.name === "low_poly_triple_trees") {
+          console.log(`🌳 low_poly_triple_trees 지형 충돌 감지 - 높이 고정 및 이동 제한`);
+          // triple_trees와 충돌 중이면 높이를 고정하고 모든 이동을 제한
+          this.groundContactTime += deltaTime;
+          this.airTime = 0;
+          this.isOnGround = true; // 지형으로 인식하여 추가 이동 방지
+
+          // 모든 방향 속도를 강력하게 감소
+          this.velocity.x *= 0.01;
+          this.velocity.z *= 0.01;
+          this.velocity.y = 0; // 수직 이동 완전 차단
+
+          // 현재 높이를 강제로 유지
+          const currentHeight = this.position.y;
+          this.position.y = currentHeight;
+
+          return;
+        } else {
+          // 다른 오브젝트들은 기존 로직 적용
+          // 공중 오브젝트와 충돌 중이면 위로 올라가는 것을 방지하고 현재 높이 유지
+          // isOnGround를 true로 설정하지 않아서 지형 적응 로직이 계속 작동하도록 함
+          this.groundContactTime += deltaTime;
+          this.airTime = 0;
+
+          // 위로 올라가는 것을 방지
+          if (this.velocity.y > 0) {
+            this.velocity.y *= 0.1;
+          }
+
+          // 현재 높이를 강제로 유지 (위로 올라가지 않도록)
+          const currentHeight = this.position.y;
+          if (this.velocity.y > 0) {
+            this.position.y = currentHeight;
+          }
+
+          return;
+        }
+      }
+
       // 일반적인 지형 적응
       const currentGroundHeight = this.terrainRaycaster.getTerrainHeight(this.position.x, this.position.z);
       const distanceToTarget = this.position.y - currentGroundHeight;
@@ -574,10 +1079,26 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   }
 
   private handleVerticalMovement(keys: any, deltaTime: number): void {
-    // 점프 처리 - 물에서는 점프 제한
+    // 캐릭터 조작이 잠겨있으면 점프 처리 건너뛰기
+    if (this.isControlLocked) {
+      return;
+    }
+
+    // 공중 오브젝트와의 충돌 체크
+    const collisionCheck = this.checkFloatingObjectCollision(this.position);
+    const isCollidingWithFloatingObject = collisionCheck.collision;
+
+    // 점프 처리 - 물이나 공중 오브젝트 충돌 시 점프 제한
     if (keys["Space"] && this.isOnGround && this.groundContactTime > 0.05) {
-      if (this.isInWater) {
-        return; // 물에서는 점프 불가
+      // 채팅 입력 필드가 활성화되어 있으면 점프 차단
+      const activeElement = document.activeElement;
+      const isChatInputActive = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
+      if (isChatInputActive) {
+        return; // 채팅 입력 중에는 점프 불가
+      }
+
+      if (this.isInWater || isCollidingWithFloatingObject) {
+        return; // 물이나 공중 오브젝트 충돌 시 점프 불가
       }
 
       this.velocity.y = this.jumpPower;
@@ -598,6 +1119,9 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   }
 
   private updateFinalPosition(deltaTime: number): void {
+    // 이전 위치 저장
+    const previousPosition = this.position.clone();
+
     if (this.isInWater) {
       // 물 속에서는 구름 중앙에서 부드럽게 떠있도록
       const waterSurfaceHeight = this.waterLevel; // 음수 값 그대로 사용
@@ -616,6 +1140,22 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
       // 물 속에서는 중력 효과 감소
       this.velocity.y *= 0.95;
     } else {
+      // 공중 오브젝트와의 충돌 체크 (상호작용 감지와 동일한 방법 사용)
+      const collisionCheck = this.checkFloatingObjectCollision(this.position);
+      if (collisionCheck.collision) {
+        // 공중 오브젝트와 충돌 중이면 위로 올라가는 것을 강력하게 방지
+        console.log(`공중 오브젝트 충돌 감지: ${collisionCheck.object.name} - 위로 올라가는 것 방지됨`);
+
+        // 위로 올라가는 것을 완전히 차단
+        if (this.velocity.y > 0) {
+          this.velocity.y = 0;
+        }
+
+        // 현재 높이를 강제로 유지
+        const currentHeight = this.position.y;
+        this.position.y = currentHeight;
+      }
+
       // 물 밖에서는 일반적인 중력 적용
       this.velocity.y -= this.gravity * deltaTime;
 
@@ -645,6 +1185,11 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     }
 
     this.checkBounds();
+
+    // 위치가 변경되었을 때만 콘솔에 출력
+    if (this.velocity.x !== 0 || this.velocity.z !== 0 || this.velocity.y !== 0) {
+      console.log(`캐릭터 위치: x=${this.position.x.toFixed(2)}, y=${this.position.y.toFixed(2)}, z=${this.position.z.toFixed(2)}`);
+    }
   }
 
   // 맵 경계 제한
@@ -653,7 +1198,7 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     let bounds;
 
     if (isDay) {
-      bounds = { minX: -300, maxX: 300, minZ: -280, maxZ: 280 };
+      bounds = { minX: -800, maxX: 800, minZ: -800, maxZ: 800 };
     } else {
       bounds = { minX: -3800, maxX: 3800, minZ: -3800, maxZ: 3800 };
     }
@@ -723,6 +1268,12 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   }
 
   public destroy(): void {
+    // 액션 버튼 정리
+    this.hideActionButton();
+
+    // 리셋 버튼 정리
+    this.hideResetButton();
+
     // 구름 모델 정리
     if (this.waterCloudModel) {
       this.scene.remove(this.waterCloudModel);
@@ -792,6 +1343,14 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
         x: this.lastMoveDirection.x.toFixed(2),
         z: this.lastMoveDirection.z.toFixed(2),
       },
+      // 공중 오브젝트 상호작용 정보 추가
+      isNearFloatingObject: this.isNearFloatingObject,
+      currentFloatingObject: this.currentFloatingObject?.name || "none",
+      actionButtonVisible: this.actionButtonVisible,
+      isControlLocked: this.isControlLocked,
+      floatingObjectsCount: this.floatingObjects.length,
+      // 리셋 버튼 정보 추가
+      resetButtonVisible: this.resetButtonVisible,
     };
   }
 }

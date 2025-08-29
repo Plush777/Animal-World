@@ -18,9 +18,11 @@ export const chatHtml: { [key: string]: any } = {
                         <form id="chat-form">
                             <input
                                 type="text"
-                                placeholder="메시지를 입력하세요."
+                                placeholder="Enter를 눌러 채팅을 시작해보세요."
                                 class="chat-input"
                                 id="chat-input"
+                                autocomplete="off"
+                                spellcheck="false"
                             />
                         </form>
                        

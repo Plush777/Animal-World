@@ -38,20 +38,44 @@ export const sceneHtml: { [key: string]: any } = {
             </div>
         </div>
 
+       
+
         <button type="button" class="setting-button only-icon-button">
             <span class="hidden">설정</span>
             ${svg.setting}
-            <span class="short-key has-border has-text">S</span>
+            <span class="short-key has-border has-text">F</span>
         </button>
 
         <div class="popup setting" role="dialog">
             <div class="popup-inner">
                 <header class="popup-header">
-                <h2 class="popup-header-title">설정</h2>
+                  <h2 class="popup-header-title">설정</h2>
 
-                <button type="button" class="popup-close">
-                    ${svg.popupClose}
-                </button>
+                  <button type="button" class="popup-close">
+                      ${svg.popupClose}
+                  </button>
+                </header>
+
+                <div class="popup-body">
+                    
+                </div>
+            </div>
+        </div>
+
+         <button type="button" class="ui-hide-button only-icon-button">
+            <span class="hidden">도움말</span>
+            ${svg.question}
+            <span class="short-key has-border has-text">Q</span>
+        </button>
+        
+        <div class="popup help" role="dialog">
+            <div class="popup-inner">
+                <header class="popup-header">
+                  <h2 class="popup-header-title">도움말</h2>
+
+                  <button type="button" class="popup-close">
+                      ${svg.popupClose}
+                  </button>
                 </header>
 
                 <div class="popup-body">
@@ -79,15 +103,15 @@ export const sceneHtml: { [key: string]: any } = {
       </div>
     </section>
     <section class="popup-section">
-      <h3 class="popup-section-title">Sound setting</h3>
+      <h3 class="popup-section-title">Scene setting</h3>
       <div class="popup-section-item-box">
+        
         <div class="popup-section-item">
-          <strong class="popup-section-item-title">배경음 음량</strong>
-          <input type="range" class="range-bar" />
-        </div>
-        <div class="popup-section-item">
-          <strong class="popup-section-item-title">효과음 음량</strong>
-          <input type="range" class="range-bar" />
+        <input type="checkbox" id="map-explore" />
+          <label for="map-explore" class="popup-section-item-title">
+            ${svg.check}
+            <span>맵 둘러보기</span>
+          </label>
         </div>
       </div>
     </section>
@@ -233,4 +257,23 @@ export const sceneHtml: { [key: string]: any } = {
 </div>
     
     `,
+
+  actionButtons: {
+    object: `
+      <button type="button" id="move-button" class="button button-sky button-size-lg has-short-key">
+        <span class="short-key has-border has-text"> M </span>
+        <span>올라가기</span>
+      </button>
+      <button type="button" id="back-button" class="button button-gray-no-border button-size-lg has-short-key">
+        <span class="short-key has-border has-text"> B </span>
+        <span>돌아가기</span>
+      </button>
+    `,
+    reset: `
+      <button type="button" id="reset-position-button">
+        ${svg.reset}
+        <span>리셋</span>
+      </button>
+    `,
+  },
 };

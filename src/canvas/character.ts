@@ -55,31 +55,6 @@ export class CharacterManager {
     console.log(`씬 경계 설정: X(${minX} ~ ${maxX}), Z(${minZ} ~ ${maxZ})`);
   }
 
-  // 씬 경계 체크
-  private checkSceneBounds(position: THREE.Vector3): THREE.Vector3 {
-    const clampedPosition = position.clone();
-
-    // X축 경계 체크
-    if (clampedPosition.x < this.sceneBounds.minX) {
-      clampedPosition.x = this.sceneBounds.minX;
-      console.log(`X축 경계 제한: ${position.x.toFixed(2)} -> ${clampedPosition.x.toFixed(2)}`);
-    } else if (clampedPosition.x > this.sceneBounds.maxX) {
-      clampedPosition.x = this.sceneBounds.maxX;
-      console.log(`X축 경계 제한: ${position.x.toFixed(2)} -> ${clampedPosition.x.toFixed(2)}`);
-    }
-
-    // Z축 경계 체크
-    if (clampedPosition.z < this.sceneBounds.minZ) {
-      clampedPosition.z = this.sceneBounds.minZ;
-      console.log(`Z축 경계 제한: ${position.z.toFixed(2)} -> ${clampedPosition.z.toFixed(2)}`);
-    } else if (clampedPosition.z > this.sceneBounds.maxZ) {
-      clampedPosition.z = this.sceneBounds.maxZ;
-      console.log(`Z축 경계 제한: ${position.z.toFixed(2)} -> ${clampedPosition.z.toFixed(2)}`);
-    }
-
-    return clampedPosition;
-  }
-
   // 모든 오브젝트 이름 출력 (디버깅용)
   public logAllObjectNames(): void {
     console.log("=== 모든 오브젝트 이름 출력 ===");
@@ -405,6 +380,13 @@ export class CharacterManager {
     const walkDirection = new Ammo.btVector3(0, 0, 0);
     const speed = 25; // deltaTime을 곱하지 말고 고정 속도 사용
 
+    // 채팅 입력 필드가 활성화되어 있으면 이동 처리 건너뛰기
+    const activeElement = document.activeElement;
+    const isChatInputActive = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
+    if (isChatInputActive) {
+      return;
+    }
+
     let isMoving = false;
 
     // 키 입력 처리
@@ -439,8 +421,13 @@ export class CharacterManager {
 
     // 점프 처리
     if (keys["Space"]) {
-      character.physicsController.jump();
-      console.log("점프!");
+      // 채팅 입력 필드가 활성화되어 있으면 점프 차단
+      const activeElement = document.activeElement;
+      const isChatInputActive = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
+      if (!isChatInputActive) {
+        character.physicsController.jump();
+        console.log("점프!");
+      }
     }
 
     // 물리 바디 위치 가져오기

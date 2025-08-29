@@ -357,6 +357,19 @@ function createLargerGroundPhysics(physicsWorld: any): void {
 
   // 키보드 이벤트 리스너 추가
   window.addEventListener("keydown", (e: KeyboardEvent) => {
+    // 채팅 입력 필드가 활성화되어 있는지 확인
+    const activeElement = document.activeElement;
+    const isChatInputActive = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
+
+    // 채팅 입력 필드가 활성화되어 있으면 캐릭터 조작 키는 무시
+    if (isChatInputActive) {
+      // 캐릭터 조작에 사용되는 키들을 명시적으로 차단
+      const blockedKeys = ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"];
+      if (blockedKeys.includes(e.code)) {
+        return; // 캐릭터 조작 키 무시
+      }
+    }
+
     keys[e.code] = true;
   });
   window.addEventListener("keyup", (e: KeyboardEvent) => {
@@ -488,6 +501,46 @@ function createLargerGroundPhysics(physicsWorld: any): void {
       console.log("캐릭터 정보:", info);
     } else {
       console.log("부드러운 캐릭터 컨트롤러가 초기화되지 않았습니다.");
+    }
+  };
+
+  (window as any).testFloatingObjectInteraction = () => {
+    if (smoothCharacterController) {
+      const adaptiveController = smoothCharacterController as any;
+      const info = adaptiveController.getDebugInfo ? adaptiveController.getDebugInfo() : {};
+      console.log("=== 공중 오브젝트 상호작용 테스트 ===");
+      console.log("공중 오브젝트 근처:", info.isNearFloatingObject);
+      console.log("현재 오브젝트:", info.currentFloatingObject);
+      console.log("액션 버튼 표시:", info.actionButtonVisible);
+      console.log("총 오브젝트 수:", info.floatingObjectsCount);
+      console.log("캐릭터 위치:", info.position);
+      console.log("================================");
+    } else {
+      console.log("캐릭터 컨트롤러가 없습니다.");
+    }
+  };
+
+  (window as any).testFloatingObjectCollision = () => {
+    if (smoothCharacterController) {
+      const adaptiveController = smoothCharacterController as any;
+      const pos = adaptiveController.getPosition();
+      console.log("=== 공중 오브젝트 충돌 테스트 ===");
+      console.log("캐릭터 위치:", pos);
+
+      // 각 공중 오브젝트와의 거리 계산
+      const floatingObjects = [
+        { name: "low_poly_floating_island", position: { x: -100, y: 90, z: 330 } },
+        { name: "low_poly_trees", position: { x: 320, y: 80, z: 0 } },
+        { name: "low_poly_triple_trees", position: { x: -400, y: 60, z: 100 } },
+      ];
+
+      floatingObjects.forEach((obj) => {
+        const distance = Math.sqrt(Math.pow(pos.x - obj.position.x, 2) + Math.pow(pos.z - obj.position.z, 2));
+        console.log(`${obj.name}과의 거리: ${distance.toFixed(2)}`);
+      });
+      console.log("================================");
+    } else {
+      console.log("캐릭터 컨트롤러가 없습니다.");
     }
   };
 

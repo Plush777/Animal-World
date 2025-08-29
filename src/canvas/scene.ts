@@ -71,7 +71,7 @@ export function createRenderer(): THREE.WebGLRenderer {
   renderer.shadowMap.autoUpdate = false;
 
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = isDayTime() ? 1.0 : 1.2;
+  renderer.toneMappingExposure = isDayTime() ? 1.2 : 1.4; // 원본 이미지의 밝은 느낌을 위해 노출 증가
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   return renderer;
@@ -317,6 +317,10 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
 
     if (floatingIsland) {
       addFloatingAnimation(floatingIsland, 8, 0.4, 0);
+      // 원본 이미지와 동일한 조명 및 색감 적용
+      adjustFloatingIslandLighting(floatingIsland);
+      // 전역 변수로 저장
+      (window as any).floatingIslandModel = floatingIsland;
     }
 
     const floatingTrees = await loadModel(
@@ -329,6 +333,8 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
 
     if (floatingTrees) {
       addFloatingAnimation(floatingTrees, 6, 0.6, Math.PI / 3);
+      // 전역 변수로 저장
+      (window as any).floatingTreesModel = floatingTrees;
     }
 
     const tripleTrees = await loadModel(
@@ -341,6 +347,8 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
 
     if (tripleTrees) {
       addFloatingAnimation(tripleTrees, 7, 0.4, Math.PI / 4);
+      // 전역 변수로 저장
+      (window as any).tripleTreesModel = tripleTrees;
     }
 
     const lighthouseModel = await loadModel(
@@ -609,6 +617,129 @@ function adjustNightSkySceneOpacity(nightSkyModel: THREE.Group): void {
       });
     }
   });
+}
+
+/**
+ * floating island 모델의 조명 및 색감을 원본 이미지와 동일하게 설정합니다.
+ * 원본 이미지의 특징: 밝은 흰색 배경, 선명한 색상, 부드러운 그림자
+ * @param floatingIsland floating island 모델 그룹
+ */
+function adjustFloatingIslandLighting(floatingIsland: THREE.Group): void {
+  floatingIsland.traverse((child) => {
+    if (child instanceof THREE.Mesh && child.material) {
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+      materials.forEach((mat) => {
+        // 잔디 재질 특별 처리 (원본 이미지의 밝은 녹색 잔디 재현)
+        // 더 구체적으로 잔디 부분만 감지하도록 제한
+        const isGrassMaterial =
+          child.name.toLowerCase().includes("grass") ||
+          child.name.toLowerCase().includes("grass_top") ||
+          child.name.toLowerCase().includes("surface_grass") ||
+          child.name.toLowerCase().includes("top_grass") ||
+          // 색상 기반 감지는 더 엄격하게
+          (mat.color &&
+            (mat.color.getHexString() === "4a7c59" || // 정확한 잔디색
+              mat.color.getHexString() === "7cb342" || // 정확한 밝은 잔디색
+              mat.color.getHexString() === "8bc34a")); // 정확한 연한 잔디색
+
+        // 디버깅: 모든 메시 정보 출력 (투명도 정보 포함)
+        console.log(
+          `🔍 메시 분석: ${child.name}, 색상: ${mat.color?.getHexString()}, 투명도: ${mat.transparent}, 불투명도: ${
+            mat.opacity
+          }, 잔디여부: ${isGrassMaterial}`
+        );
+
+        if (isGrassMaterial) {
+          // 잔디 재질의 밝고 선명한 녹색 설정 (원본 이미지의 밝은 잔디 재현)
+          if (mat.color) {
+            // 원본 이미지의 밝고 선명한 잔디 색상으로 설정
+            mat.color.setHex(0x8bc34a); // 원본 이미지의 밝은 녹색
+            mat.color.multiplyScalar(1.5); // 더 밝게
+
+            // 채도를 높여서 선명한 녹색으로
+            const hsl: { h: number; s: number; l: number } = { h: 0, s: 0, l: 0 };
+            mat.color.getHSL(hsl);
+            hsl.s = Math.min(hsl.s * 1.4, 1.0); // 채도 증가
+            hsl.l = Math.min(hsl.l * 1.3, 1.0); // 명도 증가
+            mat.color.setHSL(hsl.h, hsl.s, hsl.l);
+          }
+
+          // 잔디 특유의 재질 속성 설정
+          mat.roughness = 0.8; // 잔디는 거칠게
+          mat.metalness = 0.0; // 금속성 없음
+
+          // 잔디는 완전히 불투명하게 설정 (원본 이미지와 동일)
+          mat.transparent = false;
+          mat.opacity = 1.0;
+          mat.alphaTest = 0.0;
+          mat.depthWrite = true;
+          mat.depthTest = true;
+
+          console.log(`🌱 잔디 재질 처리: ${child.name}, 색상: ${mat.color?.getHexString()}, 투명도: ${mat.transparent}, 불투명도: ${mat.opacity}`);
+        } else {
+          // 일반 재질 처리 (원본 이미지의 밝고 선명한 색감)
+          if (mat.color) {
+            // 색상을 더 밝고 선명하게 조정
+            const originalColor = mat.color.clone();
+            originalColor.multiplyScalar(1.3); // 색상 밝기 증가
+
+            // 채도 증가를 위해 HSL로 변환 후 조정
+            const hsl: { h: number; s: number; l: number } = { h: 0, s: 0, l: 0 };
+            originalColor.getHSL(hsl);
+            hsl.s = Math.min(hsl.s * 1.2, 1.0); // 채도 증가
+            hsl.l = Math.min(hsl.l * 1.1, 1.0); // 명도 증가
+            mat.color.setHSL(hsl.h, hsl.s, hsl.l);
+          }
+
+          // 원본 이미지의 부드러운 그림자를 위해 재질 속성 조정
+          if (mat.roughness !== undefined) {
+            mat.roughness = 0.6; // 적당한 거칠기로 부드러운 반사
+          }
+          if (mat.metalness !== undefined) {
+            mat.metalness = 0.0; // 금속성 제거로 자연스러운 느낌
+          }
+
+          // 일반 재질도 투명도 설정 명시
+          mat.transparent = false;
+          mat.opacity = 1.0;
+          mat.depthWrite = true;
+          mat.depthTest = true;
+        }
+
+        // 그림자 설정 최적화
+        child.castShadow = true;
+        child.receiveShadow = true;
+
+        // 재질 업데이트
+        mat.needsUpdate = true;
+      });
+    }
+  });
+
+  // floating island 전용 조명 추가 (원본 이미지의 밝은 조명 재현)
+  const islandAmbientLight = new THREE.AmbientLight(0xffffff, 0.4);
+  islandAmbientLight.position.set(-100, 90, 330);
+  floatingIsland.add(islandAmbientLight);
+
+  // 부드러운 그림자를 위한 추가 조명
+  const islandFillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+  islandFillLight.position.set(-80, 120, 300);
+  islandFillLight.castShadow = true;
+  islandFillLight.shadow.mapSize.width = 1024;
+  islandFillLight.shadow.mapSize.height = 1024;
+  islandFillLight.shadow.camera.near = 0.1;
+  islandFillLight.shadow.camera.far = 1000;
+  islandFillLight.shadow.camera.left = -50;
+  islandFillLight.shadow.camera.right = 50;
+  islandFillLight.shadow.camera.top = 50;
+  islandFillLight.shadow.camera.bottom = -50;
+  islandFillLight.shadow.bias = -0.0001;
+  islandFillLight.shadow.normalBias = 0.002;
+  islandFillLight.shadow.radius = 0.5;
+  floatingIsland.add(islandFillLight);
+
+  console.log("✅ Floating Island 조명 및 색감이 원본 이미지와 동일하게 설정되었습니다.");
 }
 
 function controlLighthouseLight(lighthouseModel: THREE.Group, isDay: boolean): void {

@@ -99,6 +99,11 @@ class ChatSystem {
       if (target.closest(".chat-leave-button")) {
         this.leaveRoom();
       }
+
+      // chat-enter-button 클릭 이벤트 처리
+      if (target.closest(".chat-enter-button")) {
+        this.sendMessage();
+      }
     });
 
     if (this.ui.form) {
