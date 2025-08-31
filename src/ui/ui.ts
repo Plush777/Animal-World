@@ -28,6 +28,7 @@ function initAllUIModules(): void {
     app.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
       const closeButton = document.querySelector(".chat-close-button") as HTMLElement;
+      const emojiButton = document.querySelector(".chat-emoji-button") as HTMLElement;
 
       e.stopPropagation();
 
@@ -35,6 +36,13 @@ function initAllUIModules(): void {
       if (chatWrapper && target === closeButton) {
         console.log(target);
         chatWrapper.classList.toggle("active");
+      }
+
+      const emojiWrapper = document.querySelector(".chat-emoji-wrapper") as HTMLElement;
+
+      if (emojiWrapper && target === emojiButton) {
+        emojiWrapper.classList.toggle("active");
+        emojiButton.setAttribute("aria-expanded", emojiWrapper.classList.contains("active") ? "true" : "false");
       }
     });
   }

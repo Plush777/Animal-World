@@ -11,6 +11,7 @@
   font-size: 12px;
   font-weight: 500;
   text-transform: uppercase;
+  pointer-events: none;
 }
 
 .has-short-key {

@@ -62,7 +62,7 @@ export const sceneHtml: { [key: string]: any } = {
             </div>
         </div>
 
-         <button type="button" class="ui-hide-button only-icon-button">
+         <button type="button" class="help-button ui-hide-button only-icon-button">
             <span class="hidden">도움말</span>
             ${svg.question}
             <span class="short-key has-border has-text">Q</span>
@@ -107,7 +107,7 @@ export const sceneHtml: { [key: string]: any } = {
       <div class="popup-section-item-box">
         
         <div class="popup-section-item">
-        <input type="checkbox" id="map-explore" />
+          <input type="checkbox" id="map-explore" />
           <label for="map-explore" class="popup-section-item-title">
             ${svg.check}
             <span>맵 둘러보기</span>
@@ -116,19 +116,121 @@ export const sceneHtml: { [key: string]: any } = {
       </div>
     </section>
     <section class="popup-section">
-      <h3 class="popup-section-title">Sound setting</h3>
+      <h3 class="popup-section-title">Common setting</h3>
       <div class="popup-section-item-box">
         <div class="popup-section-item">
-          <strong class="popup-section-item-title">배경음 음량</strong>
-          <input type="range" class="range-bar" />
-        </div>
-        <div class="popup-section-item">
-          <strong class="popup-section-item-title">효과음 음량</strong>
-          <input type="range" class="range-bar" />
+          <input type="checkbox" id="short-key-disable" />
+          <label for="short-key-disable" class="popup-section-item-title">
+            ${svg.check}
+            <span>단축키 비활성화</span>
+          </label>
         </div>
       </div>
     </section>
     
+    `,
+
+  help: `
+      <section class="popup-section">
+        <div class="help-group-box">
+          <div class="help-group">
+            <strong class="help-group-text">UI 숨기기</strong>
+            <span class="short-key has-border has-text"> H </span>
+          </div>
+          <p class="help-group-description">상단 메뉴, 채팅창 등 화면에 표시되는 요소를 숨길 수 있어요.</p>
+        </div>
+      </section>
+
+      <section class="popup-section">
+        <div class="help-group-box">
+          <div class="help-group">
+            <strong class="help-group-text">이모지</strong>
+            <span class="short-key has-border has-text"> E </span>
+            <span class="short-key has-border has-text"> 1 ~ 6</span>
+          </div>
+          <p class="help-group-description">상대방에게 보낼 이모지를 선택할 수 있어요.</p>
+        </div>
+      </section>
+
+      <section class="popup-section">
+        <div class="help-group-box">
+          <div class="help-group">
+            <strong class="help-group-text">맵 둘러보기</strong>
+            <span class="short-key has-border has-text"> M </span>
+          </div>
+          <p class="help-group-description">해당 설정을 켜면 카메라가 활성화 되어 드래그를 통해 맵을 둘러볼 수 있어요. (단, 캐릭터 조작 및 채팅 등의 기능은 비활성화 됩니다.)</p>
+        </div>
+      </section>
+
+      <section class="popup-section">
+        <div class="help-group-box">
+          <div class="help-group">
+            <strong class="help-group-text">월드 나가기</strong>
+            <span class="short-key has-border has-text"> L </span>
+          </div>
+          <p class="help-group-description">접속해있는 월드를 나갈 수 있어요.</p>
+        </div>
+      </section>
+
+      <section class="popup-section">
+        <div class="help-group-box">
+          <div class="help-group">
+            <strong class="help-group-text">랭킹</strong>
+            <span class="short-key has-border has-text"> R </span>
+          </div>
+          <p class="help-group-description">해당 단축키로 랭킹 팝업을 열 수 있어요.</p>
+        </div>
+      </section>
+
+      <section class="popup-section">
+        <div class="help-group-box">
+          <div class="help-group">
+            <strong class="help-group-text">유저 목록</strong>
+            <span class="short-key has-border has-text"> U </span>
+          </div>
+          <p class="help-group-description">해당 단축키로 유저 목록 팝업을 열 수 있어요.</p>
+        </div>
+      </section>
+
+      <section class="popup-section">
+        <div class="help-group-box">
+          <div class="help-group">
+            <strong class="help-group-text">설정</strong>
+            <span class="short-key has-border has-text"> F </span>
+          </div>
+          <p class="help-group-description">해당 단축키로 설정 팝업을 열 수 있어요.</p>
+        </div>
+      </section>
+
+      <section class="popup-section">
+        <div class="help-group-box">
+          <div class="help-group">
+            <strong class="help-group-text">도움말</strong>
+            <span class="short-key has-border has-text"> Q </span>
+          </div>
+          <p class="help-group-description">해당 단축키로 도움말 팝업을 열 수 있어요.</p>
+        </div>
+      </section>
+
+      <section class="popup-section">
+        <div class="help-group-box">
+          <div class="help-group">
+            <strong class="help-group-text">채팅 입력 및 전송 (PC 한정)</strong>
+            <span class="short-key has-border has-text"> Enter </span>
+          </div>
+          <p class="help-group-description">해당 단축키로 채팅을 입력하고 전송할 수 있어요.</p>
+        </div>
+      </section>
+
+      <section class="popup-section">
+        <div class="help-group-box">
+          <div class="help-group">
+            <strong class="help-group-text">채팅창 열기 및 닫기</strong>
+            <span class="short-key has-border has-text"> C </span>
+          </div>
+          <p class="help-group-description">해당 단축키로 채팅창을 열고 닫을 수 있어요.</p>
+        </div>
+      </section>
     `,
 
   characterSetting: `

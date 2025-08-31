@@ -1,5 +1,6 @@
 :root {
   --white: #ffffff;
+  --white-900: #ffffffe6;
   --black: #000000;
 
   --red-50: oklch(0.971 0.013 17.38);
@@ -269,6 +270,7 @@
 
 [data-theme="light"] {
   --body: var(--white);
+  --white-900: #ffffffe6;
 
   --theme-element1: var(--black);
   --theme-element2: var(--white);
@@ -282,6 +284,7 @@
 
 [data-theme="dark"] {
   --body: #121212;
+  --white-900: #ffffffe6;
 
   --theme-element1: var(--white);
   --theme-element2: var(--black);

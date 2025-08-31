@@ -36,4 +36,8 @@
   .header-right button:hover {
     background-color: var(--gray-100);
   }
+
+  .chat-emoji-list-button:hover {
+    transform: scale(1.1);
+  }
 }

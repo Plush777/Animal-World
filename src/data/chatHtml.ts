@@ -3,6 +3,34 @@ import { svg } from "./svg";
 export const chatHtml: { [key: string]: any } = {
   chat: `
         <div class="chat-wrapper active ui-element">
+            <div class="chat-emoji-wrapper">
+                <button type="button" class="chat-emoji-button" aria-expanded="false">
+                    ${svg.emoji}
+                </button>
+
+                <div class="chat-emoji-list" id="chat-emoji-list">
+                   <button type="button" class="chat-emoji-list-button">
+                   👍
+                   </button>
+                   <button type="button" class="chat-emoji-list-button">
+                   👏
+                   </button>
+                   <button type="button" class="chat-emoji-list-button">
+                   ❤️
+                   </button>
+                   <button type="button" class="chat-emoji-list-button">
+                   👋
+                   </button>
+                    <button type="button" class="chat-emoji-list-button">
+                   😆
+                   </button>
+                   <button type="button" class="chat-emoji-list-button">
+                   😢
+                   </button>
+                </div>
+            </div>
+            <span class="short-key has-border has-text">E</span>
+
             <div class="chat-inner">
                 <header class="chat-header">
                     <div class="chat-button-group">

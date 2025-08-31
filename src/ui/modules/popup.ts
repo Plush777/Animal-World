@@ -15,6 +15,7 @@ let userListLoadTimeout: NodeJS.Timeout | null = null;
 // 가상 스크롤 인스턴스들
 let userListVirtualScroll: PopupVirtualScroll | null = null;
 let settingVirtualScroll: PopupVirtualScroll | null = null;
+let helpVirtualScroll: PopupVirtualScroll | null = null;
 
 // 스크롤바 thumb 가시성 감지 및 클래스 관리 함수
 function setupScrollbarThumbVisibilityObserver(thumbClass: string): void {
@@ -141,6 +142,47 @@ function setupUserListPopup(): void {
   }
 }
 
+function setupHelpPopup(): void {
+  const app = document.querySelector("#app") as HTMLElement;
+
+  if (app) {
+    app.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+
+      if (target.classList.contains("help-button")) {
+        const helpButton = document.querySelector(".help-button") as HTMLElement;
+        helpButton.classList.toggle("active");
+
+        // 팝업이 열릴 때 가상 스크롤 초기화
+        if (helpButton.classList.contains("active")) {
+          initializeHelpVirtualScroll();
+          // 스크롤 위치 초기화
+          if (helpVirtualScroll) {
+            helpVirtualScroll.resetScroll();
+          }
+        } else {
+          // 팝업이 닫힐 때 가상 스크롤 정리
+          if (helpVirtualScroll) {
+            helpVirtualScroll.destroy();
+            helpVirtualScroll = null;
+          }
+        }
+      }
+
+      const helpButton = document.querySelector(".help-button") as HTMLElement;
+
+      if (helpButton?.classList.contains("active") && target !== helpButton && !target.closest(".popup.help")) {
+        helpButton?.classList.remove("active");
+        // 팝업이 닫힐 때 가상 스크롤 정리
+        if (helpVirtualScroll) {
+          helpVirtualScroll.destroy();
+          helpVirtualScroll = null;
+        }
+      }
+    });
+  }
+}
+
 // 유저 목록 팝업 가상 스크롤 초기화
 function initializeUserListVirtualScroll(): void {
   const popupBody = document.querySelector(".popup.user-list .popup-body") as HTMLElement;
@@ -224,6 +266,48 @@ function initializeSettingVirtualScroll(): void {
   addSettingItems();
 }
 
+function initializeHelpVirtualScroll(): void {
+  const popupBody = document.querySelector(".popup.help .popup-body") as HTMLElement;
+
+  if (!popupBody) {
+    console.error("설정 팝업 요소를 찾을 수 없습니다.");
+    return;
+  }
+
+  // 기존 가상 스크롤이 있다면 정리
+  if (helpVirtualScroll) {
+    helpVirtualScroll.destroy();
+  }
+
+  // 팝업 바디 스타일 설정 (chat div와 동일한 방식)
+  popupBody.style.position = "relative";
+  popupBody.style.overflow = "hidden";
+  popupBody.style.height = "300px"; // 설정팝업 높이 조정
+
+  // 팝업 바디에 가상 스크롤 적용
+  helpVirtualScroll = new PopupVirtualScroll(popupBody, {
+    itemHeight: 30, // 각 섹션 간격 (top 값 간격과 동일)
+    scrollbarWidth: 6,
+    scrollbarColor: "#666",
+    scrollbarTrackColor: "rgba(0,0,0,0.1)",
+    scrollbarThumbColor: "#999",
+    scrollbarRadius: 3,
+    enableTouchScroll: true,
+    touchSensitivity: 1.2,
+    maxScrollSpeed: 30,
+    scrollMargin: 4,
+    containerClass: "help-virtual-scroll-container",
+    scrollbarClass: "help-virtual-scrollbar",
+    scrollbarThumbClass: "help-virtual-scrollbar-thumb",
+  });
+
+  // 스크롤바 thumb 가시성 감지 설정
+  setupScrollbarThumbVisibilityObserver("help-virtual-scrollbar-thumb");
+
+  // 설정 아이템들을 가상 스크롤에 추가
+  addHelpItems();
+}
+
 // 설정 아이템들을 가상 스크롤에 추가
 function addSettingItems(): void {
   if (!settingVirtualScroll) return;
@@ -267,6 +351,51 @@ function addSettingItems(): void {
 
     // 스크롤바 업데이트
     (settingVirtualScroll as any).updateScrollbarThumb();
+  }
+}
+
+function addHelpItems(): void {
+  if (!helpVirtualScroll) return;
+
+  // 기존 아이템들 제거
+  helpVirtualScroll.clearItems();
+
+  // 사운드 설정 섹션 HTML (chat div처럼 각 섹션을 개별적으로 처리)
+  const soundSectionHTML = sceneHtml.help;
+
+  // 임시 컨테이너를 생성하여 HTML을 파싱
+  const tempContainer = document.createElement("div");
+  tempContainer.innerHTML = soundSectionHTML;
+
+  // 각 섹션을 개별적으로 가상 스크롤에 추가 (chat div와 동일한 방식)
+  const sections = tempContainer.querySelectorAll(".popup-section");
+  sections.forEach((section, index) => {
+    const sectionElement = section as HTMLElement;
+    if (helpVirtualScroll) {
+      helpVirtualScroll.addItem(sectionElement);
+      // 각 섹션의 top 값을 개별적으로 설정 (0, 30, 60...)
+      sectionElement.style.top = `${index * 30}px`;
+    }
+  });
+
+  // 가상스크롤의 totalHeight를 수동으로 조정 (실제 섹션 높이 + 간격 고려)
+  if (helpVirtualScroll) {
+    const actualSectionHeight = 105; // 실제 섹션 높이 (예상값)
+    const sectionGap = 30; // 섹션 간 간격
+    const totalSections = sections.length;
+    const totalHeight = actualSectionHeight * totalSections + sectionGap * (totalSections - 1);
+
+    // 가상스크롤의 totalHeight를 수동으로 설정
+    (helpVirtualScroll as any).totalHeight = totalHeight;
+
+    // 스크롤 컨테이너 높이 업데이트
+    const scrollContainer = document.querySelector(".help-virtual-scroll-container") as HTMLElement;
+    if (scrollContainer) {
+      scrollContainer.style.height = `${totalHeight + 4}px`; // scrollMargin 추가
+    }
+
+    // 스크롤바 업데이트
+    (helpVirtualScroll as any).updateScrollbarThumb();
   }
 }
 
@@ -536,6 +665,7 @@ function restoreSelectedCharacter(): void {
 function initPopupModule(): void {
   setupSettingPopup();
   setupUserListPopup();
+  setupHelpPopup();
   setupPopupClose();
   setupCharacterSelection();
   setupRealTimeUserListUpdates();
