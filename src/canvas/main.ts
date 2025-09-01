@@ -12,6 +12,7 @@ import {
 } from "./scene";
 
 import { createAnimationLoop } from "./animation";
+
 import { CharacterManager, CharacterLoader } from "./character";
 import { CharacterStorage } from "./characterStorage";
 import { joinButtonManager } from "../ui/modules/joinButton";
