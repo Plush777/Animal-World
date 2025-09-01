@@ -9,7 +9,12 @@
   backdrop-filter: blur(10px);
 }
 
+.chat-wrapper.active .chat-inner {
+  display: block;
+}
+
 .chat-inner {
+  display: none;
   padding: 12px;
 }
 
@@ -71,6 +76,7 @@
 }
 
 .chat-close-button {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -378,15 +384,20 @@ input[type="checkbox"] + label {
 
 .chat-emoji-wrapper {
   position: absolute;
-  top: -50px;
+  top: -85px;
   left: 0;
   display: flex;
   align-items: center;
   width: 40px;
   border-radius: 9999px;
   transition: 0.5s ease-in-out;
+  transition-property: width;
   background-color: var(--white-900);
   overflow: hidden;
+}
+
+.chat-emoji-wrapper + .short-key {
+  top: -58px;
 }
 
 .chat-emoji-wrapper.active {
@@ -400,6 +411,11 @@ input[type="checkbox"] + label {
   pointer-events: auto;
 }
 
+.chat-emoji-button,
+.chat-open-button {
+  position: relative;
+}
+
 .chat-emoji-button {
   display: flex;
   align-items: center;
@@ -411,9 +427,14 @@ input[type="checkbox"] + label {
 .chat-emoji-wrapper + .short-key {
   display: flex;
   transform: none;
-  top: -23px;
+  top: -59px;
   z-index: 10;
   left: 30px;
+  transition: 0s;
+}
+
+.chat-wrapper.active .chat-emoji-wrapper + .short-key {
+  top: -23px;
 }
 
 .chat-emoji-wrapper.active + .short-key {
@@ -480,39 +501,93 @@ input[type="checkbox"] + label {
   word-break: keep-all;
 }
 
-input[type="checkbox"] + label svg {
+.chat-wrapper.active .chat-open-button-area {
   display: none;
+}
+
+.chat-wrapper.active .chat-open-button-area + .short-key {
+  display: none;
+}
+
+.chat-wrapper.active .chat-emoji-wrapper {
+  top: -49px;
+}
+
+.chat-open-button-area {
+  display: flex;
   position: absolute;
-  top: 50%;
+  top: -32px;
   left: 0;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--yellow-400);
-  width: 18px;
-  height: 18px;
 }
 
-input[type="checkbox"] + label svg path {
-  stroke-width: 5px;
+.chat-open-button-area + .short-key {
+  top: 4px;
+  left: 30px;
 }
 
-input[type="checkbox"] + label span {
-  padding-left: 20px;
+.chat-open-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background-color: var(--white-900);
 }
 
-input[type="checkbox"]:checked + label svg {
-  display: block;
+.chat-open-button svg {
+  width: 26px;
+  height: 26px;
 }
 
-input[type="checkbox"] + label::before {
-  content: "";
-  position: absolute;
+.world-header-box .tooltip {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -39px;
+}
+
+.chat-close-button .tooltip {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -37px;
+  z-index: 20;
+}
+
+.world-header-box .short-key ~ .tooltip {
+  bottom: -70px;
+}
+
+.chat-emoji-button .tooltip {
+  position: fixed;
+  bottom: 50px;
+  left: 55px;
+}
+
+.chat-open-button .tooltip {
   top: 50%;
-  left: 0;
   transform: translateY(-50%);
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  border: 1px solid var(--gray-400);
-  background-color: var(--white);
+  left: 55px;
+}
+
+.chat-wrapper.active .chat-emoji-button .tooltip {
+  top: 0;
+  left: auto;
+}
+
+[data-short-key="true"] .chat-emoji-wrapper .tooltip,
+[data-short-key="true"] .chat-open-button-area .tooltip {
+  left: 48px;
+}
+
+[data-short-key="true"] .short-key,
+[data-short-key="true"] .short-key + .short-key {
+  display: none;
+}
+
+[data-short-key="true"] .world-header-box .short-key ~ .tooltip {
+  bottom: -40px;
+}
+
+[data-short-key="true"] #join-button .short-key {
+  display: none;
 }

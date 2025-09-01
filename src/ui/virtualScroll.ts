@@ -75,7 +75,7 @@ export class VirtualScroll {
     this.enableTouchScroll = options.enableTouchScroll ?? true;
     this.touchSensitivity = options.touchSensitivity || 1;
     this.maxScrollSpeed = options.maxScrollSpeed || 50;
-    this.scrollMargin = options.scrollMargin || 8;
+    this.scrollMargin = options.scrollMargin || 28; // 팝업 패딩 12px + 추가 여백 4px
 
     this.init();
   }
@@ -539,6 +539,7 @@ export class ChatVirtualScroll extends VirtualScroll {
       smoothScroll: true,
       scrollDuration: 250,
       showScrollbar: true, // 채팅 메시지용 가상 스크롤도 스크롤바 표시
+      scrollMargin: 4,
       ...options, // 추가 옵션 허용
     });
   }
@@ -639,7 +640,7 @@ export class PopupVirtualScroll extends VirtualScroll {
       enableTouchScroll: true,
       touchSensitivity: 1.2,
       maxScrollSpeed: 30,
-      scrollMargin: 4,
+      scrollMargin: 28, // 팝업 패딩 12px + 추가 여백 4px
       ...options,
     });
   }

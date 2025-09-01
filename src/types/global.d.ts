@@ -12,6 +12,8 @@ interface LoadingUIInterface {
 declare global {
   interface Window {
     LoadingUI: LoadingUIInterface;
+    globalControls: any; // OrbitControls 인스턴스
+    globalCamera: any; // THREE.PerspectiveCamera 인스턴스
   }
 }
 

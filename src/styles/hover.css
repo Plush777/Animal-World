@@ -40,4 +40,24 @@
   .chat-emoji-list-button:hover {
     transform: scale(1.1);
   }
+
+  .world-header-box button:not(.active):hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .chat-close-button:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .chat-emoji-wrapper:not(.active) .chat-emoji-button:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .chat-open-button:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+  }
 }

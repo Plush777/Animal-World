@@ -16,14 +16,7 @@ import { CharacterManager, CharacterLoader } from "./character";
 import { CharacterStorage } from "./characterStorage";
 import { joinButtonManager } from "../ui/modules/joinButton";
 import { getCharacterSettings, createVector3FromSettings, createScaleFromSettings } from "../data/characterInfo";
-import {
-  initializeAmmo,
-  initPhysicsWorld,
-  createTriangleMeshShape,
-  createStaticRigidBody,
-  createBoxShapeFromGeometry,
-  analyzeTerrainAroundCharacter,
-} from "./physicsEngine";
+import { initializeAmmo, initPhysicsWorld, analyzeTerrainAroundCharacter } from "./physicsEngine";
 
 import { TerrainRaycaster } from "./terrainRaycaster";
 import { TerrainAdaptiveCharacterController, SmoothCharacterController } from "./smoothCharacterController";
@@ -90,125 +83,6 @@ let smoothCharacterController: SmoothCharacterController | null = null;
   console.log("캔버스 정리 완료");
 };
 
-// 물리 바디를 씬에 추가하는 함수 (현재 사용하지 않음 - 호환성을 위해 유지)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function addPhysicsBodiesToScene(scene: THREE.Scene, physicsWorld: any): void {
-  let addedCount = 0;
-
-  // 모든 메시를 순회하면서 지면이 될 수 있는 메시들을 찾음
-  scene.traverse((child: THREE.Object3D) => {
-    if ((child as THREE.Mesh).isMesh) {
-      const mesh = child as THREE.Mesh;
-
-      // forest 모델의 모든 지면 메시를 감지하도록 개선
-      let isGroundMesh = false;
-
-      // 먼저 이름으로 판단 (더 넓은 패턴)
-      if (
-        mesh.name.toLowerCase().includes("ground") ||
-        mesh.name.toLowerCase().includes("floor") ||
-        mesh.name.toLowerCase().includes("terrain") ||
-        mesh.name.toLowerCase().includes("base") ||
-        mesh.name.toLowerCase().includes("forest") ||
-        mesh.name.toLowerCase().includes("land") ||
-        mesh.name.toLowerCase().includes("plane") ||
-        mesh.name.toLowerCase().includes("island") ||
-        mesh.name.toLowerCase().includes("mesh")
-      ) {
-        isGroundMesh = true;
-      }
-
-      // forest 모델 근처의 모든 메시를 지면으로 간주 (더 넓은 범위와 더 정확한 탐지)
-      const forestCenter = new THREE.Vector3(70, 0, 100);
-      const meshWorldPosition = new THREE.Vector3();
-      mesh.getWorldPosition(meshWorldPosition);
-
-      if (meshWorldPosition.distanceTo(forestCenter) < 300) {
-        // 바운딩 박스 계산
-        if (!mesh.geometry.boundingBox) {
-          mesh.geometry.computeBoundingBox();
-        }
-
-        if (mesh.geometry.boundingBox) {
-          const size = new THREE.Vector3();
-          mesh.geometry.boundingBox.getSize(size);
-
-          // 지면 특성을 가진 메시 탐지 (더 정교한 조건)
-          const hasGroundLikeSize = size.x > 0.5 && size.z > 0.5; // 최소 크기
-          const isReasonableHeight = meshWorldPosition.y < 50 && meshWorldPosition.y > -20; // 적정 높이
-          const hasGroundRatio = (size.x * size.z) / size.y > 2; // 가로세로가 높이보다 훨씬 큰 경우
-
-          if (hasGroundLikeSize && isReasonableHeight && hasGroundRatio) {
-            isGroundMesh = true;
-            console.log(
-              `지형 메시 발견 (거리 기반): ${mesh.name}, 위치: ${meshWorldPosition.x.toFixed(1)}, ${meshWorldPosition.y.toFixed(
-                1
-              )}, ${meshWorldPosition.z.toFixed(1)}, 크기: ${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)}`
-            );
-          }
-        }
-      }
-
-      if (isGroundMesh && mesh.geometry) {
-        console.log(
-          `지면 메시 발견: ${mesh.name || "unnamed"} (위치: ${mesh.position.x.toFixed(2)}, ${mesh.position.y.toFixed(2)}, ${mesh.position.z.toFixed(
-            2
-          )})`
-        );
-
-        // geometry 정보 확인
-        mesh.geometry.computeBoundingBox();
-        const size = new THREE.Vector3();
-        if (mesh.geometry.boundingBox) {
-          mesh.geometry.boundingBox.getSize(size);
-          console.log(`  크기: ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}`);
-        }
-
-        // 물리 바디 생성 - 박스 모양 우선 사용 (안정성 향상)
-        const boxShape = createBoxShapeFromGeometry(mesh.geometry);
-        if (boxShape) {
-          createStaticRigidBody(mesh, boxShape, physicsWorld);
-          console.log(`  박스 물리 바디 추가 성공`);
-          addedCount++;
-        } else {
-          // 박스 실패 시에만 Triangle mesh 시도
-          const shape = createTriangleMeshShape(mesh.geometry);
-          if (shape) {
-            createStaticRigidBody(mesh, shape, physicsWorld);
-            console.log(`  트라이앵글 메시 물리 바디 추가 성공`);
-            addedCount++;
-          }
-        }
-      }
-    }
-  });
-
-  console.log(`총 ${addedCount}개의 지면 물리 바디가 추가되었습니다.`);
-
-  // 항상 기본 지면 생성 (안전장치)
-  console.log("=== 기본 지면 생성 시작 ===");
-  createManualGroundPhysics(physicsWorld);
-  createLargerGroundPhysics(physicsWorld);
-
-  // 물리 월드 상태 확인
-  if (physicsWorld) {
-    console.log("=== 물리 월드 상태 확인 ===");
-    try {
-      // 중력 확인
-      const gravity = physicsWorld.getGravity();
-      if (gravity) {
-        console.log(`중력 설정: (${gravity.x()}, ${gravity.y()}, ${gravity.z()})`);
-      } else {
-        console.log("중력 설정: 확인 불가");
-      }
-      console.log("물리 월드 초기화 완료");
-    } catch (error) {
-      console.warn("물리 월드 상태 확인 중 오류:", error);
-    }
-    console.log("=========================");
-  }
-}
-
 // 수동 지면 물리 바디 생성 함수
 // 수동 지면 물리 바디 생성 함수 (개선된 버전)
 function createManualGroundPhysics(physicsWorld: any): void {
@@ -250,44 +124,6 @@ function createManualGroundPhysics(physicsWorld: any): void {
     // 충돌 그룹: 기본 그룹으로 설정하여 확실한 충돌 보장
     physicsWorld.addRigidBody(groundBody);
     console.log(`${config.name} 생성 완료 - 위치: (${config.x}, ${config.y}, ${config.z}), 크기: ${config.sizeX}x${config.sizeY}x${config.sizeZ}`);
-  });
-}
-
-// low_poly_game_forest.glb의 모든 메시에 대해 물리 바디 생성
-function createLargerGroundPhysics(physicsWorld: any): void {
-  const Ammo = window.Ammo;
-  if (!Ammo) return;
-
-  const positions = [
-    { x: 0, y: -5, z: 0 }, // 중앙 (y 위치 조정)
-    { x: 70, y: 140, z: 100 }, // forest 위치 - 220 높이로 조정
-    { x: -100, y: -5, z: 0 }, // 서쪽
-    { x: 200, y: -5, z: 0 }, // 동쪽
-    { x: 0, y: -5, z: -100 }, // 북쪽
-    { x: 0, y: -5, z: 200 }, // 남쪽
-  ];
-
-  positions.forEach((pos, index) => {
-    const halfExtents = new Ammo.btVector3(150, 10, 150); // 높이 증가
-    const groundShape = new Ammo.btBoxShape(halfExtents);
-
-    const transform = new Ammo.btTransform();
-    transform.setIdentity();
-    transform.setOrigin(new Ammo.btVector3(pos.x, pos.y, pos.z));
-
-    const motionState = new Ammo.btDefaultMotionState(transform);
-    const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, groundShape, new Ammo.btVector3(0, 0, 0));
-    const groundBody = new Ammo.btRigidBody(rbInfo);
-
-    // 마찰력 추가
-    groundBody.setFriction(2.0);
-    groundBody.setRestitution(0.1);
-
-    // 충돌 그룹: 지면 그룹으로 설정하여 캐릭터와 확실한 충돌 보장
-    const groundCollisionGroup = 1; // 지면 그룹
-    const groundCollisionMask = 1 | 2; // 지면(1)과 캐릭터(2) 모두와 충돌
-    physicsWorld.addRigidBody(groundBody, groundCollisionGroup, groundCollisionMask);
-    console.log(`대형 지면 ${index + 1} 생성: (${pos.x}, ${pos.y}, ${pos.z})`);
   });
 }
 
@@ -391,10 +227,10 @@ function createLargerGroundPhysics(physicsWorld: any): void {
   (window as any).globalCamera = camera;
   (window as any).globalPhysicsWorld = globalPhysicsWorld; // 물리 월드도 전역에 노출
   // 레거시 함수들을 새로운 시스템으로 래핑 (호환성 유지)
-  (window as any).findGroundHeight = (physicsWorld: any, x: number, z: number) => {
+  (window as any).findGroundHeight = (x: number, z: number) => {
     return terrainRaycaster ? terrainRaycaster.getTerrainHeight(x, z) : 150;
   };
-  (window as any).analyzeTerrainAroundCharacter = (physicsWorld: any, x: number, z: number, range: number = 5) => {
+  (window as any).analyzeTerrainAroundCharacter = (x: number, z: number, range: number = 5) => {
     if (terrainRaycaster) {
       const analysis = terrainRaycaster.analyzeTerrainAroundPosition(x, z, range);
       return {
@@ -723,6 +559,9 @@ function createLargerGroundPhysics(physicsWorld: any): void {
 
   // controls를 전역 변수에 할당
   (window as any).globalControls = controls;
+
+  // camera를 전역 변수에 할당
+  (window as any).globalCamera = camera;
 
   setupCameraEventListeners(camera, controls);
 

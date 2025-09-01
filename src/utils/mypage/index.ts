@@ -2,11 +2,7 @@ import { myPageHtml } from "../../data/myPageHtml";
 
 export const CONSTANTS = {
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
-  MAX_DOM_WAIT_ATTEMPTS: 10,
-  DOM_WAIT_DELAY: 10,
-  DATA_LOAD_DELAY: 200,
   GUEST_DEFAULT_NICKNAME: "Guest123456",
-  GUEST_DEFAULT_INTRO: "게스트 계정입니다.",
   GUEST_INTRO_RESTRICTION_MESSAGE: "게스트 계정은 한 줄 소개를 수정할 수 없어요.",
 } as const;
 

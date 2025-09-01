@@ -420,19 +420,19 @@ function setupGuestUserUI(
 ): void {
   // 닉네임과 소개 설정 (disableGuestUserInputs보다 먼저 설정)
   nameInput.value = nickname;
-  introTextarea.value = CONSTANTS.GUEST_DEFAULT_INTRO;
+  introTextarea.value = CONSTANTS.GUEST_INTRO_RESTRICTION_MESSAGE;
 
   // 원본 데이터 백업
   originalProfileData = {
     name: nickname,
-    introduction: CONSTANTS.GUEST_DEFAULT_INTRO,
+    introduction: CONSTANTS.GUEST_INTRO_RESTRICTION_MESSAGE,
     avatarUrl: imageState.currentImageUrl,
     hasCustomImage: imageState.hasCustomImage,
     isImageRemoved: imageState.isImageRemoved,
   };
 
   if (countText) {
-    countText.textContent = CONSTANTS.GUEST_DEFAULT_INTRO.length.toString();
+    countText.textContent = CONSTANTS.GUEST_INTRO_RESTRICTION_MESSAGE.length.toString();
   }
 
   updateAllProfileImages(svg.defaultImage);
@@ -551,8 +551,6 @@ function disableGuestUserInputs(): void {
 
   if (introTextarea) {
     introTextarea.disabled = true;
-    // 게스트 계정 안내 메시지로 설정 (이미 설정된 값 덮어쓰기)
-    introTextarea.value = CONSTANTS.GUEST_INTRO_RESTRICTION_MESSAGE;
   }
 
   if (uploadButton) {

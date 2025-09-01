@@ -378,3 +378,11 @@
 .header-right .only-icon-button.active + .popup {
   display: block;
 }
+
+[data-short-key="true"] .world-header-box .popup {
+  top: 70px;
+}
+
+.popup.help .short-key {
+  display: flex;
+}

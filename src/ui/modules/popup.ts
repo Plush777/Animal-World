@@ -213,7 +213,7 @@ function initializeUserListVirtualScroll(): void {
     enableTouchScroll: true,
     touchSensitivity: 1.2,
     maxScrollSpeed: 30,
-    scrollMargin: 4,
+    scrollMargin: 28, // 패딩 12px + 추가 여백 4px
     containerClass: "user-list-virtual-scroll-container",
     scrollbarClass: "user-list-virtual-scrollbar",
     scrollbarThumbClass: "user-list-virtual-scrollbar-thumb",
@@ -253,7 +253,7 @@ function initializeSettingVirtualScroll(): void {
     enableTouchScroll: true,
     touchSensitivity: 1.2,
     maxScrollSpeed: 30,
-    scrollMargin: 4,
+    scrollMargin: 28, // 패딩 12px + 추가 여백 4px
     containerClass: "setting-virtual-scroll-container",
     scrollbarClass: "setting-virtual-scrollbar",
     scrollbarThumbClass: "setting-virtual-scrollbar-thumb",
@@ -282,7 +282,7 @@ function initializeHelpVirtualScroll(): void {
   // 팝업 바디 스타일 설정 (chat div와 동일한 방식)
   popupBody.style.position = "relative";
   popupBody.style.overflow = "hidden";
-  popupBody.style.height = "300px"; // 설정팝업 높이 조정
+  popupBody.style.height = "400px"; // 설정팝업 높이 조정
 
   // 팝업 바디에 가상 스크롤 적용
   helpVirtualScroll = new PopupVirtualScroll(popupBody, {
@@ -295,7 +295,7 @@ function initializeHelpVirtualScroll(): void {
     enableTouchScroll: true,
     touchSensitivity: 1.2,
     maxScrollSpeed: 30,
-    scrollMargin: 4,
+    scrollMargin: 28, // 패딩 12px + 추가 여백 4px
     containerClass: "help-virtual-scroll-container",
     scrollbarClass: "help-virtual-scrollbar",
     scrollbarThumbClass: "help-virtual-scrollbar-thumb",
@@ -333,12 +333,21 @@ function addSettingItems(): void {
     }
   });
 
-  // 가상스크롤의 totalHeight를 수동으로 조정 (실제 섹션 높이 + 간격 고려)
+  // 가상스크롤의 totalHeight를 각 섹션의 실제 높이를 계산하여 조정
   if (settingVirtualScroll) {
-    const actualSectionHeight = 105; // 실제 섹션 높이 (예상값)
-    const sectionGap = 30; // 섹션 간 간격
-    const totalSections = sections.length;
-    const totalHeight = actualSectionHeight * totalSections + sectionGap * (totalSections - 1);
+    let totalHeight = 0;
+
+    // 각 섹션의 실제 높이를 계산하여 총 높이 구하기
+    sections.forEach((section, index) => {
+      const sectionElement = section as HTMLElement;
+      const sectionHeight = sectionElement.offsetHeight || sectionElement.clientHeight || 105; // 기본값 105
+      totalHeight += sectionHeight;
+
+      // 마지막 섹션이 아닌 경우 간격 추가
+      if (index < sections.length - 1) {
+        totalHeight += 30; // 섹션 간 간격
+      }
+    });
 
     // 가상스크롤의 totalHeight를 수동으로 설정
     (settingVirtualScroll as any).totalHeight = totalHeight;
@@ -346,7 +355,7 @@ function addSettingItems(): void {
     // 스크롤 컨테이너 높이 업데이트
     const scrollContainer = document.querySelector(".setting-virtual-scroll-container") as HTMLElement;
     if (scrollContainer) {
-      scrollContainer.style.height = `${totalHeight + 4}px`; // scrollMargin 추가
+      scrollContainer.style.height = `${totalHeight + 28}px`; // scrollMargin 추가 (패딩 12px + 여백 4px)
     }
 
     // 스크롤바 업데이트
@@ -378,12 +387,21 @@ function addHelpItems(): void {
     }
   });
 
-  // 가상스크롤의 totalHeight를 수동으로 조정 (실제 섹션 높이 + 간격 고려)
+  // 가상스크롤의 totalHeight를 각 섹션의 실제 높이를 계산하여 조정
   if (helpVirtualScroll) {
-    const actualSectionHeight = 105; // 실제 섹션 높이 (예상값)
-    const sectionGap = 30; // 섹션 간 간격
-    const totalSections = sections.length;
-    const totalHeight = actualSectionHeight * totalSections + sectionGap * (totalSections - 1);
+    let totalHeight = 0;
+
+    // 각 섹션의 실제 높이를 계산하여 총 높이 구하기
+    sections.forEach((section, index) => {
+      const sectionElement = section as HTMLElement;
+      const sectionHeight = sectionElement.offsetHeight || sectionElement.clientHeight || 105; // 기본값 105
+      totalHeight += sectionHeight;
+
+      // 마지막 섹션이 아닌 경우 간격 추가
+      if (index < sections.length - 1) {
+        totalHeight += 30; // 섹션 간 간격
+      }
+    });
 
     // 가상스크롤의 totalHeight를 수동으로 설정
     (helpVirtualScroll as any).totalHeight = totalHeight;
@@ -391,7 +409,7 @@ function addHelpItems(): void {
     // 스크롤 컨테이너 높이 업데이트
     const scrollContainer = document.querySelector(".help-virtual-scroll-container") as HTMLElement;
     if (scrollContainer) {
-      scrollContainer.style.height = `${totalHeight + 4}px`; // scrollMargin 추가
+      scrollContainer.style.height = `${totalHeight + 28}px`; // scrollMargin 추가 (패딩 12px + 여백 4px)
     }
 
     // 스크롤바 업데이트
@@ -434,12 +452,21 @@ function renderUserList(users: Array<{ nickname?: string }>): void {
       }
     });
 
-    // 가상스크롤의 totalHeight를 수동으로 조정 (실제 사용자 아이템 높이 + 간격 고려)
+    // 가상스크롤의 totalHeight를 각 사용자 아이템의 실제 높이를 계산하여 조정
     if (userListVirtualScroll) {
-      const actualUserItemHeight = 294; // 실제 사용자 아이템 높이
-      const itemGap = 30; // 아이템 간 간격
-      const totalUsers = users.length;
-      const totalHeight = actualUserItemHeight * totalUsers + itemGap * (totalUsers - 1);
+      let totalHeight = 0;
+
+      // 각 사용자 아이템의 실제 높이를 계산하여 총 높이 구하기
+      users.forEach((user: { nickname?: string }, index: number) => {
+        const userElement = document.querySelector(`.world-user-list-item:nth-child(${index + 1})`) as HTMLElement;
+        const itemHeight = userElement ? userElement.offsetHeight || userElement.clientHeight || 294 : 294; // 기본값 294
+        totalHeight += itemHeight;
+
+        // 마지막 아이템이 아닌 경우 간격 추가
+        if (index < users.length - 1) {
+          totalHeight += 30; // 아이템 간 간격
+        }
+      });
 
       // 가상스크롤의 totalHeight를 수동으로 설정
       (userListVirtualScroll as any).totalHeight = totalHeight;
@@ -447,7 +474,7 @@ function renderUserList(users: Array<{ nickname?: string }>): void {
       // 스크롤 컨테이너 높이 업데이트
       const scrollContainer = document.querySelector(".user-list-virtual-scroll-container") as HTMLElement;
       if (scrollContainer) {
-        scrollContainer.style.height = `${totalHeight + 4}px`; // scrollMargin 추가
+        scrollContainer.style.height = `${totalHeight + 28}px`; // scrollMargin 추가 (패딩 12px + 여백 4px)
       }
 
       // 스크롤바 업데이트
@@ -463,9 +490,10 @@ function renderUserList(users: Array<{ nickname?: string }>): void {
       // "접속한 사용자가 없습니다" 메시지의 top 값 설정
       noUserElement.style.top = "0px";
 
-      // 가상스크롤의 totalHeight를 수동으로 조정
-      const actualUserItemHeight = 32; // 실제 사용자 아이템 높이
-      const totalHeight = actualUserItemHeight;
+      // 가상스크롤의 totalHeight를 실제 아이템 높이로 조정
+      const noUserElementInDOM = document.querySelector(".world-user-list-item") as HTMLElement;
+      const itemHeight = noUserElementInDOM ? noUserElementInDOM.offsetHeight || noUserElementInDOM.clientHeight || 32 : 32;
+      const totalHeight = itemHeight;
 
       // 가상스크롤의 totalHeight를 수동으로 설정
       (userListVirtualScroll as any).totalHeight = totalHeight;
@@ -473,7 +501,7 @@ function renderUserList(users: Array<{ nickname?: string }>): void {
       // 스크롤 컨테이너 높이 업데이트
       const scrollContainer = document.querySelector(".user-list-virtual-scroll-container") as HTMLElement;
       if (scrollContainer) {
-        scrollContainer.style.height = `${totalHeight + 4}px`; // scrollMargin 추가
+        scrollContainer.style.height = `${totalHeight + 28}px`; // scrollMargin 추가 (패딩 12px + 여백 4px)
       }
 
       // 스크롤바 업데이트

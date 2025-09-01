@@ -6,20 +6,20 @@ export const sceneHtml: { [key: string]: any } = {
     <div class="header-left">
         <button type="button" class="chat-leave-button only-icon-button">
             ${svg.chatLeave}
-            <span class="hidden">방 나가기</span>
             <span class="short-key has-border has-text">L</span>
+            <span class="tooltip">방 나가기</span>
         </button>
     </div>
     <div class="header-right">
         <button type="button" disabled="" class="ranking-button only-icon-button">
-            <span class="hidden">랭킹</span>
             ${svg.ranking}
             <span class="short-key has-border has-text">R</span>
+            <span class="tooltip">랭킹</span>
         </button>
         <button type="button" class="world-user-list-button only-icon-button">
-            <span class="hidden">광장 유저 목록 보기</span>
             ${svg.worldUserList}
             <span class="short-key has-border has-text">U</span>
+            <span class="tooltip">유저 목록</span>
         </button>
 
         <div class="popup user-list" role="dialog">
@@ -41,9 +41,9 @@ export const sceneHtml: { [key: string]: any } = {
        
 
         <button type="button" class="setting-button only-icon-button">
-            <span class="hidden">설정</span>
             ${svg.setting}
             <span class="short-key has-border has-text">F</span>
+            <span class="tooltip">설정</span>
         </button>
 
         <div class="popup setting" role="dialog">
@@ -63,9 +63,9 @@ export const sceneHtml: { [key: string]: any } = {
         </div>
 
          <button type="button" class="help-button ui-hide-button only-icon-button">
-            <span class="hidden">도움말</span>
             ${svg.question}
             <span class="short-key has-border has-text">Q</span>
+            <span class="tooltip">도움말</span>
         </button>
         
         <div class="popup help" role="dialog">
@@ -127,7 +127,6 @@ export const sceneHtml: { [key: string]: any } = {
         </div>
       </div>
     </section>
-    
     `,
 
   help: `

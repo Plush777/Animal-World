@@ -201,6 +201,17 @@ export function setupOrbitControls(camera: THREE.PerspectiveCamera, renderer: TH
   controls.minPolarAngle = Math.PI / 3; //위로 올라가는거 제한
   controls.maxPolarAngle = Math.PI / 2.5; // 수평선 아래로 내려가지 않도록
 
+  // 초기 map-explore 상태 확인 및 적용
+  const savedMapExploreState = localStorage.getItem("mapExplore");
+  const isMapExploreEnabled = savedMapExploreState ? JSON.parse(savedMapExploreState) : false;
+
+  if (!isMapExploreEnabled) {
+    // 맵 둘러보기 비활성화 상태면 카메라 고정
+    controls.enabled = false;
+    camera.position.set(456.93, 249.97, 464.93);
+    camera.lookAt(70, 45, 100);
+  }
+
   controls.addEventListener("change", () => {
     console.log("카메라 위치:", {
       x: camera.position.x.toFixed(2),
