@@ -37,11 +37,6 @@ export class TerrainRaycaster {
           // 지형 특성을 가진 메시 필터링
           if (this.isTerrainMesh(child)) {
             this.terrainMeshes.push(child);
-            console.log(
-              `지형 메시 수집: ${child.name || "unnamed"} at (${worldPosition.x.toFixed(1)}, ${worldPosition.y.toFixed(1)}, ${worldPosition.z.toFixed(
-                1
-              )})`
-            );
           }
         }
       }
@@ -64,7 +59,6 @@ export class TerrainRaycaster {
       "forest",
       "land",
       "plane",
-      "island",
       "mesh",
       "step",
       "stair",
@@ -94,7 +88,6 @@ export class TerrainRaycaster {
       "foliage",
       "canopy",
       "flower",
-      "grass",
       "bush",
       "plant",
       "vegetation",

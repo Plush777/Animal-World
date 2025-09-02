@@ -377,4 +377,27 @@ export const sceneHtml: { [key: string]: any } = {
       </button>
     `,
   },
+
+  toast: {
+    mapExploreOn: `
+      <div class="toast-wrapper"> 
+        <button type="button" class="toast-close-button">
+          ${svg.popupClose}
+        </button>
+        <p class="toast-message">맵 둘러보기 기능이 활성화 되었어요! 드래그 또는 스와이프로 맵을 둘러볼 수 있어요.</p>
+        <p class="toast-message">단, 맵 둘러보기 중에는 캐릭터를 조작할 수 없어요.</p>
+      </div>
+    `,
+
+    storageMapExploreOn: `
+      <div class="toast-wrapper"> 
+        <button type="button" class="toast-close-button">
+          ${svg.popupClose}
+        </button>
+        <p class="toast-message">맵 둘러보기 기능이 켜져있네요! 드래그 또는 스와이프로 맵을 둘러볼 수 있어요.</p>
+        <p class="toast-message">단, 맵 둘러보기 중에는 캐릭터를 조작할 수 없어요.</p>
+        <p class="toast-message map-explore">(해당 기능은 설정에서 끌 수 있어요.)</p>
+      </div>
+    `,
+  },
 };

@@ -9,6 +9,14 @@
   backdrop-filter: blur(10px);
 }
 
+.chat-wrapper:not(.active) .tooltip.emoji {
+  z-index: -1;
+}
+
+.chat-wrapper:not(.active) .chat-emoji-list {
+  z-index: 100;
+}
+
 .chat-wrapper.active .chat-inner {
   display: block;
 }
@@ -572,6 +580,49 @@ input[type="checkbox"] + label {
 .chat-wrapper.active .chat-emoji-button .tooltip {
   top: 0;
   left: auto;
+}
+
+.toast-wrapper {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--white);
+  font-size: 14px;
+  border-radius: 8px;
+  padding: 14px 32px;
+  text-align: center;
+  background-color: #27262ecc;
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.5s ease-in-out;
+  transition-property: opacity, visibility;
+}
+
+.toast-message {
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.toast-message.map-explore {
+  margin-top: 12px;
+}
+
+.toast-wrapper.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.toast-close-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+}
+
+.toast-close-button svg {
+  color: var(--white);
 }
 
 [data-short-key="true"] .chat-emoji-wrapper .tooltip,

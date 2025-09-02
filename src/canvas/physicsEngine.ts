@@ -78,47 +78,6 @@ export function initPhysicsWorld(): any {
   return physicsWorld;
 }
 
-export function createManualGroundPhysics(physicsWorld: any): void {
-  const Ammo = window.Ammo;
-  if (!Ammo) return;
-
-  // 여러 개의 큰 지면 박스 생성
-  const groundConfigs = [
-    { x: 0, y: -5, z: 0, sizeX: 200, sizeY: 10, sizeZ: 200 }, // 중앙 대형 지면
-    { x: 70, y: -5, z: 100, sizeX: 150, sizeY: 10, sizeZ: 150 }, // forest 위치 지면
-    { x: -100, y: -5, z: 0, sizeX: 100, sizeY: 10, sizeZ: 100 }, // 서쪽
-    { x: 200, y: -5, z: 0, sizeX: 100, sizeY: 10, sizeZ: 100 }, // 동쪽
-  ];
-
-  groundConfigs.forEach((config, index) => {
-    const halfExtents = new Ammo.btVector3(config.sizeX, config.sizeY, config.sizeZ);
-    const groundShape = new Ammo.btBoxShape(halfExtents);
-
-    const transform = new Ammo.btTransform();
-    transform.setIdentity();
-    transform.setOrigin(new Ammo.btVector3(config.x, config.y, config.z));
-
-    const motionState = new Ammo.btDefaultMotionState(transform);
-    const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, groundShape, new Ammo.btVector3(0, 0, 0));
-    const groundBody = new Ammo.btRigidBody(rbInfo);
-
-    // 마찰력 강화
-    groundBody.setFriction(8.0);
-    groundBody.setRestitution(0.0);
-
-    // 지면 설정 강화
-    groundBody.setCollisionFlags(groundBody.getCollisionFlags() | 1); // CF_STATIC_OBJECT
-    groundBody.setActivationState(4); // DISABLE_DEACTIVATION
-
-    // 충돌 그룹: 지면 그룹으로 설정하여 캐릭터와 확실한 충돌 보장
-    const groundCollisionGroup = 1; // 지면 그룹
-    const groundCollisionMask = 1 | 2; // 지면(1)과 캐릭터(2) 모두와 충돌
-    physicsWorld.addRigidBody(groundBody, groundCollisionGroup, groundCollisionMask);
-
-    console.log(`수동 지면 ${index + 1} 생성: (${config.x}, ${config.y}, ${config.z}) 크기: ${config.sizeX}x${config.sizeY}x${config.sizeZ}`);
-  });
-}
-
 // 향상된 지형 높이 감지 시스템 - 다중 레이캐스팅과 스무딩 적용
 export function findGroundHeight(physicsWorld: any, x: number, z: number): number {
   const Ammo = window.Ammo;

@@ -64,27 +64,11 @@ export function loadGLBModel(
                 console.log(`Floating Island 모델 발견: ${child.name}`);
                 console.log(`재질 색상:`, child.material.color);
                 console.log(`그림자 설정 - castShadow: ${child.castShadow}, receiveShadow: ${child.receiveShadow}`);
-                adjustFloatingIslandMaterial(child.material, child.name);
+                // adjustFloatingIslandMaterial(child.material, child.name);
 
                 // Floating Island 모델에 대해 추가 그림자 설정
                 child.castShadow = true;
                 child.receiveShadow = true;
-
-                if (child.material) {
-                  if (Array.isArray(child.material)) {
-                    child.material.forEach((mat) => {
-                      mat.needsUpdate = true;
-                      if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhysicalMaterial) {
-                        mat.shadowSide = THREE.FrontSide;
-                      }
-                    });
-                  } else {
-                    child.material.needsUpdate = true;
-                    if (child.material instanceof THREE.MeshStandardMaterial || child.material instanceof THREE.MeshPhysicalMaterial) {
-                      child.material.shadowSide = THREE.FrontSide;
-                    }
-                  }
-                }
               }
               // water 모델의 재질 조정 (물 효과를 위한 투명도와 반사 설정)
               else if (path.includes("water")) {
@@ -269,73 +253,6 @@ function adjustSingleTreeMaterial(material: THREE.Material): void {
         ];
         const randomTone = greenTones[Math.floor(Math.random() * greenTones.length)];
         material.color.setRGB(randomTone[0], randomTone[1], randomTone[2]);
-      }
-    }
-  }
-}
-
-// Floating Island 재질을 밝게 조정하는 함수
-function adjustFloatingIslandMaterial(material: THREE.Material | THREE.Material[], _meshName: string): void {
-  if (Array.isArray(material)) {
-    material.forEach((mat) => {
-      adjustSingleFloatingIslandMaterial(mat, _meshName);
-    });
-  } else {
-    adjustSingleFloatingIslandMaterial(material, _meshName);
-  }
-}
-
-// 단일 Floating Island 재질 조정 함수
-function adjustSingleFloatingIslandMaterial(material: THREE.Material, _meshName: string): void {
-  // MeshStandardMaterial 또는 MeshPhysicalMaterial인 경우
-  if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial) {
-    material.metalness = 0.0;
-    material.roughness = 0.7;
-    material.transparent = false;
-    material.opacity = 1.0;
-
-    // Floating Island 색상 조정 - 원래 색상을 보존하면서 약간만 밝게
-    if (material.color) {
-      // 원래 색상 값을 보존하면서 약간 밝게 조정
-      const originalR = material.color.r;
-      const originalG = material.color.g;
-      const originalB = material.color.b;
-
-      // 색상이 너무 어두운 경우에만 밝게 조정
-      if (originalR < 0.3 && originalG < 0.3 && originalB < 0.3) {
-        material.color.setRGB(Math.min(originalR * 1.5, 1.0), Math.min(originalG * 1.5, 1.0), Math.min(originalB * 1.5, 1.0));
-      }
-    }
-  }
-
-  // MeshLambertMaterial인 경우
-  else if (material instanceof THREE.MeshLambertMaterial) {
-    material.transparent = false;
-    material.opacity = 1.0;
-
-    if (material.color) {
-      const originalR = material.color.r;
-      const originalG = material.color.g;
-      const originalB = material.color.b;
-
-      if (originalR < 0.3 && originalG < 0.3 && originalB < 0.3) {
-        material.color.setRGB(Math.min(originalR * 1.5, 1.0), Math.min(originalG * 1.5, 1.0), Math.min(originalB * 1.5, 1.0));
-      }
-    }
-  }
-
-  // MeshBasicMaterial인 경우
-  else if (material instanceof THREE.MeshBasicMaterial) {
-    material.transparent = false;
-    material.opacity = 1.0;
-
-    if (material.color) {
-      const originalR = material.color.r;
-      const originalG = material.color.g;
-      const originalB = material.color.b;
-
-      if (originalR < 0.3 && originalG < 0.3 && originalB < 0.3) {
-        material.color.setRGB(Math.min(originalR * 1.5, 1.0), Math.min(originalG * 1.5, 1.0), Math.min(originalB * 1.5, 1.0));
       }
     }
   }

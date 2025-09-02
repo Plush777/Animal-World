@@ -14,6 +14,7 @@ declare global {
     LoadingUI: LoadingUIInterface;
     globalControls: any; // OrbitControls 인스턴스
     globalCamera: any; // THREE.PerspectiveCamera 인스턴스
+    toastTimers?: (number | NodeJS.Timeout)[]; // 토스트 타이머 ID들을 저장하는 배열
   }
 }
 

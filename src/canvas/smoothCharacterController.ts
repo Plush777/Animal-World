@@ -41,7 +41,11 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   // 스무딩 설정
   private velocityDamping: number = 0.9;
   private groundSnapDistance: number = 1.5;
-  private landingSpeedThreshold: number = 3.0;
+  private landingSpeedThreshold: number = 5.0;
+
+  // 착지 안정화 변수 추가
+  private landingBuffer: number = 0.0;
+  private landingBufferDecay: number = 0.9;
 
   // 상태 추적
   private lastGroundHeight: number = 150;
@@ -70,7 +74,7 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   // 구름 관련 상태
   private waterCloudModel: THREE.Object3D | null = null;
   private cloudOffset: number = 5.0; // 물 표면 위 구름 높이 (줄임)
-  private characterHeightOffset: number = 0.0; // 캐릭터가 구름 중앙에 위치하도록 변경
+  // 삭제됨: private characterHeightOffset: number = 0.0;
 
   // 캐릭터 방향 추적
   private characterDirection: THREE.Vector3 = new THREE.Vector3(0, 0, -1); // 기본 방향 (앞쪽)
@@ -232,7 +236,7 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     return { inWater: false, waterLevel: 0, buoyancy: 0 };
   }
 
-  constructor(scene: THREE.Scene, terrainRaycaster: TerrainRaycaster, startPosition: THREE.Vector3) {
+  constructor(scene: THREE.Scene, terrainRaycaster: TerrainRaycaster, _startPosition: THREE.Vector3) {
     this.scene = scene;
     this.terrainRaycaster = terrainRaycaster;
 
@@ -471,7 +475,8 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   }
 
   public update(keys: any, deltaTime: number): void {
-    deltaTime = Math.min(Math.max(deltaTime, 1 / 120), 1 / 30);
+    // deltaTime 안정화 - 극단적인 값들을 제한하여 부드러운 움직임 보장
+    deltaTime = Math.min(Math.max(deltaTime, 1 / 120), 1 / 45);
 
     // 1. 물 상태 업데이트
     this.updateWaterState(deltaTime);
@@ -1051,20 +1056,40 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
       const distanceToTarget = this.position.y - currentGroundHeight;
       const wasOnGround = this.isOnGround;
 
-      this.isOnGround =
-        distanceToTarget <= this.groundCheckDistance && (Math.abs(this.velocity.y) < this.landingSpeedThreshold || this.velocity.y <= 10);
+      // 착지 조건 개선 - 점프 후 부드러운 착지를 위한 조정
+      const isNearGround = distanceToTarget <= this.groundCheckDistance;
+      const hasSlowVerticalSpeed = Math.abs(this.velocity.y) < this.landingSpeedThreshold;
+      const isFalling = this.velocity.y <= 15; // 하강 중이거나 정지 상태
+
+      // 착지 버퍼를 통한 안정화 (착지 후 일시적으로 지상 상태 유지)
+      if (this.landingBuffer > 0) {
+        this.isOnGround = true;
+        this.landingBuffer *= this.landingBufferDecay;
+        if (this.landingBuffer < 0.1) {
+          this.landingBuffer = 0;
+        }
+      } else {
+        this.isOnGround = isNearGround && (hasSlowVerticalSpeed || isFalling);
+      }
 
       if (this.isOnGround) {
         this.groundContactTime += deltaTime;
         this.airTime = 0;
 
         const snapDistance = this.groundSnapDistance;
-        if (distanceToTarget < snapDistance || (this.velocity.y < 0 && distanceToTarget < snapDistance * 2)) {
-          this.position.y = currentGroundHeight;
+        // 착지 시 부드러운 스냅핑 적용
+        if (distanceToTarget < snapDistance || (this.velocity.y <= 0 && distanceToTarget < snapDistance * 2.5)) {
+          // 급격한 위치 변경 대신 부드러운 보간 적용
+          const lerpFactor = Math.min(deltaTime * 8, 1.0); // 부드러운 보간 속도
+          this.position.y = THREE.MathUtils.lerp(this.position.y, currentGroundHeight, lerpFactor);
           this.lastGroundHeight = currentGroundHeight;
 
-          if (this.velocity.y < 0) {
-            this.velocity.y = 0;
+          // 수직 속도 부드럽게 감소
+          if (this.velocity.y <= 0) {
+            this.velocity.y *= 0.85; // 급격한 0 설정 대신 점진적 감소
+            if (Math.abs(this.velocity.y) < 1.0) {
+              this.velocity.y = 0;
+            }
           }
         }
       } else {
@@ -1073,7 +1098,10 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
       }
 
       if (!wasOnGround && this.isOnGround) {
-        console.log(`착지! 높이: ${this.position.y.toFixed(1)}`);
+        // 착지 시 부드러운 감쇠 효과 적용
+        this.velocity.y *= 0.3; // 착지 충격 완화
+        this.landingBuffer = 1.0; // 착지 버퍼 활성화로 안정화
+        console.log(`착지! 높이: ${this.position.y.toFixed(1)}, 감쇠 후 속도: ${this.velocity.y.toFixed(1)}`);
       }
     }
   }
@@ -1089,7 +1117,7 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     const isCollidingWithFloatingObject = collisionCheck.collision;
 
     // 점프 처리 - 물이나 공중 오브젝트 충돌 시 점프 제한
-    if (keys["Space"] && this.isOnGround && this.groundContactTime > 0.05) {
+    if (keys["Space"] && this.isOnGround && this.groundContactTime > 0.1) {
       // 채팅 입력 필드가 활성화되어 있으면 점프 차단
       const activeElement = document.activeElement;
       const isChatInputActive = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
@@ -1101,27 +1129,38 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
         return; // 물이나 공중 오브젝트 충돌 시 점프 불가
       }
 
-      this.velocity.y = this.jumpPower;
+      // 부드러운 점프 시작 - 이전 수직 속도 고려
+      const currentVerticalVelocity = Math.max(this.velocity.y, 0);
+      this.velocity.y = this.jumpPower + currentVerticalVelocity * 0.1;
       this.isOnGround = false;
       this.groundContactTime = 0;
-      console.log(`점프! 현재 높이: ${this.position.y.toFixed(1)}, 점프력: ${this.jumpPower.toFixed(1)}`);
+      this.airTime = 0; // 에어타임 초기화
+      console.log(`점프! 현재 높이: ${this.position.y.toFixed(1)}, 점프력: ${this.velocity.y.toFixed(1)}`);
     }
 
-    // 중력 처리
+    // 중력 처리 - 착지 시 부드러운 전환
     if (this.isInWater) {
       this.velocity.y = 0; // 물에서는 Y축 속도 고정
     } else if (!this.isOnGround) {
+      // 공중에서는 일반적인 중력 적용
       this.velocity.y -= this.gravity * deltaTime;
       this.velocity.y = Math.max(this.velocity.y, -70);
     } else if (this.isOnGround && !this.isInWater) {
-      this.velocity.y = Math.max(this.velocity.y, 0);
+      // 지상에서는 상승 속도만 허용하고 하강 속도는 부드럽게 감소
+      if (this.velocity.y < 0) {
+        // 착지 버퍼가 활성화된 경우 더 강한 감쇠 적용
+        const dampingFactor = this.landingBuffer > 0 ? 0.6 : 0.8;
+        this.velocity.y *= dampingFactor;
+        if (Math.abs(this.velocity.y) < 0.5) {
+          this.velocity.y = 0;
+        }
+      } else {
+        this.velocity.y = Math.max(this.velocity.y, 0);
+      }
     }
   }
 
   private updateFinalPosition(deltaTime: number): void {
-    // 이전 위치 저장
-    const previousPosition = this.position.clone();
-
     if (this.isInWater) {
       // 물 속에서는 구름 중앙에서 부드럽게 떠있도록
       const waterSurfaceHeight = this.waterLevel; // 음수 값 그대로 사용
@@ -1174,13 +1213,22 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
       const terrainHeight = this.terrainRaycaster.getTerrainHeight(this.position.x, this.position.z);
       const minHeight = Math.max(terrainHeight, -1000); // 최소 높이 제한
 
-      // 지형과의 충돌 검사
+      // 지형과의 충돌 검사 - 부드러운 착지 처리
       const heightDifference = this.position.y - minHeight;
 
-      if (heightDifference < -2.0 && this.velocity.y <= 0) {
-        this.position.y = minHeight;
-        this.velocity.y = 0;
-        this.isOnGround = true;
+      if (heightDifference < -1.0 && this.velocity.y <= 0) {
+        // 급격한 위치 변경 대신 부드러운 보간 적용
+        const lerpFactor = Math.min(deltaTime * 12, 1.0);
+        this.position.y = THREE.MathUtils.lerp(this.position.y, minHeight, lerpFactor);
+
+        // 수직 속도 부드럽게 감소 - 착지 버퍼 상태에 따라 조정
+        const dampingRate = this.landingBuffer > 0 ? 0.5 : 0.7;
+        this.velocity.y *= dampingRate;
+        if (Math.abs(this.velocity.y) < 2.0) {
+          this.velocity.y = 0;
+          this.isOnGround = true;
+          this.landingBuffer = 1.0; // 강제 착지 시에도 버퍼 활성화
+        }
       }
     }
 

@@ -84,50 +84,6 @@ let smoothCharacterController: SmoothCharacterController | null = null;
   console.log("캔버스 정리 완료");
 };
 
-// 수동 지면 물리 바디 생성 함수
-// 수동 지면 물리 바디 생성 함수 (개선된 버전)
-function createManualGroundPhysics(physicsWorld: any): void {
-  const Ammo = window.Ammo;
-  if (!Ammo) return;
-
-  // 주요 지면들을 개별적으로 생성 - 150 높이로 조정
-  const groundConfigs = [
-    // forest 위치에 150 높이 지면 생성 - 여러 높이에 배치
-    { x: 70, y: 150, z: 100, sizeX: 500, sizeY: 40, sizeZ: 500, name: "Forest 지면 (메인)" },
-    { x: 70, y: 130, z: 100, sizeX: 600, sizeY: 40, sizeZ: 600, name: "Forest 지면 (하층)" },
-    { x: 70, y: 110, z: 100, sizeX: 700, sizeY: 40, sizeZ: 700, name: "Forest 지면 (깊은층)" },
-
-    // 추가 안전망 지면들 (기존 높이 유지)
-    { x: 0, y: -10, z: 0, sizeX: 400, sizeY: 30, sizeZ: 400, name: "중앙 안전망" },
-    { x: 150, y: -5, z: 200, sizeX: 300, sizeY: 30, sizeZ: 300, name: "동쪽 안전망" },
-    { x: -100, y: -5, z: 50, sizeX: 300, sizeY: 30, sizeZ: 300, name: "서쪽 안전망" },
-
-    // 대형 기본 지면 (최후의 안전망)
-    { x: 0, y: -60, z: 0, sizeX: 1500, sizeY: 30, sizeZ: 1500, name: "기본 안전망" },
-  ];
-
-  groundConfigs.forEach((config) => {
-    const halfExtents = new Ammo.btVector3(config.sizeX, config.sizeY, config.sizeZ);
-    const groundShape = new Ammo.btBoxShape(halfExtents);
-
-    const transform = new Ammo.btTransform();
-    transform.setIdentity();
-    transform.setOrigin(new Ammo.btVector3(config.x, config.y, config.z));
-
-    const motionState = new Ammo.btDefaultMotionState(transform);
-    const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, groundShape, new Ammo.btVector3(0, 0, 0));
-    const groundBody = new Ammo.btRigidBody(rbInfo);
-
-    // 마찰력 강화
-    groundBody.setFriction(3.0);
-    groundBody.setRestitution(0.05);
-
-    // 충돌 그룹: 기본 그룹으로 설정하여 확실한 충돌 보장
-    physicsWorld.addRigidBody(groundBody);
-    console.log(`${config.name} 생성 완료 - 위치: (${config.x}, ${config.y}, ${config.z}), 크기: ${config.sizeX}x${config.sizeY}x${config.sizeZ}`);
-  });
-}
-
 (window as any).initCanvas = async function (): Promise<void> {
   // Ammo.js 초기화 (선택적)
   try {
@@ -176,22 +132,6 @@ function createManualGroundPhysics(physicsWorld: any): void {
     console.log("Raycaster 기반 지형 시스템 초기화 완료");
   }
 
-  // *** 기존 물리 시스템도 유지 (호환성을 위해) ***
-  if (globalPhysicsWorld && globalScene) {
-    console.log("=== 기존 물리 바디 생성 (호환용) ===");
-
-    // 1. 수동 지면 먼저 생성
-    createManualGroundPhysics(globalPhysicsWorld);
-
-    // 2. 물리 시뮬레이션을 여러 번 실행해서 완전히 안정화
-    console.log("지면 물리 시뮬레이션 안정화 중...");
-    for (let i = 0; i < 10; i++) {
-      globalPhysicsWorld.stepSimulation(1 / 60, 1, 1 / 60);
-    }
-
-    console.log("기존 물리 바디 생성 완료");
-  }
-
   // 키보드 이벤트 리스너 추가
   window.addEventListener("keydown", (e: KeyboardEvent) => {
     // 채팅 입력 필드가 활성화되어 있는지 확인
@@ -215,11 +155,6 @@ function createManualGroundPhysics(physicsWorld: any): void {
 
   // 캐릭터 매니저 초기화
   globalCharacterManager = new CharacterManager(globalScene, globalPhysicsWorld);
-
-  // low_poly_game_forest.glb의 GLTF_SceneRootNode 경계 설정
-  // 모델 위치: (70, 0, 100), 스케일: (22, 22, 22)
-  // 섬들의 실제 경계에 맞게 더 좁게 조정
-  // globalCharacterManager.setSceneBounds(-100, 240, -50, 250);
 
   // 전역 변수들을 window 객체에 노출
   (window as any).globalCharacterManager = globalCharacterManager;

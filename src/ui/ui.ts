@@ -15,35 +15,10 @@ import "./modules/loading.ts";
 import "./modules/characterSetting.ts";
 import "./modules/joinButton.ts";
 
-/**
- * 단축키 비활성화 상태를 로컬 스토리지에 저장하는 함수
- * @param isDisabled 단축키 비활성화 여부
- */
-function saveShortKeyDisabledState(isDisabled: boolean): void {
-  localStorage.setItem("shortKeyDisabled", JSON.stringify(isDisabled));
-}
-
-/**
- * 로컬 스토리지에서 단축키 비활성화 상태를 불러오는 함수
- * @returns 단축키 비활성화 여부
- */
-function loadShortKeyDisabledState(): boolean {
-  const savedState = localStorage.getItem("shortKeyDisabled");
-  return savedState ? JSON.parse(savedState) : false;
-}
-
-/**
- * 단축키 비활성화 상태를 토글하는 함수
- * @param isDisabled 단축키 비활성화 여부
- */
-function toggleShortKeyDisabled(isDisabled: boolean): void {
-  // body 태그에 data-short-key 속성 설정
-  if (isDisabled) {
-    document.body.setAttribute("data-short-key", "true");
-  } else {
-    document.body.setAttribute("data-short-key", "false");
-  }
-}
+import { chatEnterKey } from "./modules/shortKey.ts";
+import { showToastMapExplore } from "./modules/toast.ts";
+import { appClickEvents } from "./modules/appClickEvents.ts";
+import { saveShortKeyDisabledState, loadShortKeyDisabledState, toggleShortKeyDisabled } from "./modules/shortKey.ts";
 
 /**
  * 체크박스 상태를 로컬 스토리지 값과 동기화하는 함수
@@ -128,36 +103,18 @@ function initAllUIModules(): void {
   initUserBoxModule();
   initializeMyPageEventListeners();
 
-  const app = document.querySelector("#app") as HTMLElement;
+  document.addEventListener(
+    "canvasLoadingComplete",
+    () => {
+      // ui-visible 클래스가 추가될 때까지 대기 (3초 후)
+      setTimeout(() => {
+        showToastMapExplore();
+      }, 3000);
+    },
+    { once: true }
+  );
 
-  if (app) {
-    app.addEventListener("click", (e) => {
-      const target = e.target as HTMLElement;
-      const closeButton = document.querySelector(".chat-close-button") as HTMLElement;
-      const emojiButton = document.querySelector(".chat-emoji-button") as HTMLElement;
-      const chatOpenButton = document.querySelector(".chat-open-button") as HTMLElement;
-
-      e.stopPropagation();
-
-      const chatWrapper = document.querySelector(".chat-wrapper") as HTMLElement;
-      if (chatWrapper && target === closeButton) {
-        console.log(target);
-        chatWrapper.classList.remove("active");
-      }
-
-      if (chatWrapper && target === chatOpenButton) {
-        console.log(target);
-        chatWrapper.classList.add("active");
-      }
-
-      const emojiWrapper = document.querySelector(".chat-emoji-wrapper") as HTMLElement;
-
-      if (emojiWrapper && target === emojiButton) {
-        emojiWrapper.classList.toggle("active");
-        emojiButton.setAttribute("aria-expanded", emojiWrapper.classList.contains("active") ? "true" : "false");
-      }
-    });
-  }
+  appClickEvents();
 
   // 단축키 비활성화 체크박스 이벤트 리스너
   document.addEventListener("change", (e) => {
@@ -217,20 +174,7 @@ function initAllUIModules(): void {
     syncMapExploreCheckboxWithLocalStorage();
   }
 
-  // Enter 키를 눌렀을 때 채팅 입력 필드에 포커스
-  document.addEventListener("keydown", (e) => {
-    // Enter 키가 눌렸고, 현재 포커스된 요소가 입력 필드가 아닐 때
-    if (e.key === "Enter" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
-      const chatInput = document.querySelector(".chat-input") as HTMLInputElement;
-      const chatWrapper = document.querySelector(".chat-wrapper") as HTMLElement;
-
-      // 채팅창이 활성화되어 있고 입력 필드가 존재할 때만 포커스
-      if (chatInput && chatWrapper && chatWrapper.classList.contains("active")) {
-        e.preventDefault();
-        chatInput.focus();
-      }
-    }
-  });
+  chatEnterKey();
 }
 
 document.addEventListener("DOMContentLoaded", () => {

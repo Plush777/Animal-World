@@ -49,12 +49,6 @@ export class CharacterManager {
     this.physicsWorld = physicsWorld;
   }
 
-  // 씬 경계 설정
-  public setSceneBounds(minX: number, maxX: number, minZ: number, maxZ: number): void {
-    this.sceneBounds = { minX, maxX, minZ, maxZ };
-    console.log(`씬 경계 설정: X(${minX} ~ ${maxX}), Z(${minZ} ~ ${maxZ})`);
-  }
-
   // 모든 오브젝트 이름 출력 (디버깅용)
   public logAllObjectNames(): void {
     console.log("=== 모든 오브젝트 이름 출력 ===");

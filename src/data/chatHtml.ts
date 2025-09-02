@@ -45,7 +45,7 @@ export const chatHtml: { [key: string]: any } = {
                 <header class="chat-header">
                     <div class="chat-button-group">
                         <button type="button" class="chat-close-button">
-                            ${svg.chatClose}
+                            ${svg.popupClose}
                             <span class="tooltip">채팅창 닫기</span>
                         </button>
                     </div>
