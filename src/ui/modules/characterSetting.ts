@@ -1,6 +1,6 @@
 import { CharacterStorage, CharacterInfo } from "../../canvas/characterStorage";
 import { sceneHtml } from "../../data/sceneHtml";
-import { getCharacterSettings, createVector3FromSettings, createScaleFromSettings } from "../../data/characterInfo";
+import { getCharacterSettings, createScaleFromSettings, START_POSITIONS, getRandomStartPosition } from "../../data/characterInfo";
 
 export class CharacterSettingPopup {
   private popup: HTMLElement | null = null;
@@ -196,7 +196,16 @@ export class CharacterSettingPopup {
 
       // 캐릭터 로드 - 물 위로 올려서 위치
       const characterSettings = getCharacterSettings(characterInfo.id);
-      const position = createVector3FromSettings(characterSettings);
+
+      // 랜덤 시작 위치 생성 (공통 상수 사용)
+      const selectedPosition = getRandomStartPosition();
+      const position = new (window as any).THREE.Vector3(selectedPosition.x, selectedPosition.y, selectedPosition.z);
+
+      console.log(
+        `🎯 ${characterInfo.name} 랜덤 시작 위치: (${selectedPosition.x.toFixed(2)}, ${selectedPosition.y.toFixed(2)}, ${selectedPosition.z.toFixed(
+          2
+        )})`
+      );
       const scale = createScaleFromSettings(characterSettings);
 
       console.log("캐릭터 로드 파라미터:", {

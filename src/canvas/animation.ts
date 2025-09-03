@@ -258,12 +258,28 @@ export function createAnimationLoop(
           if (allCharacters.length > 0) {
             const visualCharacter = allCharacters[0];
 
-            // 시각적 모델을 컨트롤러 위치로 이동
-            visualCharacter.model.position.set(
-              characterPos.x,
-              characterPos.y - 1.0, // 캐릭터 발이 지면에 닿도록 조정
-              characterPos.z
-            );
+            // 시각적 모델을 컨트롤러 위치로 정확히 이동 (높이 조정 없음)
+            const syncPosition = new THREE.Vector3(characterPos.x, characterPos.y, characterPos.z);
+
+            // CharacterManager의 새로운 메서드를 사용하여 위치 설정
+            if (characterManager.setCharacterPosition) {
+              characterManager.setCharacterPosition(visualCharacter.id, syncPosition);
+            } else {
+              // 기존 방식 (fallback)
+              visualCharacter.model.position.copy(syncPosition);
+            }
+
+            // 디버깅을 위한 로그 (간혹 출력)
+            if (Math.random() < 0.01) {
+              // 1% 확률로 출력
+              console.log(
+                `캐릭터 위치 동기화: smoothController(${characterPos.x.toFixed(2)}, ${characterPos.y.toFixed(2)}, ${characterPos.z.toFixed(
+                  2
+                )}) -> model(${visualCharacter.model.position.x.toFixed(2)}, ${visualCharacter.model.position.y.toFixed(
+                  2
+                )}, ${visualCharacter.model.position.z.toFixed(2)})`
+              );
+            }
 
             // 캐릭터 회전 처리 (이동 방향에 따라)
             if (moveInfo && moveInfo.isMoving) {

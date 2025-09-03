@@ -1,6 +1,8 @@
 import { sceneHtml } from "../../data/sceneHtml";
 
 export function showToastMapExplore() {
+  sessionStorage.setItem("toast-mapExplore-close", "false");
+
   const getLocalStorageMapExplore = localStorage.getItem("mapExplore");
   const getSessionStorageMapExploreClose = sessionStorage.getItem("toast-mapExplore-close");
   const toast = document.getElementById("toast") as HTMLElement;

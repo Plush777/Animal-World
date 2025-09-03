@@ -27,7 +27,6 @@ export interface Character {
 export class CharacterManager {
   private characters: Map<string, Character> = new Map();
   private scene: THREE.Scene;
-  private clock: THREE.Clock;
   private physicsWorld: any; // Ammo.js physics world
 
   // GLTF_SceneRootNode 경계 설정
@@ -45,7 +44,6 @@ export class CharacterManager {
 
   constructor(scene: THREE.Scene, physicsWorld?: any) {
     this.scene = scene;
-    this.clock = new THREE.Clock();
     this.physicsWorld = physicsWorld;
   }
 
@@ -103,7 +101,7 @@ export class CharacterManager {
       console.log(`=== 캐릭터 매니저 로드 시작 ===`);
       console.log(`캐릭터 ID: ${characterId}`);
       console.log(`모델 경로: ${modelPath}`);
-      console.log(`위치:`, position);
+      // console.log(`위치:`, position);
       console.log(`스케일:`, scale);
 
       const gltf = await loadGLBModel(modelPath);
@@ -167,13 +165,11 @@ export class CharacterManager {
       // 바운딩 박스 계산 및 출력
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
-      const center = box.getCenter(new THREE.Vector3());
 
       console.log("캐릭터 바운딩 박스:", {
         min: box.min,
         max: box.max,
         size: size,
-        center: center,
       });
 
       // 애니메이션 믹서 생성
@@ -308,7 +304,6 @@ export class CharacterManager {
     // 캐릭터의 바운딩 박스 계산
     const box = new THREE.Box3().setFromObject(character.model);
     const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
 
     console.log(`캐릭터 바운딩 박스: 크기=${size.x.toFixed(2)}, ${size.y.toFixed(2)}, ${size.z.toFixed(2)}`);
 
@@ -358,104 +353,42 @@ export class CharacterManager {
     );
   }
 
-  // 캐릭터 물리 업데이트
-  updateCharacterPhysics(characterId: string, keys: any, deltaTime: number): void {
+  // 캐릭터 위치를 외부에서 직접 설정하는 메서드 추가
+  setCharacterPosition(characterId: string, position: THREE.Vector3): void {
+    const character = this.characters.get(characterId);
+    if (!character) {
+      return;
+    }
+
+    // 모델 위치 직접 설정
+    character.model.position.copy(position);
+    character.position.copy(position);
+
+    // 물리 바디가 있다면 물리 바디 위치도 업데이트
+    if (character.physicsBody) {
+      const Ammo = window.Ammo;
+      if (Ammo) {
+        const transform = character.physicsBody.getWorldTransform();
+        transform.setOrigin(new Ammo.btVector3(position.x, position.y, position.z));
+        character.physicsBody.setWorldTransform(transform);
+      }
+    }
+  }
+
+  // 캐릭터 물리 업데이트 (smoothCharacterController 사용 시 비활성화)
+  updateCharacterPhysics(characterId: string, _keys: any, _deltaTime: number): void {
     const character = this.characters.get(characterId);
     if (!character || !character.physicsController || !character.physicsBody) {
       return;
     }
 
-    const Ammo = window.Ammo;
-    if (!Ammo) return;
-
-    // deltaTime이 너무 작거나 0인 경우 최소값으로 설정
-    const effectiveDeltaTime = Math.max(deltaTime, 1 / 60); // 최소 16.67ms
-
-    const walkDirection = new Ammo.btVector3(0, 0, 0);
-    const speed = 25; // deltaTime을 곱하지 말고 고정 속도 사용
-
-    // 채팅 입력 필드가 활성화되어 있으면 이동 처리 건너뛰기
-    const activeElement = document.activeElement;
-    const isChatInputActive = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
-    if (isChatInputActive) {
-      return;
+    // smoothCharacterController를 사용하는 경우 물리 업데이트 건너뛰기
+    // animation.ts에서 위치 동기화가 처리됨
+    if (Math.random() < 0.1) {
+      // 10% 확률로만 로그 출력 (스팸 방지)
+      console.log(`캐릭터 ${characterId} 물리 업데이트 건너뛰기 (smoothCharacterController 사용 중)`);
     }
-
-    let isMoving = false;
-
-    // 키 입력 처리
-    if (keys["KeyW"] || keys["ArrowUp"]) {
-      walkDirection.setZ(-speed);
-      isMoving = true;
-    }
-    if (keys["KeyS"] || keys["ArrowDown"]) {
-      walkDirection.setZ(speed);
-      isMoving = true;
-    }
-    if (keys["KeyA"] || keys["ArrowLeft"]) {
-      walkDirection.setX(-speed);
-      isMoving = true;
-    }
-    if (keys["KeyD"] || keys["ArrowRight"]) {
-      walkDirection.setX(speed);
-      isMoving = true;
-    }
-
-    // 움직임이 있을 때만 로그 출력
-    if (isMoving) {
-      console.log(
-        `움직임 감지: 방향(${walkDirection.x().toFixed(1)}, ${walkDirection.z().toFixed(1)}), 속도=${speed}, deltaTime=${effectiveDeltaTime.toFixed(
-          4
-        )}`
-      );
-    }
-
-    // 워크 방향 적용
-    character.physicsController.setWalkDirection(walkDirection);
-
-    // 점프 처리
-    if (keys["Space"]) {
-      // 채팅 입력 필드가 활성화되어 있으면 점프 차단
-      const activeElement = document.activeElement;
-      const isChatInputActive = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
-      if (!isChatInputActive) {
-        character.physicsController.jump();
-        console.log("점프!");
-      }
-    }
-
-    // 물리 바디 위치 가져오기
-    const transform = character.physicsBody.getWorldTransform();
-    const origin = transform.getOrigin();
-
-    // 이전 위치 저장 (움직임 확인용)
-    const prevPosition = character.model.position.clone();
-
-    // 바운딩 박스 계산
-    const box = new THREE.Box3().setFromObject(character.model);
-    const size = box.getSize(new THREE.Vector3());
-
-    // 모델 위치 업데이트
-    character.model.position.set(
-      origin.x(),
-      origin.y() - size.y * 0.4, // 발 위치에 맞춤
-      origin.z()
-    );
-
-    // 실제 움직임이 있었는지 확인
-    const moved = prevPosition.distanceTo(character.model.position);
-
-    if (isMoving || moved > 0.01) {
-      console.log(`캐릭터 ${characterId} 위치 업데이트:`);
-      console.log(`  물리 바디: (${origin.x().toFixed(2)}, ${origin.y().toFixed(2)}, ${origin.z().toFixed(2)})`);
-      console.log(
-        `  모델 위치: (${character.model.position.x.toFixed(2)}, ${character.model.position.y.toFixed(2)}, ${character.model.position.z.toFixed(2)})`
-      );
-      console.log(`  이동 거리: ${moved.toFixed(3)}`);
-    }
-
-    // 워크 방향 정리
-    walkDirection.setValue(0, 0, 0);
+    return;
   }
 
   // 물리 월드 설정
@@ -511,11 +444,5 @@ export class CharacterLoader {
   // 캐릭터 모델 경로 가져오기
   static getCharacterModelPath(characterType: string): string | null {
     return this.characterModels[characterType as keyof typeof this.characterModels] || null;
-  }
-
-  // 랜덤 캐릭터 타입 선택
-  static getRandomCharacterType(): string {
-    const characters = this.getAvailableCharacters();
-    return characters[Math.floor(Math.random() * characters.length)];
   }
 }
