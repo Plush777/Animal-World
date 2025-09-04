@@ -54,12 +54,15 @@ export function loadGLBModel(
                 }
               }
 
-              // 나무 모델의 재질을 초록색으로 조정
+              // 나무 모델의 재질을 초록색으로 조정하고 충돌 감지 비활성화
               if (path.includes("low_poly_trees")) {
                 console.log(`나무 모델 발견: ${child.name}`);
                 adjustTreeMaterial(child.material);
+                // 캐릭터가 오브젝트로 인식하지 않도록 물리 속성 비활성화
+                child.userData.isCollidable = false;
+                child.userData.isTerrain = false;
               }
-              // floating island 모델의 재질 조정 (색상 보존)
+              // floating island 모델의 재질 조정 (색상 보존) 및 충돌 감지 비활성화
               else if (path.includes("low_poly_floating_island")) {
                 console.log(`Floating Island 모델 발견: ${child.name}`);
                 console.log(`재질 색상:`, child.material.color);
@@ -69,6 +72,10 @@ export function loadGLBModel(
                 // Floating Island 모델에 대해 추가 그림자 설정
                 child.castShadow = true;
                 child.receiveShadow = true;
+
+                // 캐릭터가 오브젝트로 인식하지 않도록 물리 속성 비활성화
+                child.userData.isCollidable = false;
+                child.userData.isTerrain = false;
               }
               // water 모델의 재질 조정 (물 효과를 위한 투명도와 반사 설정)
               else if (path.includes("water")) {
@@ -78,6 +85,13 @@ export function loadGLBModel(
                 // 물 모델에 대해 그림자 설정
                 child.castShadow = false; // 물은 그림자를 드리지 않음
                 child.receiveShadow = true; // 물은 그림자를 받음
+              }
+              // triple trees 모델의 충돌 감지 비활성화
+              else if (path.includes("low_poly_triple_trees")) {
+                console.log(`Triple Trees 모델 발견: ${child.name}`);
+                // 캐릭터가 오브젝트로 인식하지 않도록 물리 속성 비활성화
+                child.userData.isCollidable = false;
+                child.userData.isTerrain = false;
               }
               // night_sky_scene 모델의 재질 조정 (밤 하늘 배경 보존)
               else if (path.includes("night_sky_scene")) {
@@ -404,4 +418,58 @@ export function getModelSize(gltf: any): THREE.Vector3 {
   const size = new THREE.Vector3();
   box.getSize(size);
   return size;
+}
+
+// 씬 모델의 경계 정보를 반환하는 함수
+export function getSceneModelBounds(scene: THREE.Scene, modelName: string): THREE.Box3 | null {
+  let targetModel: THREE.Object3D | null = null;
+
+  scene.traverse((child) => {
+    if (child.name === modelName || (child.userData && child.userData.modelName === modelName)) {
+      targetModel = child;
+    }
+  });
+
+  if (!targetModel) {
+    console.warn(`모델을 찾을 수 없습니다: ${modelName}`);
+    return null;
+  }
+
+  const box = new THREE.Box3();
+  box.setFromObject(targetModel);
+  return box;
+}
+
+// 씬 모델의 경계 크기와 중심점을 반환하는 함수
+export function getSceneModelBoundaryInfo(
+  scene: THREE.Scene,
+  modelName: string
+): {
+  center: THREE.Vector3;
+  size: THREE.Vector3;
+  min: THREE.Vector3;
+  max: THREE.Vector3;
+} | null {
+  const box = getSceneModelBounds(scene, modelName);
+
+  if (!box) {
+    return null;
+  }
+
+  const center = new THREE.Vector3();
+  const size = new THREE.Vector3();
+  const min = new THREE.Vector3();
+  const max = new THREE.Vector3();
+
+  box.getCenter(center);
+  box.getSize(size);
+  box.min.copy(min);
+  box.max.copy(max);
+
+  return {
+    center,
+    size,
+    min,
+    max,
+  };
 }

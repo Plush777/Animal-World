@@ -24,7 +24,7 @@ export class TerrainRaycaster {
   private collectTerrainMeshes(): void {
     this.terrainMeshes = [];
     const forestCenter = new THREE.Vector3(70, 0, 100);
-    const collectionRadius = 500;
+    const collectionRadius = 300; // 수집 범위
 
     this.scene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -47,6 +47,20 @@ export class TerrainRaycaster {
    */
   private isTerrainMesh(mesh: THREE.Mesh): boolean {
     const name = mesh.name.toLowerCase();
+
+    // 제외할 모델들 (캐릭터가 오브젝트로 인식하지 않도록)
+    const excludedModels = ["low_poly_floating_island", "low_poly_trees", "low_poly_triple_trees"];
+
+    // 제외할 모델인지 확인
+    const isExcluded = excludedModels.some((excludedName) => name.includes(excludedName) || mesh.parent?.name?.toLowerCase().includes(excludedName));
+
+    // userData에서 충돌 감지 비활성화 확인
+    const isCollisionDisabled = mesh.userData.isCollidable === false || mesh.userData.isTerrain === false;
+
+    if (isExcluded || isCollisionDisabled) {
+      return false;
+    }
+
     const terrainKeywords = ["lighthouse", "ground", "terrain"];
 
     const isNameMatch = terrainKeywords.some((keyword) => name.includes(keyword));

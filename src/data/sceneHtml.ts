@@ -360,20 +360,10 @@ export const sceneHtml: { [key: string]: any } = {
     `,
 
   actionButtons: {
-    object: `
-      <button type="button" id="move-button" class="button button-sky button-size-lg has-short-key">
-        <span class="short-key has-border has-text"> M </span>
-        <span>올라가기</span>
-      </button>
-      <button type="button" id="back-button" class="button button-gray-no-border button-size-lg has-short-key">
-        <span class="short-key has-border has-text"> B </span>
-        <span>돌아가기</span>
-      </button>
-    `,
     reset: `
-      <button type="button" id="reset-position-button">
-        ${svg.reset}
-        <span>리셋</span>
+      <button type="button" id="reset-position-button" class="button button-sky button-size-lg has-short-key">
+        <span class="short-key has-border has-text"> X </span>
+        <span>위치 초기화</span>
       </button>
     `,
   },

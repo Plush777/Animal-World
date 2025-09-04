@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { TerrainRaycaster } from "./terrainRaycaster";
 import { isDayTime } from "./time";
 import { sceneHtml } from "../data/sceneHtml";
+import { getSceneModelBoundaryInfo } from "../utils/glbLoader";
 
 /**
  * Three.js Raycaster 기반 부드러운 캐릭터 컨트롤러
@@ -11,7 +12,6 @@ import { sceneHtml } from "../data/sceneHtml";
 // 상수 정의
 const PHYSICS_CONSTANTS = {
   MOVE_SPEED: 50,
-  JUMP_POWER: 50,
   GRAVITY: 45,
   VELOCITY_DAMPING: 0.9,
   GROUND_CHECK_DISTANCE: 4.0,
@@ -21,7 +21,7 @@ const PHYSICS_CONSTANTS = {
   LANDING_SPEED_THRESHOLD: 5.0,
   CLOUD_OFFSET: 5.0,
   CLOUD_ROTATION_SPEED: 0.05,
-  WATER_STATE_DELAY: 0.3,
+  WATER_STATE_DELAY: 0.1, // 물 상태 전환 지연을 줄여서 더 빠르게 반응
   LANDING_BUFFER_DECAY: 0.9,
   MIN_VELOCITY_THRESHOLD: 0.1,
   MAX_FALL_SPEED: -70,
@@ -43,7 +43,23 @@ const PHYSICS_CONSTANTS = {
   HEIGHT_LERP_FACTOR_TERRAIN: 15, // 지형 높이 보간 속도
   DAMPING_FACTOR_LANDING: 0.85, // 착지 시 감속 계수
   DAMPING_FACTOR_WATER: 0.95, // 물 속 감속 계수
+
+  // 씬 경계 마진 상수
+  SCENE_BOUNDARY_MARGIN_X: 100, // X축(양옆) 경계에서 안전한 거리 (단위)
+  SCENE_BOUNDARY_MARGIN_Z: 220, // Z축(앞뒤) 경계에서 안전한 거리 (단위) - 더 좁게 조정
+
+  // 원형 경계 설정
+  USE_CIRCULAR_BOUNDARY: true, // 원형 경계 사용 여부
+  CIRCULAR_BOUNDARY_MARGIN: 50, // 원형 경계에서 안전한 거리 (단위)
 } as const;
+
+// 방향별 마진 값을 동적으로 조정할 수 있는 변수
+let dynamicBoundaryMarginX: number = PHYSICS_CONSTANTS.SCENE_BOUNDARY_MARGIN_X;
+let dynamicBoundaryMarginZ: number = PHYSICS_CONSTANTS.SCENE_BOUNDARY_MARGIN_Z;
+
+// 원형 경계 관련 변수
+let useCircularBoundary: boolean = PHYSICS_CONSTANTS.USE_CIRCULAR_BOUNDARY;
+let circularBoundaryMargin: number = PHYSICS_CONSTANTS.CIRCULAR_BOUNDARY_MARGIN;
 
 // 시작 위치 상수
 const START_POSITIONS = [
@@ -373,6 +389,94 @@ class CloudManager {
   }
 }
 
+// 원형 경계 체크 함수
+function checkCircularBoundary(position: THREE.Vector3, center: THREE.Vector3, radius: number): THREE.Vector3 {
+  const newPosition = position.clone();
+
+  // 중심점에서의 거리 계산
+  const distanceFromCenter = Math.sqrt(Math.pow(position.x - center.x, 2) + Math.pow(position.z - center.z, 2));
+
+  // 경계를 벗어났는지 확인
+  if (distanceFromCenter > radius) {
+    // 중심점에서 경계까지의 방향 벡터 계산
+    const directionX = (position.x - center.x) / distanceFromCenter;
+    const directionZ = (position.z - center.z) / distanceFromCenter;
+
+    // 경계 위의 가장 가까운 점으로 이동
+    newPosition.x = center.x + directionX * radius;
+    newPosition.z = center.z + directionZ * radius;
+
+    console.log(
+      `⭕ 원형 경계 제한: 거리 ${distanceFromCenter.toFixed(1)} → ${radius.toFixed(1)} (${position.x.toFixed(1)}, ${position.z.toFixed(
+        1
+      )}) → (${newPosition.x.toFixed(1)}, ${newPosition.z.toFixed(1)})`
+    );
+  }
+
+  return newPosition;
+}
+
+// 마진 조정 함수들
+export function setBoundaryMargin(marginX: number, marginZ?: number): void {
+  dynamicBoundaryMarginX = Math.max(0, marginX); // 음수 방지
+  if (marginZ !== undefined) {
+    dynamicBoundaryMarginZ = Math.max(0, marginZ);
+  } else {
+    dynamicBoundaryMarginZ = dynamicBoundaryMarginX; // Z축 마진이 지정되지 않으면 X축과 동일하게
+  }
+  console.log(`🔧 씬 경계 마진이 X: ${dynamicBoundaryMarginX}, Z: ${dynamicBoundaryMarginZ}으로 설정되었습니다.`);
+}
+
+export function getBoundaryMargin(): { x: number; z: number } {
+  return { x: dynamicBoundaryMarginX, z: dynamicBoundaryMarginZ };
+}
+
+export function increaseBoundaryMargin(amountX: number = 10, amountZ?: number): void {
+  dynamicBoundaryMarginX += amountX;
+  if (amountZ !== undefined) {
+    dynamicBoundaryMarginZ += amountZ;
+  } else {
+    dynamicBoundaryMarginZ += amountX; // Z축 증가량이 지정되지 않으면 X축과 동일하게
+  }
+  console.log(`🔧 씬 경계 마진이 X: ${dynamicBoundaryMarginX}, Z: ${dynamicBoundaryMarginZ}으로 증가했습니다.`);
+}
+
+export function decreaseBoundaryMargin(amountX: number = 10, amountZ?: number): void {
+  dynamicBoundaryMarginX = Math.max(0, dynamicBoundaryMarginX - amountX);
+  if (amountZ !== undefined) {
+    dynamicBoundaryMarginZ = Math.max(0, dynamicBoundaryMarginZ - amountZ);
+  } else {
+    dynamicBoundaryMarginZ = Math.max(0, dynamicBoundaryMarginZ - amountX); // Z축 감소량이 지정되지 않으면 X축과 동일하게
+  }
+  console.log(`🔧 씬 경계 마진이 X: ${dynamicBoundaryMarginX}, Z: ${dynamicBoundaryMarginZ}으로 감소했습니다.`);
+}
+
+// 방향별 개별 조정 함수들
+export function setBoundaryMarginX(margin: number): void {
+  dynamicBoundaryMarginX = Math.max(0, margin);
+  console.log(`🔧 X축(양옆) 경계 마진이 ${dynamicBoundaryMarginX}으로 설정되었습니다.`);
+}
+
+export function setBoundaryMarginZ(margin: number): void {
+  dynamicBoundaryMarginZ = Math.max(0, margin);
+  console.log(`🔧 Z축(앞뒤) 경계 마진이 ${dynamicBoundaryMarginZ}으로 설정되었습니다.`);
+}
+
+// 원형 경계 제어 함수들
+export function setCircularBoundary(enabled: boolean): void {
+  useCircularBoundary = enabled;
+  console.log(`⭕ 원형 경계가 ${enabled ? "활성화" : "비활성화"}되었습니다.`);
+}
+
+export function setCircularBoundaryMargin(margin: number): void {
+  circularBoundaryMargin = Math.max(0, margin);
+  console.log(`⭕ 원형 경계 마진이 ${circularBoundaryMargin}으로 설정되었습니다.`);
+}
+
+export function getCircularBoundarySettings(): { enabled: boolean; margin: number } {
+  return { enabled: useCircularBoundary, margin: circularBoundaryMargin };
+}
+
 // 유틸리티 클래스
 class TerrainUtils {
   public static generateRandomStartPosition(): THREE.Vector3 {
@@ -403,24 +507,138 @@ class TerrainUtils {
       : [
           {
             center: { x: 0, y: -85, z: 0 },
-            size: { x: 2640, y: 200, z: 2640 },
+            size: { x: 600, y: 200, z: 600 },
             buoyancy: 25.0,
             waterLevel: -85,
           },
         ];
   }
 
-  public static checkBounds(position: THREE.Vector3): THREE.Vector3 {
-    const isDay = isDayTime();
-    const bounds = isDay ? { minX: -800, maxX: 800, minZ: -800, maxZ: 800 } : { minX: -3800, maxX: 3800, minZ: -3800, maxZ: 3800 };
-
+  public static checkBounds(position: THREE.Vector3, scene?: THREE.Scene): THREE.Vector3 {
     const newPosition = position.clone();
-    newPosition.x = THREE.MathUtils.clamp(newPosition.x, bounds.minX, bounds.maxX);
-    newPosition.z = THREE.MathUtils.clamp(newPosition.z, bounds.minZ, bounds.maxZ);
+    let boundaryChanged = false;
 
-    if (newPosition.x !== position.x || newPosition.z !== position.z) {
+    // 씬 모델의 실제 경계를 사용한 체크
+    if (scene) {
+      const isDay = isDayTime();
+      const modelName = isDay ? "scene.glb" : "night_sky_scene.glb";
+
+      const boundaryInfo = getSceneModelBoundaryInfo(scene, modelName);
+
+      if (boundaryInfo) {
+        // 모델의 실제 경계를 사용하여 체크
+        const { center, size } = boundaryInfo;
+
+        if (useCircularBoundary) {
+          // 원형 경계 사용
+          const radius = Math.min(size.x, size.z) / 2 - circularBoundaryMargin;
+          const circularCenter = new THREE.Vector3(center.x, center.y, center.z);
+
+          const boundedPosition = checkCircularBoundary(newPosition, circularCenter, radius);
+          if (boundedPosition.x !== newPosition.x || boundedPosition.z !== newPosition.z) {
+            newPosition.copy(boundedPosition);
+            boundaryChanged = true;
+          }
+        } else {
+          // 기존 사각형 경계 사용
+          const halfWidth = size.x / 2 - dynamicBoundaryMarginX;
+          const halfDepth = size.z / 2 - dynamicBoundaryMarginZ;
+
+          const minX = center.x - halfWidth;
+          const maxX = center.x + halfWidth;
+          const minZ = center.z - halfDepth;
+          const maxZ = center.z + halfDepth;
+
+          // 경계 체크 및 제한
+          if (newPosition.x < minX) {
+            newPosition.x = minX;
+            boundaryChanged = true;
+          } else if (newPosition.x > maxX) {
+            newPosition.x = maxX;
+            boundaryChanged = true;
+          }
+
+          if (newPosition.z < minZ) {
+            newPosition.z = minZ;
+            boundaryChanged = true;
+          } else if (newPosition.z > maxZ) {
+            newPosition.z = maxZ;
+            boundaryChanged = true;
+          }
+
+          if (boundaryChanged) {
+            console.log(
+              `🌌 씬 모델 경계 제한 (${modelName}, 마진 X:${dynamicBoundaryMarginX}, Z:${dynamicBoundaryMarginZ}): (${position.x.toFixed(
+                1
+              )}, ${position.z.toFixed(1)}) → (${newPosition.x.toFixed(1)}, ${newPosition.z.toFixed(1)})`
+            );
+            console.log(`📍 모델 경계 (방향별 마진 적용): X[${minX.toFixed(1)}, ${maxX.toFixed(1)}], Z[${minZ.toFixed(1)}, ${maxZ.toFixed(1)}]`);
+          }
+        }
+      } else {
+        // 모델을 찾을 수 없는 경우 기본 경계 사용
+        console.warn(`씬 모델을 찾을 수 없습니다: ${modelName}, 기본 경계 사용`);
+        const bounds = isDay ? { minX: -800, maxX: 800, minZ: -800, maxZ: 800 } : { minX: -3800, maxX: 3800, minZ: -3800, maxZ: 3800 };
+
+        newPosition.x = THREE.MathUtils.clamp(newPosition.x, bounds.minX, bounds.maxX);
+        newPosition.z = THREE.MathUtils.clamp(newPosition.z, bounds.minZ, bounds.maxZ);
+
+        if (newPosition.x !== position.x || newPosition.z !== position.z) {
+          boundaryChanged = true;
+          console.log(
+            `🚧 기본 경계 제한: (${position.x.toFixed(1)}, ${position.z.toFixed(1)}) → (${newPosition.x.toFixed(1)}, ${newPosition.z.toFixed(1)})`
+          );
+        }
+      }
+    } else {
+      // 씬이 없는 경우 기본 경계 사용
+      const isDay = isDayTime();
+      const bounds = isDay ? { minX: -800, maxX: 800, minZ: -800, maxZ: 800 } : { minX: -3800, maxX: 3800, minZ: -3800, maxZ: 3800 };
+
+      newPosition.x = THREE.MathUtils.clamp(newPosition.x, bounds.minX, bounds.maxX);
+      newPosition.z = THREE.MathUtils.clamp(newPosition.z, bounds.minZ, bounds.maxZ);
+
+      if (newPosition.x !== position.x || newPosition.z !== position.z) {
+        boundaryChanged = true;
+        console.log(
+          `🚧 기본 경계 제한: (${position.x.toFixed(1)}, ${position.z.toFixed(1)}) → (${newPosition.x.toFixed(1)}, ${newPosition.z.toFixed(1)})`
+        );
+      }
+    }
+
+    // 등대 경계 체크
+    const lighthousePosition = new THREE.Vector3(-80, 65, -340);
+    const boundaryDistance = 60;
+    const distanceToLighthouse = Math.sqrt(Math.pow(newPosition.x - lighthousePosition.x, 2) + Math.pow(newPosition.z - lighthousePosition.z, 2));
+
+    if (distanceToLighthouse <= boundaryDistance) {
+      // 등대 경계 내부에 있으면 가장 가까운 경계 밖으로 이동
+      const direction = new THREE.Vector2(newPosition.x - lighthousePosition.x, newPosition.z - lighthousePosition.z).normalize();
+
+      newPosition.x = lighthousePosition.x + direction.x * boundaryDistance;
+      newPosition.z = lighthousePosition.z + direction.y * boundaryDistance;
+      boundaryChanged = true;
+
       console.log(
-        `🚧 맵 경계 제한: (${position.x.toFixed(1)}, ${position.z.toFixed(1)}) → (${newPosition.x.toFixed(1)}, ${newPosition.z.toFixed(1)})`
+        `🏗️ 등대 경계 제한: (${position.x.toFixed(1)}, ${position.z.toFixed(1)}) → (${newPosition.x.toFixed(1)}, ${newPosition.z.toFixed(1)})`
+      );
+    }
+
+    // low_poly_triple_trees 경계 체크
+    const tripleTreesPosition = new THREE.Vector3(-330, 70, 0);
+    const tripleTreesBoundaryDistance = 80; // 트리 크기에 맞는 경계
+    const distanceToTripleTrees = Math.sqrt(Math.pow(newPosition.x - tripleTreesPosition.x, 2) + Math.pow(newPosition.z - tripleTreesPosition.z, 2));
+
+    if (distanceToTripleTrees <= tripleTreesBoundaryDistance) {
+      // 트리 경계 내부에 있으면 가장 가까운 경계 밖으로 이동
+      const direction = new THREE.Vector2(newPosition.x - tripleTreesPosition.x, newPosition.z - tripleTreesPosition.z).normalize();
+
+      newPosition.x = tripleTreesPosition.x + direction.x * tripleTreesBoundaryDistance;
+      newPosition.z = tripleTreesPosition.z + direction.y * tripleTreesBoundaryDistance;
+      boundaryChanged = true;
+
+      console.log(
+        `🌳 트리 경계 제한: (${position.x.toFixed(1)}, ${position.z.toFixed(1)}) → (${newPosition.x.toFixed(1)}, ${newPosition.z.toFixed(1)})`
       );
     }
 
@@ -519,45 +737,7 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   };
 
   private initializeFloatingObjects(): void {
-    this.floatingObjects = [
-      {
-        name: "low_poly_floating_island",
-        position: new THREE.Vector3(-100, 90, 330),
-        radius: 60,
-        height: 90,
-        actualHeight: this.getActualObjectHeight("low_poly_floating_island", new THREE.Vector3(-100, 90, 330)),
-      },
-      {
-        name: "low_poly_trees",
-        position: new THREE.Vector3(320, 80, 0),
-        radius: 55,
-        height: 80,
-        actualHeight: this.getActualObjectHeight("low_poly_trees", new THREE.Vector3(320, 80, 0)),
-      },
-      {
-        name: "low_poly_triple_trees",
-        position: new THREE.Vector3(-400, 60, 100),
-        radius: 150,
-        height: 60,
-        actualHeight: this.getActualObjectHeight("low_poly_triple_trees", new THREE.Vector3(-400, 60, 100)),
-      },
-    ];
-  }
-
-  // 실제 오브젝트 높이를 가져오는 함수
-  private getActualObjectHeight(objectName: string, objectPosition: THREE.Vector3): number {
-    // 씬에서 오브젝트를 찾아 실제 높이를 계산
-    const object = this.scene.getObjectByName(objectName);
-    if (object) {
-      const box = new THREE.Box3().setFromObject(object);
-      const actualHeight = box.max.y;
-      console.log(`${objectName} 실제 높이: ${actualHeight.toFixed(2)}`);
-      return actualHeight;
-    }
-
-    // 오브젝트를 찾을 수 없는 경우 기본값 반환
-    console.warn(`${objectName} 오브젝트를 찾을 수 없음, 기본 높이 사용`);
-    return objectPosition.y;
+    this.floatingObjects = [];
   }
 
   // 개선된 오브젝트 충돌 감지
@@ -601,14 +781,25 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
 
   private checkWaterStatus(position: THREE.Vector3): WaterStatus {
     const waterZones = TerrainUtils.getWaterZones();
-    const margin = 5.0;
+    const margin = 2.0; // 마진을 줄여서 더 정확한 경계 감지
 
     for (const zone of waterZones) {
       const inX = Math.abs(position.x - zone.center.x) <= zone.size.x / 2 + margin;
       const inZ = Math.abs(position.z - zone.center.z) <= zone.size.z / 2 + margin;
 
       const terrainHeight = this.terrainRaycaster.getTerrainHeight(position.x, position.z);
-      const isOnWaterTerrain = terrainHeight <= zone.waterLevel + 15;
+      // 물 위에 있는지 더 정확하게 판단 (물 높이보다 약간 위에 있어야 함)
+      const isOnWaterTerrain = terrainHeight <= zone.waterLevel + 8;
+
+      // 디버깅을 위한 로그 추가
+      if (Math.abs(position.x) < 100 && Math.abs(position.z) < 100) {
+        // 중앙 지역 근처에서만 로그 출력
+        console.log(
+          `🔍 물 상태 체크: 위치=(${position.x.toFixed(1)}, ${position.z.toFixed(1)}), inX=${inX}, inZ=${inZ}, 지형높이=${terrainHeight.toFixed(
+            1
+          )}, 물높이=${zone.waterLevel}, isOnWaterTerrain=${isOnWaterTerrain}`
+        );
+      }
 
       if (inX && inZ && isOnWaterTerrain) {
         return {
@@ -631,7 +822,6 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     this.updateWaterState(deltaTime);
     this.handleHorizontalMovementImproved(keys, deltaTime);
     this.adaptToTerrainImproved(deltaTime);
-    this.handleVerticalMovementImproved(keys, deltaTime);
     this.updateFinalPositionImproved(deltaTime);
     this.updateCloudPosition();
 
@@ -675,6 +865,12 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     const currentWaterStatus = this.checkWaterStatus(this.state.position);
     const shouldBeInWater = currentWaterStatus.inWater;
 
+    // 디버깅을 위한 로그 추가
+    if (this.state.isInWater !== shouldBeInWater) {
+      console.log(`🔍 물 상태 변경 감지: 현재=${this.state.isInWater}, 예상=${shouldBeInWater}`);
+      console.log(`📍 위치: (${this.state.position.x.toFixed(1)}, ${this.state.position.y.toFixed(1)}, ${this.state.position.z.toFixed(1)})`);
+    }
+
     if (this.state.isInWater !== shouldBeInWater) {
       if (this.state.pendingWaterState !== shouldBeInWater) {
         this.state.pendingWaterState = shouldBeInWater;
@@ -683,9 +879,11 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
       }
 
       this.state.waterStateTimer += deltaTime;
+      console.log(`⏱️ 물 상태 타이머: ${this.state.waterStateTimer.toFixed(3)}/${PHYSICS_CONSTANTS.WATER_STATE_DELAY}`);
 
       if (this.state.waterStateTimer >= PHYSICS_CONSTANTS.WATER_STATE_DELAY && !this.state.waterTransitionInProgress) {
         this.state.waterTransitionInProgress = true;
+        console.log("🚀 물 상태 전환 시작!");
 
         if (shouldBeInWater) {
           console.log("🌊 물에 진입! 구름 생성 중... (안정화됨)");
@@ -698,6 +896,10 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
         this.state.isInWater = shouldBeInWater;
         this.state.waterLevel = currentWaterStatus.waterLevel;
         this.state.waterBuoyancy = currentWaterStatus.buoyancy;
+
+        // 전환 완료 후 플래그 리셋
+        this.state.waterTransitionInProgress = false;
+        console.log("✅ 물 상태 전환 완료");
       }
     } else {
       this.state.pendingWaterState = null;
@@ -730,15 +932,21 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   }
 
   private exitWater(): void {
+    console.log("🚪 exitWater() 메서드 실행 시작");
+
     this.cloudManager.hideCloud();
+    console.log("☁️ 구름 숨김 완료");
 
     const terrainHeight = this.terrainRaycaster.getTerrainHeight(this.state.position.x, this.state.position.z);
+    console.log(`📍 현재 위치: (${this.state.position.x.toFixed(1)}, ${this.state.position.y.toFixed(1)}, ${this.state.position.z.toFixed(1)})`);
+    console.log(`🏔️ 지형 높이: ${terrainHeight.toFixed(1)}`);
 
     this.state.position.y = terrainHeight;
     this.state.velocity.y = 0;
 
-    console.log(`캐릭터 높이 복원: ${terrainHeight.toFixed(1)} (지형 기준)`);
+    console.log(`✅ 캐릭터 높이 복원 완료: ${terrainHeight.toFixed(1)} (지형 기준)`);
     this.uiManager.hideResetButton();
+    console.log("🔄 리셋 버튼 숨김 완료");
   }
 
   private updateCharacterDirection(moveVector: THREE.Vector3): void {
@@ -980,63 +1188,6 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     }
   }
 
-  // 개선된 수직 이동 처리
-  private handleVerticalMovementImproved(keys: any, deltaTime: number): void {
-    if (this.state.isControlLocked) return;
-
-    if (keys["Space"] && this.canJump()) {
-      if (TerrainUtils.isChatInputActive()) return;
-      if (this.state.isInWater) return;
-
-      this.performJumpImproved();
-    }
-
-    this.applyGravityImproved(deltaTime);
-  }
-
-  private canJump(): boolean {
-    return this.state.isOnGround && this.state.groundContactTime > 0.1;
-  }
-
-  // 개선된 점프 수행
-  private performJumpImproved(): void {
-    const currentVerticalVelocity = Math.max(this.state.velocity.y, 0);
-
-    // 일관된 점프 파워 적용
-    const jumpPower = PHYSICS_CONSTANTS.JUMP_POWER;
-
-    this.state.velocity.y = jumpPower + currentVerticalVelocity * 0.1;
-    this.state.isOnGround = false;
-    this.state.groundContactTime = 0;
-    this.state.airTime = 0;
-    this.state.objectStabilityFrames = 0; // 점프 시 오브젝트 안정성 리셋
-
-    const locationInfo = this.state.currentObjectCollision.isOnFloatingObject ? ` (${this.state.currentObjectCollision.objectName}에서)` : "";
-
-    console.log(`점프!${locationInfo} 현재 높이: ${this.state.position.y.toFixed(1)}, 점프력: ${this.state.velocity.y.toFixed(1)}`);
-  }
-
-  // 개선된 중력 적용
-  private applyGravityImproved(deltaTime: number): void {
-    if (this.state.isInWater) {
-      this.state.velocity.y = 0;
-    } else if (!this.state.isOnGround) {
-      // 일관된 중력 적용
-      this.state.velocity.y -= PHYSICS_CONSTANTS.GRAVITY * deltaTime;
-      this.state.velocity.y = Math.max(this.state.velocity.y, PHYSICS_CONSTANTS.MAX_FALL_SPEED);
-    } else if (this.state.isOnGround && !this.state.isInWater) {
-      if (this.state.velocity.y < 0) {
-        const dampingFactor = this.state.landingBuffer > 0 ? 0.6 : 0.8;
-        this.state.velocity.y *= dampingFactor;
-        if (Math.abs(this.state.velocity.y) < 0.5) {
-          this.state.velocity.y = 0;
-        }
-      } else {
-        this.state.velocity.y = Math.max(this.state.velocity.y, 0);
-      }
-    }
-  }
-
   // 개선된 최종 위치 업데이트
   private updateFinalPositionImproved(deltaTime: number): void {
     if (this.state.isInWater) {
@@ -1047,7 +1198,7 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
       this.updateLandPositionImproved(deltaTime);
     }
 
-    this.state.position = TerrainUtils.checkBounds(this.state.position);
+    this.state.position = TerrainUtils.checkBounds(this.state.position, this.scene);
   }
 
   // 개선된 오브젝트 위 위치 업데이트

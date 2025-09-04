@@ -96,7 +96,16 @@ function applyShortKeyDisabledToAllElements(): void {
   toggleShortKeyDisabled(savedState);
 }
 
+function appTransition(): void {
+  const body = document.body as HTMLElement;
+
+  if (body) {
+    body.classList.add("transition-div-active");
+  }
+}
+
 function initAllUIModules(): void {
+  appTransition();
   initIntroModule();
   initPopupModule();
   initThemeModule();

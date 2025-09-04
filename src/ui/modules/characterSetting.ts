@@ -1,6 +1,6 @@
-import { CharacterStorage, CharacterInfo } from "../../canvas/characterStorage";
+import { CharacterStorage } from "../../canvas/characterStorage";
 import { sceneHtml } from "../../data/sceneHtml";
-import { getCharacterSettings, createScaleFromSettings, START_POSITIONS, getRandomStartPosition } from "../../data/characterInfo";
+import { getCharacterSettings, createScaleFromSettings, getRandomStartPosition } from "../../data/characterInfo";
 
 export class CharacterSettingPopup {
   private popup: HTMLElement | null = null;
@@ -419,20 +419,6 @@ export class CharacterSettingPopup {
   // chat 컨테이너만 비우기
   private clearChatContainer(): void {
     const chat = document.querySelector("#chat") as HTMLElement;
-
-    if (chat) {
-      chat.innerHTML = "";
-    }
-  }
-
-  // 컨테이너들 비우기 (전체 초기화 시에만 사용)
-  private clearContainers(): void {
-    const characterSetting = document.querySelector("#character-setting") as HTMLElement;
-    const chat = document.querySelector("#chat") as HTMLElement;
-
-    if (characterSetting) {
-      characterSetting.innerHTML = "";
-    }
 
     if (chat) {
       chat.innerHTML = "";

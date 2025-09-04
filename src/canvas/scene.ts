@@ -68,7 +68,8 @@ export function createRenderer(): THREE.WebGLRenderer {
 
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.autoUpdate = false; // 성능을 위해 자동 업데이트 비활성화
+  // renderer.shadowMap.needsUpdate = true; // 초기 그림자 맵 업데이트 강제
 
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = isDayTime() ? 1.2 : 1.4; // 원본 이미지의 밝은 느낌을 위해 노출 증가
@@ -81,31 +82,31 @@ export function createRenderer(): THREE.WebGLRenderer {
 export function setupLighting(scene: THREE.Scene): void {
   const isDay = isDayTime();
 
-  const ambientIntensity = isDay ? 0.15 : 0.25; // 밤에는 night_sky_scene을 위해 더 밝게
-  const directionalIntensity = isDay ? 2.0 : 0.8; // 밤에는 직사광을 약간 증가
+  const ambientIntensity = isDay ? 0.15 : 0.25; // 성능을 위해 약간 증가하여 그림자 의존도 감소
+  const directionalIntensity = isDay ? 2.0 : 0.8; // 성능을 위해 약간 감소
   const lightColor = isDay ? 0xffffff : 0xffffff; // 밤에는 흰색 조명으로 원래 색상 보존
 
   const ambientLight = new THREE.AmbientLight(lightColor, ambientIntensity);
   scene.add(ambientLight);
 
   const directionalLight = new THREE.DirectionalLight(lightColor, directionalIntensity);
-  directionalLight.position.set(30, 120, 0);
+  directionalLight.position.set(30, 150, 0); // 조명 높이를 증가하여 애니메이션 중에도 그림자가 잘 보이도록
   directionalLight.castShadow = true;
 
-  // 그림자 맵 품질 향상 - 떠다니는 모델들을 위해 최적화
-  directionalLight.shadow.mapSize.width = 2048;
+  // 그림자 맵 품질 향상 - 성능과 품질의 균형을 맞춰 최적화
+  directionalLight.shadow.mapSize.width = 2048; // 성능을 위해 적당한 해상도로 조정
   directionalLight.shadow.mapSize.height = 2048;
   directionalLight.shadow.camera.near = 0.1;
-  directionalLight.shadow.camera.far = 5000;
-  directionalLight.shadow.camera.left = -1000;
-  directionalLight.shadow.camera.right = 1000;
-  directionalLight.shadow.camera.top = 1000;
-  directionalLight.shadow.camera.bottom = -1000;
+  directionalLight.shadow.camera.far = 8000; // 적당한 far 값으로 조정
+  directionalLight.shadow.camera.left = -2000; // 적당한 그림자 범위로 조정
+  directionalLight.shadow.camera.right = 2000;
+  directionalLight.shadow.camera.top = 2000; // 애니메이션 중 높은 위치까지 그림자 범위
+  directionalLight.shadow.camera.bottom = -2000;
 
-  // 그림자 품질 설정 - 떠다니는 모델들을 위해 최적화
-  directionalLight.shadow.bias = -0.0002;
-  directionalLight.shadow.normalBias = 0.003;
-  directionalLight.shadow.radius = 0.3;
+  // 그림자 품질 설정 - 성능과 품질의 균형
+  directionalLight.shadow.bias = -0.0005; // 성능을 고려한 bias 값
+  directionalLight.shadow.normalBias = 0.001; // 성능을 고려한 normalBias 값
+  directionalLight.shadow.radius = 0.3; // 적당한 그림자 경계 품질
 
   scene.add(directionalLight);
 
@@ -171,18 +172,33 @@ export function createCircularGradientGround(scene: THREE.Scene): void {
 
 // 그림자 품질 향상을 위한 추가 그림자 평면
 function createShadowPlane(scene: THREE.Scene): void {
-  const shadowPlaneGeometry = new THREE.PlaneGeometry(2000, 2000);
-  const shadowMaterial = new THREE.ShadowMaterial({
+  // 메인 그림자 평면 (성능을 고려한 적당한 크기)
+  const mainShadowPlaneGeometry = new THREE.PlaneGeometry(6000, 6000); // 성능을 위해 크기 조정
+  const mainShadowMaterial = new THREE.ShadowMaterial({
     transparent: true,
-    opacity: 0.2, // 떠다니는 모델들의 그림자를 위해 투명도 증가
+    opacity: 0.15, // 적당한 투명도로 조정
   });
 
-  const shadowPlane = new THREE.Mesh(shadowPlaneGeometry, shadowMaterial);
-  shadowPlane.rotation.x = -Math.PI / 2;
-  shadowPlane.position.y = -0.3; // 바닥에 더 가깝게 배치
-  shadowPlane.receiveShadow = true;
+  const mainShadowPlane = new THREE.Mesh(mainShadowPlaneGeometry, mainShadowMaterial);
+  mainShadowPlane.rotation.x = -Math.PI / 2;
+  mainShadowPlane.position.y = -0.3; // 바닥에 더 가깝게 배치
+  mainShadowPlane.receiveShadow = true;
 
-  scene.add(shadowPlane);
+  scene.add(mainShadowPlane);
+
+  // 추가 그림자 평면 (애니메이션 중 높은 위치의 그림자를 위해)
+  const extraShadowPlaneGeometry = new THREE.PlaneGeometry(8000, 8000);
+  const extraShadowMaterial = new THREE.ShadowMaterial({
+    transparent: true,
+    opacity: 0.08, // 더 투명하게 설정하여 자연스러운 그림자 효과
+  });
+
+  const extraShadowPlane = new THREE.Mesh(extraShadowPlaneGeometry, extraShadowMaterial);
+  extraShadowPlane.rotation.x = -Math.PI / 2;
+  extraShadowPlane.position.y = -0.2; // 메인 평면보다 약간 위에 배치
+  extraShadowPlane.receiveShadow = true;
+
+  scene.add(extraShadowPlane);
 }
 
 export function setupOrbitControls(camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer): OrbitControls {
@@ -289,6 +305,23 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
     // 씬 모델 로드
     const sceneModel = await loadModel(scene, sceneModelPath, scenePosition, sceneScale, sceneRotation);
 
+    if (sceneModel) {
+      // 씬 모델에 이름과 경계 정보 설정
+      const modelName = isDay ? "scene.glb" : "night_sky_scene.glb";
+      sceneModel.name = modelName;
+      sceneModel.userData.modelName = modelName;
+      sceneModel.userData.isSceneModel = true;
+
+      // 전역 변수로 저장하여 다른 시스템에서 접근 가능하도록 함
+      (window as any).sceneModel = sceneModel;
+
+      console.log(`✅ 씬 모델 로드 완료: ${modelName}`, {
+        position: sceneModel.position,
+        scale: sceneModel.scale,
+        name: sceneModel.name,
+      });
+    }
+
     if (sceneModel && !isDay && !sceneModelPath.includes("night_sky_scene")) {
       adjustSceneForNightTime(sceneModel);
     }
@@ -321,15 +354,23 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
     const floatingIsland = await loadModel(
       scene,
       "/models/low_poly_floating_island.glb",
-      new THREE.Vector3(-100, 90, 330),
+      new THREE.Vector3(-100, 130, 330),
       new THREE.Vector3(3, 3, 3),
       new THREE.Euler(0, 2, 0)
     );
 
     if (floatingIsland) {
       addFloatingAnimation(floatingIsland, 8, 0.4, 0);
-      // 원본 이미지와 동일한 조명 및 색감 적용
-      // adjustFloatingIslandLighting(floatingIsland);
+      // 캐릭터가 오브젝트로 인식하지 않도록 물리 속성 비활성화
+      floatingIsland.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.userData.isCollidable = false;
+          child.userData.isTerrain = false;
+          // 그림자 설정 최적화
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
       // 전역 변수로 저장
       (window as any).floatingIslandModel = floatingIsland;
     }
@@ -337,13 +378,23 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
     const floatingTrees = await loadModel(
       scene,
       "/models/low_poly_trees.glb",
-      new THREE.Vector3(320, 80, 0),
+      new THREE.Vector3(310, 90, 0),
       new THREE.Vector3(0.05, 0.05, 0.05),
       new THREE.Euler(0, 5, 0)
     );
 
     if (floatingTrees) {
       addFloatingAnimation(floatingTrees, 6, 0.6, Math.PI / 3);
+      // 캐릭터가 오브젝트로 인식하지 않도록 물리 속성 비활성화
+      floatingTrees.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.userData.isCollidable = false;
+          child.userData.isTerrain = false;
+          // 그림자 설정 최적화
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
       // 전역 변수로 저장
       (window as any).floatingTreesModel = floatingTrees;
     }
@@ -351,13 +402,20 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
     const tripleTrees = await loadModel(
       scene,
       "/models/low_poly_triple_trees.glb",
-      new THREE.Vector3(-400, 60, 100),
+      new THREE.Vector3(-330, 70, 0),
       new THREE.Vector3(4, 4, 4),
       new THREE.Euler(0, 4, 0)
     );
 
     if (tripleTrees) {
       addFloatingAnimation(tripleTrees, 7, 0.4, Math.PI / 4);
+      // 캐릭터가 오브젝트로 인식하지 않도록 물리 속성 비활성화
+      tripleTrees.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.userData.isCollidable = false;
+          child.userData.isTerrain = false;
+        }
+      });
       // 전역 변수로 저장
       (window as any).tripleTreesModel = tripleTrees;
     }
@@ -365,12 +423,15 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
     const lighthouseModel = await loadModel(
       scene,
       "/models/lighthouse.glb",
-      new THREE.Vector3(0, 75, -300),
+      new THREE.Vector3(-80, 65, -340),
       new THREE.Vector3(100, 100, 100),
       new THREE.Euler(0, 0, 0)
     );
 
     console.log("lighthouse 모델 로드 완료:", lighthouseModel);
+
+    // 등대 주변에 맵 경계 생성 (등대에 접근하지 못하도록)
+    // createLighthouseBoundary(scene); // 시각적 문제로 인해 비활성화, 캐릭터 컨트롤러에서만 체크
 
     // lighthouse 모델의 Node-Mesh_9 오브젝트 제어
     if (lighthouseModel) {

@@ -13,14 +13,26 @@ import {
 
 import { createAnimationLoop } from "./animation";
 
-import { CharacterManager, CharacterLoader } from "./character";
+import { CharacterManager } from "./character";
 import { CharacterStorage } from "./characterStorage";
 import { joinButtonManager } from "../ui/modules/joinButton";
-import { getCharacterSettings, createScaleFromSettings, START_POSITIONS, getRandomStartPosition } from "../data/characterInfo";
-import { initializeAmmo, initPhysicsWorld, analyzeTerrainAroundCharacter } from "./physicsEngine";
+import { getCharacterSettings, createScaleFromSettings, getRandomStartPosition } from "../data/characterInfo";
+import { initializeAmmo, initPhysicsWorld } from "./physicsEngine";
 
 import { TerrainRaycaster } from "./terrainRaycaster";
-import { TerrainAdaptiveCharacterController, SmoothCharacterController } from "./smoothCharacterController";
+import {
+  TerrainAdaptiveCharacterController,
+  SmoothCharacterController,
+  setBoundaryMargin,
+  getBoundaryMargin,
+  increaseBoundaryMargin,
+  decreaseBoundaryMargin,
+  setBoundaryMarginX,
+  setBoundaryMarginZ,
+  setCircularBoundary,
+  setCircularBoundaryMargin,
+  getCircularBoundarySettings,
+} from "./smoothCharacterController";
 
 import { initializeTheme, startAutoThemeUpdater } from "../ui/theme";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -141,7 +153,7 @@ let smoothCharacterController: SmoothCharacterController | null = null;
     // 채팅 입력 필드가 활성화되어 있으면 캐릭터 조작 키는 무시
     if (isChatInputActive) {
       // 캐릭터 조작에 사용되는 키들을 명시적으로 차단
-      const blockedKeys = ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"];
+      const blockedKeys = ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
       if (blockedKeys.includes(e.code)) {
         return; // 캐릭터 조작 키 무시
       }
@@ -183,19 +195,18 @@ let smoothCharacterController: SmoothCharacterController | null = null;
   (window as any).terrainRaycaster = terrainRaycaster;
   (window as any).smoothCharacterController = smoothCharacterController;
 
-  // 디버깅용 전역 함수들
-  (window as any).logAllObjects = () => {
-    globalCharacterManager?.logAllObjectNames();
-  };
+  // 경계 마진 조정 함수들 전역 노출
+  (window as any).setBoundaryMargin = setBoundaryMargin;
+  (window as any).getBoundaryMargin = getBoundaryMargin;
+  (window as any).increaseBoundaryMargin = increaseBoundaryMargin;
+  (window as any).decreaseBoundaryMargin = decreaseBoundaryMargin;
+  (window as any).setBoundaryMarginX = setBoundaryMarginX;
+  (window as any).setBoundaryMarginZ = setBoundaryMarginZ;
 
-  (window as any).testInteraction = () => {
-    const character = globalCharacterManager?.getAllCharacters()[0];
-    if (character) {
-      console.log("상호작용 테스트 시작");
-    } else {
-      console.log("캐릭터가 없습니다.");
-    }
-  };
+  // 원형 경계 제어 함수들 전역 노출
+  (window as any).setCircularBoundary = setCircularBoundary;
+  (window as any).setCircularBoundaryMargin = setCircularBoundaryMargin;
+  (window as any).getCircularBoundarySettings = getCircularBoundarySettings;
 
   (window as any).logSceneBounds = () => {
     globalCharacterManager?.logSceneBounds();
@@ -203,39 +214,6 @@ let smoothCharacterController: SmoothCharacterController | null = null;
 
   (window as any).visualizeBounds = () => {
     globalCharacterManager?.visualizeBounds();
-  };
-
-  // TPS 지형 추적 시스템 테스트 함수들
-  (window as any).testTerrainTracking = () => {
-    if (globalPhysicsWorld && globalCharacterManager) {
-      const characters = globalCharacterManager.getAllCharacters();
-      if (characters.length > 0) {
-        const char = characters[0];
-        const pos = char.model.position;
-        console.log("🧪 TPS 지형 추적 테스트 시작:");
-        console.log(`📍 캐릭터 위치: (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)})`);
-
-        const terrainAnalysis = analyzeTerrainAroundCharacter(globalPhysicsWorld, pos.x, pos.z, 5);
-        console.log(`🏔️ 지형 분석 결과:`);
-        console.log(`  - 현재 높이: ${terrainAnalysis.currentHeight.toFixed(1)}`);
-        console.log(`  - 평균 높이: ${terrainAnalysis.averageHeight.toFixed(1)}`);
-        console.log(`  - 경사도: ${terrainAnalysis.slope.toFixed(1)}`);
-        console.log(`  - 이동 가능: ${terrainAnalysis.canMove ? "✅" : "❌"}`);
-      } else {
-        console.log("❌ 테스트할 캐릭터가 없습니다.");
-      }
-    } else {
-      console.log("❌ 물리 월드 또는 캐릭터 매니저가 없습니다.");
-    }
-  };
-
-  (window as any).enableDetailedDebug = () => {
-    console.log("🔍 상세 디버깅 모드 활성화됨 - 5초간 모든 정보 출력");
-    (window as any).detailedDebugMode = true;
-    setTimeout(() => {
-      (window as any).detailedDebugMode = false;
-      console.log("🔍 상세 디버깅 모드 비활성화됨");
-    }, 5000);
   };
 
   // 새로운 지형 시스템 디버깅 함수들
@@ -254,126 +232,6 @@ let smoothCharacterController: SmoothCharacterController | null = null;
       console.log(`위치 (${x}, ${z})에서 지형 높이: ${height.toFixed(2)}`);
     } else {
       console.log("지형 레이캐스터가 초기화되지 않았습니다.");
-    }
-  };
-
-  (window as any).analyzePosition = (x = 70, z = 100, radius = 5) => {
-    if (terrainRaycaster) {
-      const analysis = terrainRaycaster.analyzeTerrainAroundPosition(x, z, radius);
-      console.log("지형 분석 결과:", analysis);
-    } else {
-      console.log("지형 레이캐스터가 초기화되지 않았습니다.");
-    }
-  };
-
-  (window as any).getCharacterInfo = () => {
-    if (smoothCharacterController) {
-      const adaptiveController = smoothCharacterController as any;
-      const info = adaptiveController.getDebugInfo ? adaptiveController.getDebugInfo() : smoothCharacterController.getPosition();
-      console.log("캐릭터 정보:", info);
-    } else {
-      console.log("부드러운 캐릭터 컨트롤러가 초기화되지 않았습니다.");
-    }
-  };
-
-  (window as any).testFloatingObjectInteraction = () => {
-    if (smoothCharacterController) {
-      const adaptiveController = smoothCharacterController as any;
-      const info = adaptiveController.getDebugInfo ? adaptiveController.getDebugInfo() : {};
-      console.log("=== 공중 오브젝트 상호작용 테스트 ===");
-      console.log("공중 오브젝트 근처:", info.isNearFloatingObject);
-      console.log("현재 오브젝트:", info.currentFloatingObject);
-      console.log("액션 버튼 표시:", info.actionButtonVisible);
-      console.log("총 오브젝트 수:", info.floatingObjectsCount);
-      console.log("캐릭터 위치:", info.position);
-      console.log("================================");
-    } else {
-      console.log("캐릭터 컨트롤러가 없습니다.");
-    }
-  };
-
-  (window as any).testFloatingObjectCollision = () => {
-    if (smoothCharacterController) {
-      const adaptiveController = smoothCharacterController as any;
-      const pos = adaptiveController.getPosition();
-      console.log("=== 공중 오브젝트 충돌 테스트 ===");
-      console.log("캐릭터 위치:", pos);
-
-      // 각 공중 오브젝트와의 거리 계산
-      const floatingObjects = [
-        { name: "low_poly_floating_island", position: { x: -100, y: 90, z: 330 } },
-        { name: "low_poly_trees", position: { x: 320, y: 80, z: 0 } },
-        { name: "low_poly_triple_trees", position: { x: -400, y: 60, z: 100 } },
-      ];
-
-      floatingObjects.forEach((obj) => {
-        const distance = Math.sqrt(Math.pow(pos.x - obj.position.x, 2) + Math.pow(pos.z - obj.position.z, 2));
-        console.log(`${obj.name}과의 거리: ${distance.toFixed(2)}`);
-      });
-      console.log("================================");
-    } else {
-      console.log("캐릭터 컨트롤러가 없습니다.");
-    }
-  };
-
-  (window as any).teleportCharacter = (x = 70, y: number | null = null, z = 100) => {
-    if (smoothCharacterController) {
-      let finalY = y;
-      if (finalY === null && terrainRaycaster) {
-        finalY = terrainRaycaster.getTerrainHeight(x, z) + 2;
-      } else if (finalY === null) {
-        finalY = 150;
-      }
-      smoothCharacterController.setPosition(x, finalY, z);
-      console.log(`캐릭터를 (${x}, ${finalY}, ${z})로 이동시켰습니다.`);
-    } else {
-      console.log("부드러운 캐릭터 컨트롤러가 초기화되지 않았습니다.");
-    }
-  };
-
-  // 카메라 위치 조정 함수들
-  (window as any).setCameraPosition = (x = 70, y = 60, z = 115) => {
-    const camera = (window as any).globalCamera;
-    if (camera) {
-      camera.position.set(x, y, z);
-      console.log(`카메라 위치를 (${x}, ${y}, ${z})로 설정했습니다.`);
-    }
-  };
-
-  (window as any).setCameraTarget = (x = 70, y = 45, z = 100) => {
-    const controls = (window as any).globalControls;
-    if (controls) {
-      controls.target.set(x, y, z);
-      console.log(`카메라 타겟을 (${x}, ${y}, ${z})로 설정했습니다.`);
-    }
-  };
-
-  (window as any).getCameraInfo = () => {
-    const camera = (window as any).globalCamera;
-    const controls = (window as any).globalControls;
-    if (camera && controls) {
-      console.log("=== 카메라 정보 ===");
-      console.log(`위치: (${camera.position.x.toFixed(2)}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)})`);
-      console.log(`타겟: (${controls.target.x.toFixed(2)}, ${controls.target.y.toFixed(2)}, ${controls.target.z.toFixed(2)})`);
-      console.log("==================");
-    }
-  };
-
-  // 캐릭터 중심으로 카메라 리셋
-  (window as any).resetCameraToCharacter = () => {
-    if (smoothCharacterController) {
-      const pos = smoothCharacterController.getPosition();
-      const camera = (window as any).globalCamera;
-      const controls = (window as any).globalControls;
-
-      if (camera && controls) {
-        // 캐릭터 뒤쪽에서 바라보는 위치로 설정
-        camera.position.set(pos.x, pos.y + 15, pos.z + 15);
-        controls.target.set(pos.x, pos.y, pos.z);
-        console.log(`카메라를 캐릭터 중심으로 리셋했습니다: (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)})`);
-      }
-    } else {
-      console.log("캐릭터 컨트롤러가 없습니다.");
     }
   };
 

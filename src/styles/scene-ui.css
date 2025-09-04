@@ -346,36 +346,14 @@
 
 .reset-button {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  left: 16px;
+  bottom: 60px;
+  transform: translateX(-50%);
+  left: 50%;
   z-index: 100;
-}
-
-.reset-button button {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: var(--blue-400);
 }
 
 .reset-button svg {
   color: var(--white);
-}
-
-.reset-button span {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: -20px;
-  text-align: center;
-  font-size: 14px;
-  color: var(--white);
-  white-space: nowrap;
 }
 
 .reset-button svg {

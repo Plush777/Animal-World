@@ -1,4 +1,7 @@
 import * as THREE from "three";
+import { getSceneModelBoundaryInfo } from "../utils/glbLoader";
+import { isDayTime } from "./time";
+import { getBoundaryMargin, getCircularBoundarySettings } from "./smoothCharacterController";
 
 declare global {
   interface Window {
@@ -207,6 +210,113 @@ function performGroundRayTest(physicsWorld: any, x: number, z: number): boolean 
   return rayCallback.hasHit();
 }
 
+// 물리 엔진용 경계 체크 함수
+function checkPhysicsBounds(position: THREE.Vector3, scene?: THREE.Scene): THREE.Vector3 {
+  const newPosition = position.clone();
+  let boundaryChanged = false;
+
+  // 방향별 동적 마진 사용 (smoothCharacterController와 동일)
+  const boundaryMargins = getBoundaryMargin();
+  const SCENE_BOUNDARY_MARGIN_X = boundaryMargins.x;
+  const SCENE_BOUNDARY_MARGIN_Z = boundaryMargins.z;
+
+  // 원형 경계 설정 확인
+  const circularSettings = getCircularBoundarySettings();
+  const useCircularBoundary = circularSettings.enabled;
+  const circularBoundaryMargin = circularSettings.margin;
+
+  // 씬 모델의 실제 경계를 사용한 체크
+  if (scene) {
+    const isDay = isDayTime();
+    const modelName = isDay ? "scene.glb" : "night_sky_scene.glb";
+
+    const boundaryInfo = getSceneModelBoundaryInfo(scene, modelName);
+
+    if (boundaryInfo) {
+      // 모델의 실제 경계를 사용하여 체크
+      const { center, size } = boundaryInfo;
+
+      if (useCircularBoundary) {
+        // 원형 경계 사용
+        const radius = Math.min(size.x, size.z) / 2 - circularBoundaryMargin;
+        const circularCenter = new THREE.Vector3(center.x, center.y, center.z);
+
+        // 중심점에서의 거리 계산
+        const distanceFromCenter = Math.sqrt(Math.pow(newPosition.x - circularCenter.x, 2) + Math.pow(newPosition.z - circularCenter.z, 2));
+
+        // 경계를 벗어났는지 확인
+        if (distanceFromCenter > radius) {
+          // 중심점에서 경계까지의 방향 벡터 계산
+          const directionX = (newPosition.x - circularCenter.x) / distanceFromCenter;
+          const directionZ = (newPosition.z - circularCenter.z) / distanceFromCenter;
+
+          // 경계 위의 가장 가까운 점으로 이동
+          newPosition.x = circularCenter.x + directionX * radius;
+          newPosition.z = circularCenter.z + directionZ * radius;
+          boundaryChanged = true;
+
+          console.log(
+            `⭕ 물리 엔진 원형 경계 제한: 거리 ${distanceFromCenter.toFixed(1)} → ${radius.toFixed(1)} (${position.x.toFixed(
+              1
+            )}, ${position.z.toFixed(1)}) → (${newPosition.x.toFixed(1)}, ${newPosition.z.toFixed(1)})`
+          );
+        }
+      } else {
+        // 기존 사각형 경계 사용
+        const halfWidth = size.x / 2 - SCENE_BOUNDARY_MARGIN_X;
+        const halfDepth = size.z / 2 - SCENE_BOUNDARY_MARGIN_Z;
+
+        const minX = center.x - halfWidth;
+        const maxX = center.x + halfWidth;
+        const minZ = center.z - halfDepth;
+        const maxZ = center.z + halfDepth;
+
+        // 경계 체크 및 제한
+        if (newPosition.x < minX) {
+          newPosition.x = minX;
+          boundaryChanged = true;
+        } else if (newPosition.x > maxX) {
+          newPosition.x = maxX;
+          boundaryChanged = true;
+        }
+
+        if (newPosition.z < minZ) {
+          newPosition.z = minZ;
+          boundaryChanged = true;
+        } else if (newPosition.z > maxZ) {
+          newPosition.z = maxZ;
+          boundaryChanged = true;
+        }
+      }
+
+      if (boundaryChanged) {
+        console.log(
+          `🌌 물리 엔진 씬 모델 경계 제한 (${modelName}, 마진 X:${SCENE_BOUNDARY_MARGIN_X}, Z:${SCENE_BOUNDARY_MARGIN_Z}): (${position.x.toFixed(
+            1
+          )}, ${position.z.toFixed(1)}) → (${newPosition.x.toFixed(1)}, ${newPosition.z.toFixed(1)})`
+        );
+      }
+    } else {
+      // 모델을 찾을 수 없는 경우 기본 경계 사용
+      const bounds = isDay ? { minX: -800, maxX: 800, minZ: -800, maxZ: 800 } : { minX: -3800, maxX: 3800, minZ: -3800, maxZ: 3800 };
+
+      newPosition.x = THREE.MathUtils.clamp(newPosition.x, bounds.minX, bounds.maxX);
+      newPosition.z = THREE.MathUtils.clamp(newPosition.z, bounds.minZ, bounds.maxZ);
+
+      if (newPosition.x !== position.x || newPosition.z !== position.z) {
+        boundaryChanged = true;
+        console.log(
+          `🚧 물리 엔진 기본 경계 제한: (${position.x.toFixed(1)}, ${position.z.toFixed(1)}) → (${newPosition.x.toFixed(1)}, ${newPosition.z.toFixed(
+            1
+          )})`
+        );
+      }
+    }
+  }
+
+  return newPosition;
+}
+
 // 캐릭터 업데이트 함수 - 안정성 개선 및 의도하지 않은 Y 이동 방지
 export function updateCharacterController(character: any, keys: any, _deltaTime: number): { moveX: number; moveZ: number; isMoving: boolean } {
   const Ammo = window.Ammo;
@@ -270,17 +380,6 @@ export function updateCharacterController(character: any, keys: any, _deltaTime:
     character.controller.setWalkDirection(walkDirection);
   }
 
-  // 점프 처리
-  if (keys["Space"]) {
-    // 채팅 입력 필드가 활성화되어 있으면 점프 차단
-    const activeElement = document.activeElement;
-    const isChatInputActive = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
-    if (!isChatInputActive) {
-      character.controller.jump();
-      console.log("점프!");
-    }
-  }
-
   // 업데이트 후 위치 가져오기
   const newTransform = character.ghostObject.getWorldTransform();
   const newOrigin = newTransform.getOrigin();
@@ -291,7 +390,6 @@ export function updateCharacterController(character: any, keys: any, _deltaTime:
 
   // 충돌 감지 상태 확인 (새로운 시스템)
   const isOnGround = character.controller.onGround();
-  const canJump = character.controller.canJump();
 
   // 개선된 디버깅 정보 출력 - TPS 게임 스타일 시스템
   const detailedMode = (window as any).detailedDebugMode;
@@ -302,8 +400,7 @@ export function updateCharacterController(character: any, keys: any, _deltaTime:
     console.log(`📍 위치: (${newPos.x.toFixed(1)}, ${newPos.y.toFixed(1)}, ${newPos.z.toFixed(1)})`);
     console.log(`📊 Y변화: ${yDiff.toFixed(3)}`);
     console.log(`🏃 지면 접촉: ${isOnGround ? "✅ YES" : "❌ NO"}`);
-    console.log(`🦘 점프 가능: ${canJump ? "✅ YES" : "❌ NO"}`);
-    console.log(`🎯 움직임: ${isMoving ? "🚶 이동중" : "🧍 정지"}, 스페이스: ${keys["Space"] ? "🦘 점프" : "⭕ 미입력"}`);
+    console.log(`🎯 움직임: ${isMoving ? "🚶 이동중" : "🧍 정지"}`);
 
     // 지형 분석 정보 추가
     const physicsWorld = (window as any).globalPhysicsWorld;
@@ -345,7 +442,7 @@ export function updateCharacterController(character: any, keys: any, _deltaTime:
       console.log(`✅ 지형 관통 수정 완료: ${newPos.y.toFixed(1)} → ${currentGroundHeight.toFixed(1)}`);
     }
     // 일반적인 안정화 (큰 Y값 변화 시)
-    else if (yDiff > 3.0 && !keys["Space"]) {
+    else if (yDiff > 3.0) {
       const correctGroundHeight = character.controller.lastGroundHeight;
 
       const correctedTransform = new Ammo.btTransform();
@@ -358,6 +455,20 @@ export function updateCharacterController(character: any, keys: any, _deltaTime:
       if (Math.random() < 0.05) {
         console.log(`⚖️ Y값 안정화: ${newPos.y.toFixed(1)} → ${correctGroundHeight.toFixed(1)}`);
       }
+    }
+  }
+
+  // 경계 체크 적용
+  const scene = (window as any).globalScene;
+  if (scene) {
+    const boundedPos = checkPhysicsBounds(newPos, scene);
+    if (boundedPos.x !== newPos.x || boundedPos.z !== newPos.z) {
+      // 경계 제한이 적용된 경우 물리 객체 위치도 수정
+      const correctedTransform = new Ammo.btTransform();
+      correctedTransform.setIdentity();
+      correctedTransform.setOrigin(new Ammo.btVector3(boundedPos.x, boundedPos.y, boundedPos.z));
+      character.ghostObject.setWorldTransform(correctedTransform);
+      newPos.copy(boundedPos);
     }
   }
 
