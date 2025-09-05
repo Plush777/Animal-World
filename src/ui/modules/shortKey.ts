@@ -36,10 +36,10 @@ export function loadShortKeyDisabledState(): boolean {
  * @param isDisabled 단축키 비활성화 여부
  */
 export function toggleShortKeyDisabled(isDisabled: boolean): void {
-  // body 태그에 data-short-key 속성 설정
+  // body 태그에 data-short-key-disable 속성 설정
   if (isDisabled) {
-    document.body.setAttribute("data-short-key", "true");
+    document.body.setAttribute("data-short-key-disable", "true");
   } else {
-    document.body.setAttribute("data-short-key", "false");
+    document.body.setAttribute("data-short-key-disable", "false");
   }
 }

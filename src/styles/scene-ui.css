@@ -603,20 +603,68 @@ input[type="checkbox"] + label {
   color: var(--white);
 }
 
-[data-short-key="true"] .chat-emoji-wrapper .tooltip,
-[data-short-key="true"] .chat-open-button-area .tooltip {
+.chat-emoji-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-short-key-disable="true"] .chat-emoji-tooltip-box {
+  pointer-events: none;
+}
+
+[data-short-key-disable="true"] .chat-emoji-wrapper.active + .chat-emoji-tooltip-box {
+  pointer-events: auto;
+}
+
+[data-short-key-disable="true"] .chat-emoji-tooltip-box .tooltip.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+[data-short-key-disable="true"] .chat-emoji-tooltip-box .tooltip.active {
+  top: -75px;
+}
+
+[data-short-key-disable="true"] #emoji-thumb-up-tooltip {
+  left: 30px;
+}
+
+[data-short-key-disable="true"] #emoji-clap-tooltip {
+  left: 70px;
+}
+
+[data-short-key-disable="true"] #emoji-heart-tooltip {
+  left: 105px;
+}
+
+[data-short-key-disable="true"] #emoji-wave-tooltip {
+  left: 150px;
+}
+
+[data-short-key-disable="true"] #emoji-smile-tooltip {
+  left: 188px;
+}
+
+[data-short-key-disable="true"] #emoji-cry-tooltip {
+  left: 228px;
+}
+
+[data-short-key-disable="true"] .chat-emoji-wrapper .tooltip,
+[data-short-key-disable="true"] .chat-open-button-area .tooltip {
   left: 48px;
 }
 
-[data-short-key="true"] .short-key,
-[data-short-key="true"] .short-key + .short-key {
+[data-short-key-disable="true"] .short-key,
+[data-short-key-disable="true"] .short-key + .short-key {
   display: none;
 }
 
-[data-short-key="true"] .world-header-box .short-key ~ .tooltip {
+[data-short-key-disable="true"] .world-header-box .short-key ~ .tooltip {
   bottom: -40px;
 }
 
-[data-short-key="true"] #join-button .short-key {
+[data-short-key-disable="true"] #join-button .short-key {
   display: none;
 }

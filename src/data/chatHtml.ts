@@ -10,25 +10,50 @@ export const chatHtml: { [key: string]: any } = {
                 </button>
 
                 <div class="chat-emoji-list" id="chat-emoji-list">
-                    <button type="button" class="chat-emoji-list-button">
-                    👍
-                    </button>
-                    <button type="button" class="chat-emoji-list-button">
-                    👏
-                    </button>
-                    <button type="button" class="chat-emoji-list-button">
-                    ❤️
-                    </button>
-                    <button type="button" class="chat-emoji-list-button">
-                    👋
-                    </button>
-                        <button type="button" class="chat-emoji-list-button">
-                    😆
-                    </button>
-                    <button type="button" class="chat-emoji-list-button">
-                    😢
-                    </button>
+                    <div class="chat-emoji-item">
+                        <button type="button" class="chat-emoji-list-button" id="emoji-thumb-up">
+                        👍
+                        </button>
+                    </div>
+
+                    <div class="chat-emoji-item">
+                        <button type="button" class="chat-emoji-list-button" id="emoji-clap">
+                        👏
+                        </button>
+                    </div>
+
+                    <div class="chat-emoji-item">
+                        <button type="button" class="chat-emoji-list-button" id="emoji-heart">
+                        ❤️
+                        </button>
+                    </div>
+                   
+                    <div class="chat-emoji-item">
+                        <button type="button" class="chat-emoji-list-button" id="emoji-wave">
+                        👋
+                        </button>
+                    </div>
+                   
+                     <div class="chat-emoji-item">
+                        <button type="button" class="chat-emoji-list-button" id="emoji-smile">
+                        😆
+                        </button>
+                    </div>
+
+                    <div class="chat-emoji-item">
+                        <button type="button" class="chat-emoji-list-button" id="emoji-cry">
+                        😢
+                        </button>
+                    </div>
                 </div>
+            </div>
+            <div class="chat-emoji-tooltip-box">
+                <span class="tooltip" id="emoji-thumb-up-tooltip">(1) 따봉</span>
+                <span class="tooltip" id="emoji-clap-tooltip">(2) 박수</span>
+                <span class="tooltip" id="emoji-heart-tooltip">(3) 하트</span>
+                <span class="tooltip" id="emoji-wave-tooltip">(4) 박수</span>
+                <span class="tooltip" id="emoji-smile-tooltip">(5) 웃음</span>
+                <span class="tooltip" id="emoji-cry-tooltip">(6) 울음</span>
             </div>
             <span class="short-key has-border has-text">E</span>
             
