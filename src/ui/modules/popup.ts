@@ -55,6 +55,105 @@ function setupScrollbarThumbVisibilityObserver(thumbClass: string): void {
   }
 }
 
+function commonInitPopup(popupType: string, e: Event): void {
+  const target = e.target as HTMLElement;
+
+  if (popupType === "setting") {
+    const settingButton = document.querySelector(".setting-button") as HTMLElement;
+
+    const isKeyboardEvent = e instanceof KeyboardEvent;
+    settingButton.classList.toggle("active");
+
+    if (isKeyboardEvent || settingButton.classList.contains("active")) {
+      initializeSettingVirtualScroll();
+
+      if (settingVirtualScroll) {
+        settingVirtualScroll.resetScroll();
+      }
+    } else {
+      if (settingVirtualScroll) {
+        settingVirtualScroll.destroy();
+        settingVirtualScroll = null;
+      }
+    }
+  }
+
+  if (popupType === "user-list") {
+    const userListButton = document.querySelector(".world-user-list-button") as HTMLElement;
+    const isKeyboardEvent = e instanceof KeyboardEvent;
+
+    // 클릭 이벤트인 경우와 키보드 이벤트인 경우를 구분하여 처리
+    if (isKeyboardEvent || target.classList.contains("world-user-list-button")) {
+      userListButton?.classList.toggle("active");
+      isUserListButtonActive = userListButton?.classList.contains("active") || false;
+
+      // 팝업이 열릴 때만 사용자 목록 로드 및 가상 스크롤 초기화
+      if (isUserListButtonActive) {
+        initializeUserListVirtualScroll();
+        loadUsersList();
+      } else {
+        // 팝업이 닫힐 때 가상 스크롤 정리 및 타임아웃 제거
+        if (userListVirtualScroll) {
+          userListVirtualScroll.destroy();
+          userListVirtualScroll = null;
+        }
+        if (userListLoadTimeout) {
+          clearTimeout(userListLoadTimeout);
+          userListLoadTimeout = null;
+        }
+      }
+    }
+
+    // 키보드 이벤트가 아닌 경우에만 외부 클릭 감지
+    if (!isKeyboardEvent && userListButton?.classList.contains("active") && target !== userListButton && !target.closest(".popup.user-list")) {
+      userListButton?.classList.remove("active");
+      isUserListButtonActive = false;
+      // 팝업이 닫힐 때 가상 스크롤 정리 및 타임아웃 제거
+      if (userListVirtualScroll) {
+        userListVirtualScroll.destroy();
+        userListVirtualScroll = null;
+      }
+      if (userListLoadTimeout) {
+        clearTimeout(userListLoadTimeout);
+        userListLoadTimeout = null;
+      }
+    }
+  }
+
+  if (popupType === "help") {
+    const helpButton = document.querySelector(".help-button") as HTMLElement;
+    const isKeyboardEvent = e instanceof KeyboardEvent;
+
+    if (isKeyboardEvent || target.classList.contains("help-button")) {
+      helpButton.classList.toggle("active");
+
+      // 팝업이 열릴 때 가상 스크롤 초기화
+      if (helpButton.classList.contains("active")) {
+        initializeHelpVirtualScroll();
+        // 스크롤 위치 초기화
+        if (helpVirtualScroll) {
+          helpVirtualScroll.resetScroll();
+        }
+      } else {
+        // 팝업이 닫힐 때 가상 스크롤 정리
+        if (helpVirtualScroll) {
+          helpVirtualScroll.destroy();
+          helpVirtualScroll = null;
+        }
+      }
+    }
+
+    if (!isKeyboardEvent && helpButton?.classList.contains("active") && target !== helpButton && !target.closest(".popup.help")) {
+      helpButton?.classList.remove("active");
+
+      if (helpVirtualScroll) {
+        helpVirtualScroll.destroy();
+        helpVirtualScroll = null;
+      }
+    }
+  }
+}
+
 function setupSettingPopup(): void {
   const app = document.querySelector("#app") as HTMLElement;
 
@@ -63,34 +162,7 @@ function setupSettingPopup(): void {
       const target = e.target as HTMLElement;
 
       if (target.classList.contains("setting-button")) {
-        const settingButton = document.querySelector(".setting-button") as HTMLElement;
-        settingButton.classList.toggle("active");
-
-        // 팝업이 열릴 때 가상 스크롤 초기화
-        if (settingButton.classList.contains("active")) {
-          initializeSettingVirtualScroll();
-          // 스크롤 위치 초기화
-          if (settingVirtualScroll) {
-            settingVirtualScroll.resetScroll();
-          }
-        } else {
-          // 팝업이 닫힐 때 가상 스크롤 정리
-          if (settingVirtualScroll) {
-            settingVirtualScroll.destroy();
-            settingVirtualScroll = null;
-          }
-        }
-      }
-
-      const settingButton = document.querySelector(".setting-button") as HTMLElement;
-
-      if (settingButton?.classList.contains("active") && target !== settingButton && !target.closest(".popup.setting")) {
-        settingButton?.classList.remove("active");
-        // 팝업이 닫힐 때 가상 스크롤 정리
-        if (settingVirtualScroll) {
-          settingVirtualScroll.destroy();
-          settingVirtualScroll = null;
-        }
+        commonInitPopup("setting", e);
       }
     });
   }
@@ -102,41 +174,9 @@ function setupUserListPopup(): void {
   if (app) {
     app.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
-      const userListButton = document.querySelector(".world-user-list-button") as HTMLElement;
 
       if (target.classList.contains("world-user-list-button")) {
-        userListButton?.classList.toggle("active");
-        isUserListButtonActive = userListButton?.classList.contains("active") || false;
-
-        // 팝업이 열릴 때만 사용자 목록 로드 및 가상 스크롤 초기화
-        if (isUserListButtonActive) {
-          initializeUserListVirtualScroll();
-          loadUsersList();
-        } else {
-          // 팝업이 닫힐 때 가상 스크롤 정리 및 타임아웃 제거
-          if (userListVirtualScroll) {
-            userListVirtualScroll.destroy();
-            userListVirtualScroll = null;
-          }
-          if (userListLoadTimeout) {
-            clearTimeout(userListLoadTimeout);
-            userListLoadTimeout = null;
-          }
-        }
-      }
-
-      if (userListButton?.classList.contains("active") && target !== userListButton && !target.closest(".popup.user-list")) {
-        userListButton?.classList.remove("active");
-        isUserListButtonActive = false;
-        // 팝업이 닫힐 때 가상 스크롤 정리 및 타임아웃 제거
-        if (userListVirtualScroll) {
-          userListVirtualScroll.destroy();
-          userListVirtualScroll = null;
-        }
-        if (userListLoadTimeout) {
-          clearTimeout(userListLoadTimeout);
-          userListLoadTimeout = null;
-        }
+        commonInitPopup("user-list", e);
       }
     });
   }
@@ -150,34 +190,7 @@ function setupHelpPopup(): void {
       const target = e.target as HTMLElement;
 
       if (target.classList.contains("help-button")) {
-        const helpButton = document.querySelector(".help-button") as HTMLElement;
-        helpButton.classList.toggle("active");
-
-        // 팝업이 열릴 때 가상 스크롤 초기화
-        if (helpButton.classList.contains("active")) {
-          initializeHelpVirtualScroll();
-          // 스크롤 위치 초기화
-          if (helpVirtualScroll) {
-            helpVirtualScroll.resetScroll();
-          }
-        } else {
-          // 팝업이 닫힐 때 가상 스크롤 정리
-          if (helpVirtualScroll) {
-            helpVirtualScroll.destroy();
-            helpVirtualScroll = null;
-          }
-        }
-      }
-
-      const helpButton = document.querySelector(".help-button") as HTMLElement;
-
-      if (helpButton?.classList.contains("active") && target !== helpButton && !target.closest(".popup.help")) {
-        helpButton?.classList.remove("active");
-        // 팝업이 닫힐 때 가상 스크롤 정리
-        if (helpVirtualScroll) {
-          helpVirtualScroll.destroy();
-          helpVirtualScroll = null;
-        }
+        commonInitPopup("help", e);
       }
     });
   }
@@ -699,4 +712,4 @@ function initPopupModule(): void {
   setupRealTimeUserListUpdates();
 }
 
-export { initPopupModule, setupSettingPopup, setupPopupClose, setupCharacterSelection, restoreSelectedCharacter };
+export { initPopupModule, commonInitPopup, setupPopupClose, setupCharacterSelection, restoreSelectedCharacter };

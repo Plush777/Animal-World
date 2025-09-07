@@ -1,5 +1,13 @@
 import { sceneHtml } from "../../data/sceneHtml";
 
+export function emojiToggle() {
+  const emojiWrapper = document.querySelector(".chat-emoji-wrapper") as HTMLElement;
+  const emojiButton = document.querySelector(".chat-emoji-button") as HTMLElement;
+
+  emojiWrapper.classList.toggle("active");
+  emojiButton.setAttribute("aria-expanded", emojiWrapper.classList.contains("active") ? "true" : "false");
+}
+
 export function appClickEvents() {
   const app = document.querySelector("#app") as HTMLElement;
 
@@ -26,8 +34,7 @@ export function appClickEvents() {
       const emojiWrapper = document.querySelector(".chat-emoji-wrapper") as HTMLElement;
 
       if (emojiWrapper && target === emojiButton) {
-        emojiWrapper.classList.toggle("active");
-        emojiButton.setAttribute("aria-expanded", emojiWrapper.classList.contains("active") ? "true" : "false");
+        emojiToggle();
       }
 
       const mapExploreCheckbox = document.getElementById("map-explore") as HTMLInputElement;

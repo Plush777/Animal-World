@@ -382,7 +382,7 @@ input[type="checkbox"] + label {
   overflow: hidden;
 }
 
-.chat-emoji-wrapper + .short-key {
+.chat-emoji-tooltip-box + .short-key {
   top: -58px;
 }
 
@@ -410,7 +410,7 @@ input[type="checkbox"] + label {
   height: 40px;
 }
 
-.chat-emoji-wrapper + .short-key {
+.chat-emoji-tooltip-box + .short-key {
   display: flex;
   transform: none;
   top: -59px;
@@ -419,11 +419,11 @@ input[type="checkbox"] + label {
   transition: 0s;
 }
 
-.chat-wrapper.active .chat-emoji-wrapper + .short-key {
+.chat-wrapper.active .chat-emoji-tooltip-box + .short-key {
   top: -23px;
 }
 
-.chat-emoji-wrapper.active + .short-key {
+.chat-emoji-wrapper.active + .chat-emoji-tooltip-box + .short-key {
   display: none;
 }
 

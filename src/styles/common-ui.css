@@ -147,6 +147,7 @@ input[type="checkbox"] + label::before {
   border-radius: 4px;
   font-size: 13px;
   white-space: nowrap;
+  z-index: 9999;
 }
 
 body::before {
@@ -181,5 +182,11 @@ video {
 @media (prefers-color-scheme: dark) {
   body {
     background-color: #000;
+  }
+}
+
+@media (max-width: 768px) {
+  .short-key {
+    display: none;
   }
 }
