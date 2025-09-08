@@ -52,7 +52,7 @@ function saveMapExploreState(isEnabled: boolean): void {
  * 로컬 스토리지에서 맵 둘러보기 상태를 불러오는 함수
  * @returns 맵 둘러보기 활성화 여부
  */
-function loadMapExploreState(): boolean {
+export function loadMapExploreState(): boolean {
   const savedState = localStorage.getItem("mapExplore");
   return savedState ? JSON.parse(savedState) : false;
 }
@@ -61,7 +61,7 @@ function loadMapExploreState(): boolean {
  * 맵 둘러보기 상태를 토글하는 함수
  * @param isEnabled 맵 둘러보기 활성화 여부
  */
-function toggleMapExplore(isEnabled: boolean): void {
+export function toggleMapExplore(isEnabled: boolean): void {
   // 전역 카메라 컨트롤에 맵 둘러보기 상태 전달
   if (window.globalControls) {
     if (isEnabled) {
@@ -87,13 +87,59 @@ function toggleMapExplore(isEnabled: boolean): void {
 /**
  * 맵 둘러보기 체크박스 상태를 로컬 스토리지 값과 동기화하는 함수
  */
-function syncMapExploreCheckboxWithLocalStorage(): void {
+export function syncMapExploreCheckboxWithLocalStorage(): void {
   const mapExploreCheckbox = document.getElementById("map-explore") as HTMLInputElement;
   if (mapExploreCheckbox) {
     const savedState = loadMapExploreState();
     mapExploreCheckbox.checked = savedState;
     toggleMapExplore(savedState);
   }
+}
+
+/**
+ * 맵 둘러보기 토글 시 toast 메시지를 표시하는 함수
+ * @param isEnabled 맵 둘러보기 활성화 여부
+ */
+export function showMapExploreToast(isEnabled: boolean): void {
+  const toast = document.getElementById("toast") as HTMLElement;
+  if (!toast) return;
+
+  if (!isEnabled) {
+    // toast 메시지를 비우고 타이머 정리
+    toast.innerHTML = "";
+    if (window.toastTimers) {
+      window.toastTimers.forEach((timerId: number | NodeJS.Timeout) => clearTimeout(timerId as any));
+    }
+    window.toastTimers = [];
+
+    return;
+  }
+
+  // sceneHtml을 동적으로 import해서 사용
+  import("../../data/sceneHtml")
+    .then(({ sceneHtml }) => {
+      toast.innerHTML = sceneHtml.toast.mapExploreOn;
+
+      // 이전 타이머가 있다면 정리
+      if (window.toastTimers) {
+        window.toastTimers.forEach((timerId: number | NodeJS.Timeout) => clearTimeout(timerId as any));
+      }
+
+      // 새로운 타이머 ID들을 저장할 배열
+      window.toastTimers = [];
+
+      const timer1 = setTimeout(() => {
+        const toastWrapper = document.querySelector(".toast-wrapper") as HTMLElement;
+        if (toastWrapper) {
+          toastWrapper.classList.add("active");
+        }
+      }, 1);
+
+      window.toastTimers.push(timer1);
+    })
+    .catch((error) => {
+      console.error("Toast 메시지 표시 중 오류:", error);
+    });
 }
 
 /**

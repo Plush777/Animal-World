@@ -227,10 +227,12 @@ class CloudManager {
     if (this.waterCloudModel) return this.waterCloudModel;
 
     try {
-      const gltfLoader = (window as any).gltfLoader;
+      let gltfLoader = (window as any).gltfLoader;
       if (!gltfLoader) {
-        console.warn("GLTFLoader가 없습니다. 대체 구름을 생성합니다.");
-        return this.createFallbackCloud();
+        console.warn("GLTFLoader가 없습니다. 새로운 인스턴스를 생성합니다.");
+        const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
+        gltfLoader = new GLTFLoader();
+        (window as any).gltfLoader = gltfLoader;
       }
 
       return new Promise((resolve) => {

@@ -231,10 +231,42 @@ class ChatSystem {
     console.log("기존 헤더 제거 완료");
   }
 
-  // 소켓 연결
+  // 소켓 연결 (싱글톤 패턴 적용)
   connectToServer(): void {
-    console.log("채팅 서버에 연결 중...");
+    console.log("채팅 서버 연결 확인 중...");
 
+    // 채팅 UI가 초기화되지 않았다면 먼저 초기화
+    if (!this.isInitialized) {
+      console.log("채팅 UI가 초기화되지 않음, 먼저 초기화");
+      this.initialize();
+    }
+
+    // 이미 연결되어 있고 상태가 정상이면 재사용
+    if (this.socket && this.socket.connected) {
+      console.log("기존 소켓 연결 재사용:", this.socket.id);
+
+      // 사용자 정보를 다시 설정
+      if (this.currentUser) {
+        this.socket.emit("setUserInfo", { nickname: this.currentUser });
+      }
+
+      // 방 입장 확인
+      setTimeout(() => {
+        this.checkURLForRoom();
+      }, 100);
+
+      return;
+    }
+
+    // 기존 소켓이 있지만 연결이 끊어진 경우 정리
+    if (this.socket && !this.socket.connected) {
+      console.log("기존 소켓 연결 정리 후 새로 연결");
+      this.socket.removeAllListeners();
+      this.socket.disconnect();
+      this.socket = null;
+    }
+
+    console.log("새로운 채팅 서버 연결 생성");
     this.socket = io("http://localhost:8000");
 
     this.socket.on("connect", () => {
@@ -413,6 +445,11 @@ class ChatSystem {
     this.resetCanvasToInitialState();
     this.showIntroWrapper();
 
+    // 참여 버튼 다시 활성화
+    if ((window as any).joinButtonManager) {
+      (window as any).joinButtonManager.enableJoinButton();
+    }
+
     console.log("방을 나갔습니다.");
   }
 
@@ -439,6 +476,12 @@ class ChatSystem {
       this.ui.container.id = "chat";
       document.body.appendChild(this.ui.container);
     } else {
+      // 채팅 메시지만 지우고 HTML 구조는 유지
+      const messagesContainer = this.ui.container.querySelector("#chat-messages");
+      if (messagesContainer) {
+        messagesContainer.innerHTML = "";
+      }
+      // 완전히 비우지 않고 상태만 초기화
       this.ui.container.innerHTML = "";
     }
 
@@ -629,16 +672,34 @@ class ChatSystem {
   }
 
   private initializeChatSystemWithUser(): void {
-    document.addEventListener(
-      "canvasLoadingComplete",
-      () => {
-        console.log("캔버스 로딩 완료, 채팅 초기화 시작");
-        this.initialize();
-        this.connectToServer();
-        console.log("채팅 시스템 초기화 완료");
-      },
-      { once: true }
-    );
+    // 이미 초기화된 상태라면 즉시 연결
+    if (this.isInitialized && this.ui.container) {
+      console.log("채팅 시스템이 이미 초기화됨, 서버 연결만 재시도");
+      this.connectToServer();
+      return;
+    }
+
+    // 캔버스가 이미 로딩된 상태인지 확인
+    const isCanvasLoaded = document.querySelector(".main.ui-visible") || (window as any).globalScene || document.querySelector("#scene.loaded");
+
+    if (isCanvasLoaded) {
+      console.log("캔버스가 이미 로딩됨, 채팅 즉시 초기화");
+      this.initialize();
+      this.connectToServer();
+      console.log("채팅 시스템 초기화 완료");
+    } else {
+      // 캔버스 로딩 대기
+      document.addEventListener(
+        "canvasLoadingComplete",
+        () => {
+          console.log("캔버스 로딩 완료, 채팅 초기화 시작");
+          this.initialize();
+          this.connectToServer();
+          console.log("채팅 시스템 초기화 완료");
+        },
+        { once: true }
+      );
+    }
   }
 
   // 현재 방의 사용자 목록 요청

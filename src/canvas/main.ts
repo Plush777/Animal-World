@@ -43,6 +43,165 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 // GLTFLoader를 전역에서 사용할 수 있도록 노출
 (window as any).gltfLoader = new GLTFLoader();
 
+// GLTFLoader 캐시 정리 함수
+(window as any).clearGLTFCache = function (): void {
+  console.log("GLTFLoader 캐시 정리 시작");
+
+  // 기존 GLTFLoader 인스턴스 참조 제거
+  (window as any).gltfLoader = null;
+
+  // THREE.js Cache 정리 (브라우저 레벨 캐시)
+  try {
+    if (THREE.Cache && THREE.Cache.clear) {
+      THREE.Cache.clear();
+      console.log("THREE.js Cache 정리 완료");
+    }
+  } catch (e) {
+    console.warn("THREE.js Cache 정리 중 오류:", e);
+  }
+
+  // 새로운 GLTFLoader 인스턴스 생성
+  (window as any).gltfLoader = new GLTFLoader();
+
+  // 다음 로딩 시 캐시 버스팅 활성화
+  (window as any).clearCacheEnabled = true;
+
+  // 브라우저 메모리 가비지 컬렉션 요청 (가능한 경우)
+  if ((window as any).gc) {
+    try {
+      (window as any).gc();
+      console.log("가비지 컬렉션 실행 완료");
+    } catch (e) {
+      console.log("가비지 컬렉션 실행 불가");
+    }
+  }
+
+  console.log("GLTFLoader 캐시 정리 완료 - 새로운 인스턴스 생성됨");
+};
+
+// Fox 모델 눈 색상 문제를 해결하기 위한 캐시 정리 함수
+(window as any).refreshCharacterModels = function (): void {
+  console.log("캐릭터 모델 새로고침 시작 - Fox 눈 색상 수정 적용");
+
+  // GLB 캐시와 GLTF 캐시 모두 정리
+  if ((window as any).clearGLBCache) {
+    (window as any).clearGLBCache();
+  }
+  if ((window as any).clearGLTFCache) {
+    (window as any).clearGLTFCache();
+  }
+
+  console.log("캐릭터 모델 새로고침 완료 - 다음 로딩 시 수정된 로직 적용됨");
+};
+
+// GLB 캐시 관리 함수들 전역 노출
+(window as any).getGLBCacheStats = function (): { size: number; keys: string[] } {
+  if ((window as any).glbCache) {
+    return (window as any).glbCache.getStats();
+  }
+  return { size: 0, keys: [] };
+};
+
+(window as any).clearGLBCache = function (): void {
+  if ((window as any).glbCache) {
+    (window as any).glbCache.clear();
+    console.log("GLB 캐시가 정리되었습니다.");
+  } else {
+    console.log("GLB 캐시가 없습니다.");
+  }
+};
+
+(window as any).logCacheStatus = function (): void {
+  const stats = (window as any).getGLBCacheStats();
+  console.log("=== GLB 캐시 상태 ===");
+  console.log(`캐시된 모델 수: ${stats.size}`);
+  console.log("캐시된 모델 목록:", stats.keys);
+
+  // Socket.IO 연결 상태도 함께 출력
+  if ((window as any).chatSystem && (window as any).chatSystem.socket) {
+    const socket = (window as any).chatSystem.socket;
+    console.log("=== Socket.IO 연결 상태 ===");
+    console.log(`연결 상태: ${socket.connected ? "연결됨" : "연결 안됨"}`);
+    console.log(`Socket ID: ${socket.id || "없음"}`);
+  }
+};
+
+// 씬의 모든 재질 상태 확인 함수
+(window as any).checkSceneMaterials = function (): void {
+  if (!globalScene) {
+    console.log("씬이 초기화되지 않았습니다.");
+    return;
+  }
+
+  console.log("=== 씬 재질 상태 검사 ===");
+  let totalMeshes = 0;
+  let blackMaterials = 0;
+  let missingTextures = 0;
+
+  globalScene.traverse((child: any) => {
+    if (child instanceof THREE.Mesh) {
+      totalMeshes++;
+
+      if (child.material) {
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((mat: any) => {
+          if (mat.color && mat.color.getHex() === 0x000000) {
+            blackMaterials++;
+            console.warn(`검은색 재질 발견:`, child.name || "이름없음", mat);
+          }
+
+          if (mat.map && (!mat.map.image || mat.map.image.width === 0)) {
+            missingTextures++;
+            console.warn(`텍스처 데이터 없음:`, child.name || "이름없음", mat.map);
+          }
+        });
+      }
+    }
+  });
+
+  console.log(`총 메시 수: ${totalMeshes}`);
+  console.log(`검은색 재질 수: ${blackMaterials}`);
+  console.log(`텍스처 누락 수: ${missingTextures}`);
+};
+
+// 재질 복원 함수
+(window as any).restoreSceneMaterials = function (): void {
+  if (!globalScene) {
+    console.log("씬이 초기화되지 않았습니다.");
+    return;
+  }
+
+  console.log("=== 씬 재질 복원 시작 ===");
+  let restoredCount = 0;
+
+  globalScene.traverse((child: any) => {
+    if (child instanceof THREE.Mesh && child.material) {
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((mat: any) => {
+        if (mat) {
+          mat.needsUpdate = true;
+
+          if (mat.color && mat.color.getHex() === 0x000000) {
+            mat.color.setHex(0xffffff);
+            restoredCount++;
+          }
+
+          // 텍스처가 있고 이미지 데이터가 유효한 경우에만 업데이트
+          const textureProperties = ["map", "normalMap", "roughnessMap", "metalnessMap", "aoMap", "emissiveMap"];
+          textureProperties.forEach((prop) => {
+            const texture = mat[prop];
+            if (texture && texture instanceof THREE.Texture && texture.image && texture.image !== null) {
+              texture.needsUpdate = true;
+            }
+          });
+        }
+      });
+    }
+  });
+
+  console.log(`복원된 재질 수: ${restoredCount}`);
+};
+
 // 전역 변수로 캔버스 관련 객체들 저장
 let globalScene: THREE.Scene | null = null;
 let globalRenderer: THREE.WebGLRenderer | null = null;
@@ -70,6 +229,17 @@ let smoothCharacterController: SmoothCharacterController | null = null;
     animationId = null;
   }
 
+  // 부드러운 캐릭터 컨트롤러 정리
+  if (smoothCharacterController) {
+    smoothCharacterController.destroy();
+    smoothCharacterController = null;
+  }
+
+  // 지형 레이캐스터 정리
+  if (terrainRaycaster) {
+    terrainRaycaster = null;
+  }
+
   // 캐릭터 매니저 정리
   if (globalCharacterManager) {
     const characters = globalCharacterManager.getAllCharacters();
@@ -78,25 +248,136 @@ let smoothCharacterController: SmoothCharacterController | null = null;
     });
   }
 
-  // 렌더러 정리
-  if (globalRenderer) {
-    globalRenderer.dispose();
-    globalRenderer = null;
-  }
-
   // 씬 정리
   if (globalScene) {
+    // 씬의 모든 객체를 순회하며 텍스처와 재질 정리
+    const disposeNode = (node: THREE.Object3D) => {
+      if (node instanceof THREE.Mesh) {
+        if (node.geometry) {
+          node.geometry.dispose();
+        }
+
+        if (node.material) {
+          const materials = Array.isArray(node.material) ? node.material : [node.material];
+          materials.forEach((material) => {
+            // 모든 텍스처 맵 정리
+            const textureProperties = [
+              "map",
+              "normalMap",
+              "bumpMap",
+              "roughnessMap",
+              "metalnessMap",
+              "aoMap",
+              "emissiveMap",
+              "specularMap",
+              "envMap",
+              "lightMap",
+              "alphaMap",
+              "displacementMap",
+            ];
+
+            textureProperties.forEach((prop) => {
+              const texture = material[prop];
+              if (texture && texture instanceof THREE.Texture) {
+                try {
+                  // GPU에서 텍스처 정리 (image 속성은 건드리지 않음)
+                  texture.dispose();
+                } catch (e) {
+                  console.warn(`텍스처 정리 중 오류 발생 (${prop}):`, e);
+                }
+              }
+            });
+
+            try {
+              // 재질의 프로그램 참조 제거
+              if (material.program) material.program = null;
+              material.dispose();
+            } catch (e) {
+              console.warn("재질 정리 중 오류 발생:", e);
+            }
+          });
+        }
+      }
+    };
+
+    // 씬의 모든 객체를 순회하며 정리
+    globalScene.traverse(disposeNode);
+
     // 씬의 모든 객체 제거
     while (globalScene.children.length > 0) {
       globalScene.remove(globalScene.children[0]);
     }
-    globalScene = null;
+  }
+
+  // 렌더러 정리
+  if (globalRenderer) {
+    try {
+      // 렌더러의 캔버스 컨텍스트 정리
+      const gl = globalRenderer.getContext();
+
+      // 렌더러 정리
+      globalRenderer.dispose();
+      globalRenderer.forceContextLoss();
+
+      // 캔버스 요소가 문서에 있는 경우에만 제거하고 새로운 캔버스 생성
+      if (globalRenderer.domElement && globalRenderer.domElement.parentNode) {
+        const sceneContainer = globalRenderer.domElement.parentNode;
+        globalRenderer.domElement.remove();
+
+        // 새로운 캔버스 요소 생성
+        const newCanvas = document.createElement("canvas");
+        newCanvas.id = "scene";
+        sceneContainer.appendChild(newCanvas);
+      }
+
+      // 렌더러 참조 제거
+      globalRenderer.setAnimationLoop(null);
+      globalRenderer = null;
+
+      // WebGL 컨텍스트 정리 시도 (선택적)
+      try {
+        const extension = gl.getExtension("WEBGL_lose_context");
+        if (extension) {
+          extension.loseContext();
+        }
+      } catch (glError) {
+        console.log("WebGL 컨텍스트 정리 건너뜀");
+      }
+    } catch (e) {
+      console.warn("렌더러 정리 중 오류 발생:", e);
+    }
+  }
+
+  // 씬 참조 제거
+  globalScene = null;
+
+  // GLTFLoader 캐시 정리
+  if ((window as any).clearGLTFCache) {
+    (window as any).clearGLTFCache();
   }
 
   console.log("캔버스 정리 완료");
 };
 
 (window as any).initCanvas = async function (): Promise<void> {
+  console.log("캔버스 초기화 확인 중...");
+
+  // 이미 초기화되어 있는지 확인
+  if (globalScene && globalRenderer && globalCharacterManager) {
+    console.log("캔버스가 이미 초기화되어 있습니다. 중복 초기화 방지");
+
+    // 캔버스 로딩 완료 이벤트 발생 (UI 업데이트를 위해)
+    const canvasLoadedEvent = new CustomEvent("canvasLoadingComplete");
+    document.dispatchEvent(canvasLoadedEvent);
+
+    return;
+  }
+
+  console.log("새로운 캔버스 초기화 시작");
+
+  // 캐시 버스팅 비활성화 (정상적인 캐싱을 위해)
+  (window as any).clearCacheEnabled = false;
+
   // Ammo.js 초기화 (선택적)
   try {
     await initializeAmmo();

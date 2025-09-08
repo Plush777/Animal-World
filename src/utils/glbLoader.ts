@@ -1,7 +1,173 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-const gltfLoader = new GLTFLoader();
+// GLB 파일 캐시 시스템
+interface CachedGLB {
+  gltf: any;
+  loadTime: number;
+  accessCount: number;
+  lastAccess: number;
+}
+
+class GLBCache {
+  private cache: Map<string, CachedGLB> = new Map();
+  private maxCacheSize = 20; // 최대 캐시 항목 수
+  private maxCacheAge = 30 * 60 * 1000; // 30분
+
+  public get(path: string): any | null {
+    const cacheKey = this.getCacheKey(path);
+    const cached = this.cache.get(cacheKey);
+
+    if (cached) {
+      // 캐시 히트 - 접근 정보 업데이트
+      cached.accessCount++;
+      cached.lastAccess = Date.now();
+      console.log(`GLB 캐시 히트: ${path} (접근 횟수: ${cached.accessCount})`);
+
+      // 새로운 씬 복사본 반환 (원본 보호)
+      return this.cloneGLTF(cached.gltf);
+    }
+
+    return null;
+  }
+
+  public set(path: string, gltf: any): void {
+    const cacheKey = this.getCacheKey(path);
+
+    // 캐시 크기 관리
+    this.cleanupCache();
+
+    // 원본을 직접 저장하여 텍스처 참조 유지
+    this.cache.set(cacheKey, {
+      gltf: gltf, // 원본 GLTF 직접 저장 (텍스처 참조 유지)
+      loadTime: Date.now(),
+      accessCount: 1,
+      lastAccess: Date.now(),
+    });
+
+    console.log(`GLB 캐시 저장: ${path} (캐시 크기: ${this.cache.size})`);
+  }
+
+  private getCacheKey(path: string): string {
+    // 캐시 버스팅 파라미터 제거하여 실제 파일 경로로 키 생성
+    return path.split("?")[0];
+  }
+
+  private cloneGLTF(gltf: any): any {
+    // GLTF 객체의 깊은 복사본 생성
+    const cloned = {
+      ...gltf,
+      scene: gltf.scene.clone(true),
+    };
+
+    // 애니메이션이 있는 경우 복사
+    if (gltf.animations && gltf.animations.length > 0) {
+      cloned.animations = gltf.animations.map((anim: any) => anim.clone());
+    }
+
+    // 텍스처와 재질 참조 복원
+    this.restoreMaterialsAndTextures(cloned.scene, gltf.scene);
+
+    return cloned;
+  }
+
+  private restoreMaterialsAndTextures(clonedNode: THREE.Object3D, originalNode: THREE.Object3D): void {
+    // 원본과 복사본을 매핑하여 재질과 텍스처 복원
+    const originalMeshes: THREE.Mesh[] = [];
+    const clonedMeshes: THREE.Mesh[] = [];
+
+    // 원본 메시들 수집
+    originalNode.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        originalMeshes.push(child);
+      }
+    });
+
+    // 복사본 메시들 수집
+    clonedNode.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        clonedMeshes.push(child);
+      }
+    });
+
+    // 메시 개수가 일치하는 경우에만 재질 복원
+    if (originalMeshes.length === clonedMeshes.length) {
+      for (let i = 0; i < originalMeshes.length; i++) {
+        const originalMesh = originalMeshes[i];
+        const clonedMesh = clonedMeshes[i];
+
+        if (originalMesh.material && clonedMesh.material) {
+          // 원본 재질을 그대로 사용 (텍스처 참조 유지)
+          if (Array.isArray(originalMesh.material)) {
+            clonedMesh.material = originalMesh.material.slice(); // 배열 복사
+          } else {
+            clonedMesh.material = originalMesh.material; // 재질 참조 복사
+          }
+
+          // 재질 업데이트 플래그 설정
+          const materials = Array.isArray(clonedMesh.material) ? clonedMesh.material : [clonedMesh.material];
+          materials.forEach((mat: THREE.Material) => {
+            if (mat) {
+              mat.needsUpdate = true;
+            }
+          });
+        }
+      }
+    }
+  }
+
+  private cleanupCache(): void {
+    const now = Date.now();
+
+    // 오래된 캐시 항목 제거
+    for (const [key, cached] of this.cache.entries()) {
+      if (now - cached.lastAccess > this.maxCacheAge) {
+        this.cache.delete(key);
+        console.log(`GLB 캐시 만료 제거: ${key}`);
+      }
+    }
+
+    // 캐시 크기 초과 시 가장 적게 사용된 항목 제거
+    if (this.cache.size >= this.maxCacheSize) {
+      const entries = Array.from(this.cache.entries());
+      entries.sort((a, b) => a[1].accessCount - b[1].accessCount);
+
+      const toRemove = entries.slice(0, Math.ceil(this.maxCacheSize * 0.2)); // 20% 제거
+      for (const [key] of toRemove) {
+        this.cache.delete(key);
+        console.log(`GLB 캐시 크기 초과 제거: ${key}`);
+      }
+    }
+  }
+
+  public clear(): void {
+    this.cache.clear();
+    console.log("GLB 캐시 전체 정리 완료");
+  }
+
+  public getStats(): { size: number; keys: string[] } {
+    return {
+      size: this.cache.size,
+      keys: Array.from(this.cache.keys()),
+    };
+  }
+}
+
+// 전역 GLB 캐시 인스턴스
+const glbCache = new GLBCache();
+(window as any).glbCache = glbCache;
+
+// 전역 GLTFLoader 사용 (캐시 관리를 위해)
+const getGLTFLoader = (): GLTFLoader => {
+  if ((window as any).gltfLoader && (window as any).gltfLoader instanceof GLTFLoader) {
+    return (window as any).gltfLoader;
+  }
+  // fallback: 새 인스턴스 생성 및 전역 등록
+  console.log("GLTFLoader가 없거나 유효하지 않습니다. 새 인스턴스를 생성합니다.");
+  const newLoader = new GLTFLoader();
+  (window as any).gltfLoader = newLoader;
+  return newLoader;
+};
 
 export function loadGLBModel(
   path: string,
@@ -10,13 +176,75 @@ export function loadGLBModel(
   onError?: (error: Error) => void
 ): Promise<any> {
   return new Promise((resolve, reject) => {
+    // 캐시에서 먼저 확인
+    const cachedGLTF = glbCache.get(path);
+    if (cachedGLTF) {
+      console.log(`GLB 모델 캐시에서 로드: ${path}`);
+
+      // 캐시된 모델의 재질과 텍스처 상태 확인 및 복원
+      cachedGLTF.scene.traverse((child: any) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+          materials.forEach((mat: any) => {
+            if (mat) {
+              // 재질 업데이트 강제
+              mat.needsUpdate = true;
+
+              // 텍스처가 있고 이미지 데이터가 유효한 경우에만 업데이트
+              const textureProperties = ["map", "normalMap", "roughnessMap", "metalnessMap", "aoMap", "emissiveMap"];
+              textureProperties.forEach((prop) => {
+                const texture = mat[prop];
+                if (texture && texture instanceof THREE.Texture && texture.image && texture.image !== null) {
+                  texture.needsUpdate = true;
+                }
+              });
+
+              // 기본 색상 확인 (검은색으로 바뀐 경우 복원)
+              // 단, 캐릭터 모델의 경우 원래 검은색이어야 하는 부분(눈 등)은 보존
+              if (mat.color && mat.color.getHex() === 0x000000) {
+                // 캐릭터 모델의 특정 부위인지 확인
+                const isCharacterMesh =
+                  path.includes("character") &&
+                  child.name &&
+                  (child.name.toLowerCase().includes("eye") ||
+                    child.name.toLowerCase().includes("pupil") ||
+                    child.name.toLowerCase().includes("nose") ||
+                    child.name.toLowerCase().includes("spot"));
+                if (!isCharacterMesh) {
+                  mat.color.setHex(0xffffff); // 캐릭터의 특정 부위가 아닌 경우만 흰색으로 복원
+                }
+              }
+            }
+          });
+        }
+      });
+
+      // UI 업데이트
+      if (window.LoadingUI) {
+        window.LoadingUI.updateProgressText(`${path.split("/").pop()?.replace(".glb", "")} 캐시에서 로드됨`);
+        window.LoadingUI.onModelLoaded();
+      }
+
+      // 콜백 호출
+      if (onLoad) onLoad(cachedGLTF);
+      resolve(cachedGLTF);
+      return;
+    }
+
     // 로딩 시작을 즉시 알림
     if (window.LoadingUI) {
       window.LoadingUI.updateProgressText(`${path.split("/").pop()?.replace(".glb", "")} 로딩 중...`);
     }
 
-    gltfLoader.load(
-      path,
+    // 캐시 버스팅을 위한 타임스탬프 추가 (개발 모드에서만, 캐시 미스 시에만)
+    let finalPath = path;
+    if (process.env.NODE_ENV === "development" || (window as any).clearCacheEnabled) {
+      const separator = path.includes("?") ? "&" : "?";
+      finalPath = `${path}${separator}_cache=${Date.now()}`;
+    }
+
+    getGLTFLoader().load(
+      finalPath,
       (gltf) => {
         console.log(`GLB 모델 로드 성공: ${path}`, gltf);
 
@@ -132,11 +360,18 @@ export function loadGLBModel(
             }
           });
 
+          // 후처리 완료 후 캐시에 저장
+          glbCache.set(path, gltf);
+
           if (onLoad) onLoad(gltf);
           resolve(gltf);
         } catch (error) {
           console.error(`GLB 모델 후처리 중 오류 발생: ${path}`, error);
           // 후처리에서 오류가 발생해도 모델 자체는 로드 성공으로 처리
+
+          // 오류가 발생해도 캐시에 저장 (후처리 실패해도 기본 모델은 사용 가능)
+          glbCache.set(path, gltf);
+
           if (onLoad) onLoad(gltf);
           resolve(gltf);
         }
@@ -392,11 +627,55 @@ function adjustSingleWaterMaterial(material: THREE.Material, _meshName: string):
 }
 
 export function addGLBModelToScene(scene: THREE.Scene, gltf: any): THREE.Group {
-  const model = gltf.scene.clone();
+  const model = gltf.scene.clone(true); // 깊은 복사
+
+  // 복사된 모델의 재질과 텍스처 확인 및 복원
+  model.traverse((child: any) => {
+    if (child instanceof THREE.Mesh && child.material) {
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((mat: any) => {
+        if (mat) {
+          // 재질 업데이트 강제
+          mat.needsUpdate = true;
+
+          // 텍스처가 있고 이미지 데이터가 유효한 경우에만 업데이트
+          const textureProperties = ["map", "normalMap", "roughnessMap", "metalnessMap", "aoMap", "emissiveMap"];
+          textureProperties.forEach((prop) => {
+            const texture = mat[prop];
+            if (texture && texture instanceof THREE.Texture && texture.image && texture.image !== null) {
+              texture.needsUpdate = true;
+            }
+          });
+
+          // 기본 색상 확인 (검은색으로 바뀐 경우 복원)
+          // 단, 캐릭터 모델의 경우 원래 검은색이어야 하는 부분(눈 등)은 보존
+          if (mat.color && mat.color.getHex() === 0x000000) {
+            // 모델 이름이나 메시 이름에서 캐릭터인지 판단
+            const isCharacterMesh =
+              child.name &&
+              (child.name.toLowerCase().includes("eye") ||
+                child.name.toLowerCase().includes("pupil") ||
+                child.name.toLowerCase().includes("nose") ||
+                model.name.toLowerCase().includes("character") ||
+                model.name.toLowerCase().includes("fox") ||
+                model.name.toLowerCase().includes("dog") ||
+                model.name.toLowerCase().includes("cat"));
+            if (!isCharacterMesh) {
+              mat.color.setHex(0xffffff); // 캐릭터의 특정 부위가 아닌 경우만 흰색으로 복원
+            }
+          }
+
+          // 그림자 설정 확인
+          if (child.castShadow === undefined) child.castShadow = true;
+          if (child.receiveShadow === undefined) child.receiveShadow = true;
+        }
+      });
+    }
+  });
 
   scene.add(model);
 
-  console.log(`GLB 모델을 씬에 추가했습니다 (원본 변환 정보 유지):`, {
+  console.log(`GLB 모델을 씬에 추가했습니다 (텍스처 복원 완료):`, {
     position: model.position,
     rotation: model.rotation,
     scale: model.scale,

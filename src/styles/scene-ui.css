@@ -194,7 +194,6 @@
 
 .chat-message.user-message {
   display: flex;
-  align-items: center;
   column-gap: 6px;
   padding: 0 6px;
   background-color: transparent;
@@ -222,7 +221,6 @@
 .message-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: 4px;
   font-size: 14px;
 }
@@ -610,49 +608,53 @@ input[type="checkbox"] + label {
   justify-content: center;
 }
 
-[data-short-key-disable="true"] .chat-emoji-tooltip-box {
+[data-short-key-disable="false"] .chat-emoji-tooltip-box {
   pointer-events: none;
 }
 
-[data-short-key-disable="true"] .chat-emoji-wrapper.active + .chat-emoji-tooltip-box {
+[data-short-key-disable="false"] .chat-emoji-wrapper.active + .chat-emoji-tooltip-box {
   pointer-events: auto;
 }
 
-[data-short-key-disable="true"] .chat-emoji-tooltip-box .tooltip.active {
+[data-short-key-disable="false"] .chat-emoji-tooltip-box .tooltip.active {
   opacity: 1;
   visibility: visible;
 }
 
-[data-short-key-disable="true"] .chat-emoji-tooltip-box .tooltip.active {
-  top: -75px;
+[data-short-key-disable="false"] .chat-wrapper.active .chat-emoji-tooltip-box .tooltip.active {
+  top: -85px;
 }
 
-[data-short-key-disable="true"] #emoji-thumb-up-tooltip {
+[data-short-key-disable="false"] .chat-emoji-tooltip-box .tooltip.active {
+  top: -120px;
+}
+
+[data-short-key-disable="false"] #emoji-thumb-up-tooltip {
   left: 30px;
 }
 
-[data-short-key-disable="true"] #emoji-clap-tooltip {
+[data-short-key-disable="false"] #emoji-clap-tooltip {
   left: 70px;
 }
 
-[data-short-key-disable="true"] #emoji-heart-tooltip {
+[data-short-key-disable="false"] #emoji-heart-tooltip {
   left: 105px;
 }
 
-[data-short-key-disable="true"] #emoji-wave-tooltip {
+[data-short-key-disable="false"] #emoji-wave-tooltip {
   left: 150px;
 }
 
-[data-short-key-disable="true"] #emoji-smile-tooltip {
+[data-short-key-disable="false"] #emoji-smile-tooltip {
   left: 188px;
 }
 
-[data-short-key-disable="true"] #emoji-cry-tooltip {
+[data-short-key-disable="false"] #emoji-cry-tooltip {
   left: 228px;
 }
 
-[data-short-key-disable="true"] .chat-emoji-wrapper .tooltip,
-[data-short-key-disable="true"] .chat-open-button-area .tooltip {
+[data-short-key-disable="false"] .chat-emoji-wrapper .tooltip,
+[data-short-key-disable="false"] .chat-open-button-area .tooltip {
   left: 48px;
 }
 

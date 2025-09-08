@@ -271,12 +271,21 @@ export async function loadModel(
   rotation: THREE.Euler = new THREE.Euler(0, 0, 0)
 ): Promise<THREE.Group | null> {
   try {
+    console.log(`모델 로드 시도: ${modelPath}`);
+
+    // GLTFLoader가 존재하는지 확인
+    if (!(window as any).gltfLoader) {
+      console.warn("GLTFLoader가 없습니다. 새로운 인스턴스를 생성합니다.");
+      const GLTFLoader = (await import("three/addons/loaders/GLTFLoader.js")).GLTFLoader;
+      (window as any).gltfLoader = new GLTFLoader();
+    }
     const gltf = await loadGLBModel(modelPath);
     const model = addGLBModelToScene(scene, gltf);
     model.position.copy(position);
     model.scale.copy(scale);
     model.rotation.copy(rotation);
 
+    console.log(`모델 로드 성공: ${modelPath}`);
     return model;
   } catch (error) {
     console.error(`GLB 모델 로드 실패: ${modelPath}`, error);
@@ -286,6 +295,36 @@ export async function loadModel(
 
 export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
   try {
+    // 씬이 이미 로드되어 있는지 확인
+    const existingSceneModel = scene.getObjectByName("scene.glb") || scene.getObjectByName("night_sky_scene.glb");
+    if (existingSceneModel) {
+      console.log("씬 모델이 이미 로드되어 있습니다. 중복 로딩 방지");
+
+      // 기존 모델의 재질 상태 확인 및 복원
+      existingSceneModel.traverse((child: any) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+          materials.forEach((mat: any) => {
+            if (mat) {
+              mat.needsUpdate = true;
+              // 기본 색상 확인 (검은색으로 바뀐 경우 복원)
+              if (mat.color && mat.color.getHex() === 0x000000) {
+                mat.color.setHex(0xffffff);
+              }
+            }
+          });
+        }
+      });
+
+      // UI에 로딩 완료 알림
+      if (window.LoadingUI) {
+        window.LoadingUI.updateProgressText("씬 모델 이미 로드됨");
+        window.LoadingUI.onModelLoaded();
+      }
+
+      return;
+    }
+
     // 모델 로딩 시작을 알림
     if (window.LoadingUI) {
       window.LoadingUI.updateProgressText("모델 로딩을 시작합니다...");

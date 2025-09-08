@@ -21,7 +21,7 @@ interface VirtualScrollOptions {
 }
 
 export class VirtualScroll {
-  private container: HTMLElement;
+  protected container: HTMLElement;
   private itemHeight: number;
   private smoothScroll: boolean;
   protected scrollContainer: HTMLElement | null = null;
@@ -527,10 +527,9 @@ export class VirtualScroll {
   }
 }
 
-// 채팅 메시지용 특화된 가상 스크롤 클래스
 export class ChatVirtualScroll extends VirtualScroll {
-  private systemMessageHeight: number = 70; // 시스템 메시지 높이
-  private userMessageHeight: number = 27; // 사용자 메시지 높이
+  private systemMessageHeight: number = 70; // 시스템 메시지 기본 높이
+  private userMessageSpacing: number = 8; // 메시지 간격
 
   constructor(container: HTMLElement, options?: Partial<VirtualScrollOptions>) {
     super({
@@ -538,30 +537,112 @@ export class ChatVirtualScroll extends VirtualScroll {
       itemHeight: 75, // 기본 채팅 메시지 높이 (시스템 메시지용)
       smoothScroll: true,
       scrollDuration: 250,
-      showScrollbar: true, // 채팅 메시지용 가상 스크롤도 스크롤바 표시
+      showScrollbar: true,
       scrollMargin: 4,
-      ...options, // 추가 옵션 허용
+      ...options,
     });
+  }
+
+  // 실제 요소 높이를 측정하는 헬퍼 메서드
+  private getActualElementHeight(element: HTMLElement): number {
+    // 요소가 아직 DOM에 추가되지 않은 경우를 위한 임시 측정
+    if (!element.parentNode) {
+      // 임시로 컨테이너에 추가해서 높이 측정
+      const tempContainer = document.createElement("div");
+      tempContainer.style.position = "absolute";
+      tempContainer.style.visibility = "hidden";
+      tempContainer.style.top = "-9999px";
+      tempContainer.style.width = this.container.clientWidth + "px"; // 컨테이너와 같은 너비로 설정
+
+      document.body.appendChild(tempContainer);
+      tempContainer.appendChild(element);
+
+      const height = element.offsetHeight;
+
+      document.body.removeChild(tempContainer);
+
+      return height;
+    }
+
+    return element.offsetHeight;
   }
 
   // 채팅 메시지 추가 (자동으로 맨 아래로 스크롤)
   addChatMessage(messageElement: HTMLElement): void {
-    // 메시지 타입에 따라 높이 결정
     const isUserMessage = messageElement.classList.contains("user-message");
-    const messageHeight = isUserMessage ? this.userMessageHeight : this.systemMessageHeight;
 
-    // 아이템 추가 시 높이 계산을 위해 메시지 요소에 높이 정보 저장
+    let messageHeight: number;
+
+    if (isUserMessage) {
+      // 사용자 메시지의 경우 실제 높이 측정 + 간격
+      const actualHeight = this.getActualElementHeight(messageElement);
+      messageHeight = actualHeight + this.userMessageSpacing;
+    } else {
+      // 시스템 메시지는 기존 방식 유지
+      messageHeight = this.systemMessageHeight;
+    }
+
+    // 메시지 요소에 높이 정보 저장
     (messageElement as any).messageHeight = messageHeight;
 
     this.addItem(messageElement);
     this.scrollToBottom();
   }
 
-  // 아이템 추가 (오버라이드)
+  // 더 정확한 높이 측정을 위한 대안 메서드 (필요시 사용)
+  addChatMessageWithCallback(messageElement: HTMLElement, callback?: () => void): void {
+    const isUserMessage = messageElement.classList.contains("user-message");
+
+    if (isUserMessage) {
+      // 먼저 요소를 추가하고 실제 렌더링 후 높이 재측정
+      const tempHeight = 50; // 임시 높이
+      (messageElement as any).messageHeight = tempHeight;
+
+      this.addItem(messageElement);
+
+      // 다음 프레임에서 실제 높이 측정 및 업데이트
+      requestAnimationFrame(() => {
+        const actualHeight = messageElement.offsetHeight;
+        const finalHeight = actualHeight + this.userMessageSpacing;
+
+        // 높이 차이만큼 전체 높이 조정
+        const heightDiff = finalHeight - tempHeight;
+        (messageElement as any).messageHeight = finalHeight;
+        this.totalHeight += heightDiff;
+
+        // 이후 아이템들의 위치 재조정
+        const currentIndex = this.items.indexOf(messageElement);
+        for (let i = currentIndex + 1; i < this.items.length; i++) {
+          const item = this.items[i];
+          const currentTop = parseInt(item.style.top) || 0;
+          item.style.top = `${currentTop + heightDiff}px`;
+        }
+
+        // 스크롤 컨테이너 높이 업데이트
+        if (this.scrollContainer) {
+          this.scrollContainer.style.height = `${this.totalHeight + this.scrollMargin}px`;
+        }
+
+        this.updateScrollbarThumb();
+        this.scrollToBottom();
+
+        // 콜백 실행
+        if (callback) callback();
+      });
+    } else {
+      // 시스템 메시지는 기존 방식
+      (messageElement as any).messageHeight = this.systemMessageHeight;
+      this.addItem(messageElement);
+      this.scrollToBottom();
+      if (callback) callback();
+    }
+  }
+
+  // 아이템 추가 (오버라이드) - 실제 높이 기반으로 계산
   addItem(element: HTMLElement): void {
     this.items.push(element);
 
-    // 메시지 타입에 따라 높이 계산
+    // 메시지 높이 가져오기 (이미 계산된 값 사용)
     const messageHeight = (element as any).messageHeight || this.systemMessageHeight;
 
     // 이전 아이템들의 높이 합계 계산
@@ -598,10 +679,13 @@ export class ChatVirtualScroll extends VirtualScroll {
 
     // 높이 재계산
     this.totalHeight = 0;
-    this.items.forEach((item, _i) => {
+    let currentTop = 0;
+
+    this.items.forEach((item) => {
       const itemHeight = (item as any).messageHeight || this.systemMessageHeight;
+      item.style.top = `${currentTop}px`;
+      currentTop += itemHeight;
       this.totalHeight += itemHeight;
-      item.style.top = `${this.totalHeight - itemHeight}px`;
     });
 
     if (this.scrollContainer) {
@@ -618,7 +702,37 @@ export class ChatVirtualScroll extends VirtualScroll {
     const totalHeight = this.getTotalHeight();
 
     // 사용자가 거의 맨 아래에 있을 때만 자동 스크롤
-    return scrollTop + containerHeight >= totalHeight + 8 - 100; // 기본 여백 사용
+    return scrollTop + containerHeight >= totalHeight + this.scrollMargin - 100;
+  }
+
+  // 모든 메시지의 높이를 재계산하는 유틸리티 메서드 (필요시 사용)
+  recalculateAllHeights(): void {
+    let currentTop = 0;
+    this.totalHeight = 0;
+
+    this.items.forEach((item) => {
+      const isUserMessage = item.classList.contains("user-message");
+
+      let messageHeight: number;
+      if (isUserMessage) {
+        const actualHeight = item.offsetHeight;
+        messageHeight = actualHeight + this.userMessageSpacing;
+      } else {
+        messageHeight = this.systemMessageHeight;
+      }
+
+      (item as any).messageHeight = messageHeight;
+      item.style.top = `${currentTop}px`;
+
+      currentTop += messageHeight;
+      this.totalHeight += messageHeight;
+    });
+
+    if (this.scrollContainer) {
+      this.scrollContainer.style.height = `${this.totalHeight + this.scrollMargin}px`;
+    }
+
+    this.updateScrollbarThumb();
   }
 }
 

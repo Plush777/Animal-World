@@ -267,17 +267,60 @@ export class CharacterManager {
     const character = this.characters.get(characterId);
     if (!character) return;
 
+    console.log(`캐릭터 제거 시작: ${characterId}`);
+
     // 애니메이션 믹서 정리
     if (character.mixer) {
       character.mixer.stopAllAction();
+      character.mixer = undefined;
     }
 
-    // 씬에서 모델 제거
-    this.scene.remove(character.model);
+    // 애니메이션 액션 정리
+    if (character.animations) {
+      character.animations.forEach((action) => {
+        if (action) {
+          action.stop();
+        }
+      });
+      character.animations = [];
+    }
+
+    // 캐릭터 모델의 모든 메시와 재질 정리
+    if (character.model) {
+      character.model.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          // 지오메트리 정리
+          if (child.geometry) {
+            child.geometry.dispose();
+          }
+
+          // 재질 정리
+          if (child.material) {
+            const materials = Array.isArray(child.material) ? child.material : [child.material];
+            materials.forEach((material) => {
+              // 텍스처 정리
+              const textureProperties = ["map", "normalMap", "bumpMap", "roughnessMap", "metalnessMap", "aoMap", "emissiveMap"];
+              textureProperties.forEach((prop) => {
+                const texture = material[prop];
+                if (texture && texture instanceof THREE.Texture) {
+                  texture.dispose();
+                }
+              });
+
+              // 재질 정리
+              material.dispose();
+            });
+          }
+        }
+      });
+
+      // 씬에서 모델 제거
+      this.scene.remove(character.model);
+    }
 
     // 캐릭터 맵에서 제거
     this.characters.delete(characterId);
-    console.log(`캐릭터 제거됨: ${characterId}`);
+    console.log(`캐릭터 제거 완료: ${characterId}`);
   }
 
   // 캐릭터에 물리 바디 추가
