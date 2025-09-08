@@ -796,11 +796,11 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
       // 디버깅을 위한 로그 추가
       if (Math.abs(position.x) < 100 && Math.abs(position.z) < 100) {
         // 중앙 지역 근처에서만 로그 출력
-        console.log(
-          `🔍 물 상태 체크: 위치=(${position.x.toFixed(1)}, ${position.z.toFixed(1)}), inX=${inX}, inZ=${inZ}, 지형높이=${terrainHeight.toFixed(
-            1
-          )}, 물높이=${zone.waterLevel}, isOnWaterTerrain=${isOnWaterTerrain}`
-        );
+        // console.log(
+        //   `🔍 물 상태 체크: 위치=(${position.x.toFixed(1)}, ${position.z.toFixed(1)}), inX=${inX}, inZ=${inZ}, 지형높이=${terrainHeight.toFixed(
+        //     1
+        //   )}, 물높이=${zone.waterLevel}, isOnWaterTerrain=${isOnWaterTerrain}`
+        // );
       }
 
       if (inX && inZ && isOnWaterTerrain) {

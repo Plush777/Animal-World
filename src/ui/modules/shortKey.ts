@@ -2,6 +2,47 @@ import { commonInitPopup } from "./popup";
 import { emojiToggle } from "./appClickEvents";
 import { toggleMapExplore, loadMapExploreState, syncMapExploreCheckboxWithLocalStorage, showMapExploreToast } from "./functions";
 
+/**
+ * J키를 눌렀을 때 방에 참여하는 함수
+ */
+function handleJoinRoom(): void {
+  console.log("J키 눌림 - 방 참여 시도");
+
+  // 현재 인트로 화면인지 확인
+  const introWrapper = document.querySelector(".intro-wrapper") as HTMLElement;
+  const isIntroVisible = introWrapper && introWrapper.style.display !== "none" && introWrapper.style.opacity !== "0";
+
+  if (isIntroVisible) {
+    // 인트로 화면에서 J키를 누른 경우: 참여 버튼 클릭과 동일한 동작
+    console.log("인트로 화면에서 J키 눌림 - 참여 버튼 클릭 실행");
+    const joinButton = document.getElementById("join-button") as HTMLButtonElement;
+    if (joinButton && !joinButton.disabled) {
+      joinButton.click();
+    } else {
+      console.log("참여 버튼을 찾을 수 없거나 비활성화 상태입니다.");
+    }
+  } else {
+    // 월드 화면에서 J키를 누른 경우: 자동 방 배정 요청
+    console.log("월드 화면에서 J키 눌림 - 자동 방 배정 요청");
+
+    // 채팅 시스템이 초기화되어 있는지 확인
+    const chatSystem = (window as any).chatSystem;
+    if (chatSystem && chatSystem.socket && chatSystem.socket.connected) {
+      // 자동 방 배정 요청
+      chatSystem.socket.emit("requestAutoRoomAssignment");
+      console.log("자동 방 배정 요청 전송됨");
+    } else {
+      console.log("채팅 시스템이 연결되지 않음");
+      // 채팅 시스템 재초기화 시도
+      if ((window as any).initializeChatSystem) {
+        const currentUser = (window as any).getCurrentLoggedInUser?.() || { email: "게스트" };
+        const userName = currentUser?.user_metadata?.name || currentUser?.email || "게스트";
+        (window as any).initializeChatSystem(userName);
+      }
+    }
+  }
+}
+
 function chatEnterKey() {
   document.addEventListener("keydown", (e: KeyboardEvent) => {
     // Enter 키가 눌렸고, 현재 포커스된 요소가 입력 필드가 아닐 때
@@ -48,11 +89,6 @@ function questionKey() {
       (window as any).leaveRoom();
     }
 
-    if (e.key === "J" || e.key === "j" || e.key === "ㅓ") {
-      e.preventDefault();
-      (window as any).autoJoinStoredRoom();
-    }
-
     if (e.key === "M" || e.key === "m" || e.key === "ㅡ") {
       e.preventDefault();
       // 현재 맵 둘러보기 상태를 가져와서 토글
@@ -93,6 +129,11 @@ function questionKey() {
 
       const chatWrapper = document.querySelector(".chat-wrapper") as HTMLElement;
       chatWrapper.classList.toggle("active");
+    }
+
+    if (e.key === "J" || e.key === "j" || e.key === "ㅓ") {
+      e.preventDefault();
+      handleJoinRoom();
     }
   });
 }
