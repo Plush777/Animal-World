@@ -184,6 +184,117 @@ class ChatSystem {
     this.addMessage("시스템", text);
   }
 
+  // 다른 사용자의 이모지 표시
+  showEmojiFromOtherUser(user: string, emoji: string): void {
+    console.log(`사용자 ${user}의 이모지 표시: ${emoji}`);
+
+    // 현재 사용자의 이모지가 아닌 경우에만 표시
+    if (user !== this.currentUser) {
+      // 해당 이모지 버튼 요소를 찾아서 전달
+      const targetButton = Array.from(document.querySelectorAll(".chat-emoji-list-button")).find(
+        (btn) => btn.textContent?.trim() === emoji
+      ) as HTMLElement;
+
+      // 다른 사용자의 캐릭터 위치를 찾아서 이모지 표시
+      this.showEmojiAtRandomPosition(emoji, targetButton);
+    }
+  }
+
+  // 랜덤 위치에 이모지 표시 (다른 사용자의 캐릭터 위치 시뮬레이션)
+  private showEmojiAtRandomPosition(emoji: string, _emojiElement?: HTMLElement): void {
+    const scene = (window as any).globalScene;
+
+    if (!scene) {
+      console.warn("씬이 초기화되지 않았습니다.");
+      return;
+    }
+
+    // 랜덤 위치 생성 (캐릭터가 있을 만한 범위)
+    const x = 50 + Math.random() * 40; // 50-90 범위
+    const z = 80 + Math.random() * 40; // 80-120 범위
+    const y = 20; // 기본 높이
+
+    // 이모지 텍스트 스프라이트 생성 (고해상도로 개선)
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d")!;
+
+    // 고해상도 캔버스 사용 (2배 크기)
+    const scale = 2;
+    canvas.width = 256 * scale;
+    canvas.height = 256 * scale;
+
+    // 고해상도 렌더링을 위한 스케일링
+    context.scale(scale, scale);
+
+    // 이모지 렌더링을 위한 최적화된 설정
+    context.font = "128px 'PretendardVariable'";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+
+    // 이모지의 원본 색상을 유지하기 위해 fillStyle을 명시적으로 설정하지 않음
+    // 브라우저가 자동으로 이모지의 원본 색상을 사용하도록 함
+    context.fillText(emoji, 128, 128);
+
+    // 텍스처 생성 (고품질 필터링)
+    const texture = new (window as any).THREE.CanvasTexture(canvas);
+    texture.minFilter = (window as any).THREE.LinearFilter;
+    texture.magFilter = (window as any).THREE.LinearFilter;
+    texture.generateMipmaps = false;
+
+    const material = new (window as any).THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      alphaTest: 1,
+      // 조명의 영향을 받지 않도록 설정
+      emissive: 0xffffff,
+      emissiveIntensity: 1.0,
+    });
+
+    const sprite = new (window as any).THREE.Sprite(material);
+    sprite.scale.set(30, 30, 1); // 이모지 크기 조정
+
+    // 랜덤 위치에 설정
+    sprite.position.set(x, y, z);
+
+    // 씬에 추가
+    scene.add(sprite);
+
+    // 애니메이션 효과
+    this.animateEmojiSprite(sprite, scene);
+  }
+
+  // 이모지 스프라이트 애니메이션
+  private animateEmojiSprite(sprite: any, scene: any): void {
+    const startTime = Date.now();
+    const duration = 3000; // 3초간 표시
+    const startY = sprite.position.y;
+    const endY = startY + 20; // 위로 20 단위 올라감
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = elapsed / duration;
+
+      if (progress >= 1) {
+        // 애니메이션 완료 - 스프라이트 제거
+        scene.remove(sprite);
+        sprite.material.dispose();
+        sprite.material.map.dispose();
+        return;
+      }
+
+      // 위로 올라가는 애니메이션
+      sprite.position.y = startY + (endY - startY) * progress;
+
+      // 페이드 아웃 효과
+      const fadeProgress = Math.max(0, (progress - 0.7) / 0.3); // 마지막 30%에서 페이드 아웃
+      sprite.material.opacity = 1 - fadeProgress;
+
+      requestAnimationFrame(animate);
+    };
+
+    animate();
+  }
+
   // 방 정보 업데이트
   updateRoomInfo(roomId: string, userCount: number, maxUsers: number): void {
     const roomInfoElement = document.querySelector<HTMLElement>("#room-info");
@@ -326,6 +437,12 @@ class ChatSystem {
 
     this.socket.on("message", (data: ChatMessage) => {
       this.addMessage(data.user, data.text, data.timestamp);
+    });
+
+    // 이모지 수신 처리
+    this.socket.on("emojiReceived", (data: { user: string; emoji: string; timestamp: string }) => {
+      console.log("다른 사용자의 이모지 수신:", data);
+      this.showEmojiFromOtherUser(data.user, data.emoji);
     });
 
     this.socket.on("disconnect", () => {

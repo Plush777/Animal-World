@@ -62,6 +62,32 @@ function commonInitPopup(popupType: string, e: Event): void {
     const settingButton = document.querySelector(".setting-button") as HTMLElement;
 
     const isKeyboardEvent = e instanceof KeyboardEvent;
+
+    // 다른 버튼들의 active 상태 제거
+    const helpButton = document.querySelector(".help-button") as HTMLElement;
+    const userListButton = document.querySelector(".world-user-list-button") as HTMLElement;
+
+    if (helpButton?.classList.contains("active")) {
+      helpButton.classList.remove("active");
+      if (helpVirtualScroll) {
+        helpVirtualScroll.destroy();
+        helpVirtualScroll = null;
+      }
+    }
+
+    if (userListButton?.classList.contains("active")) {
+      userListButton.classList.remove("active");
+      isUserListButtonActive = false;
+      if (userListVirtualScroll) {
+        userListVirtualScroll.destroy();
+        userListVirtualScroll = null;
+      }
+      if (userListLoadTimeout) {
+        clearTimeout(userListLoadTimeout);
+        userListLoadTimeout = null;
+      }
+    }
+
     settingButton.classList.toggle("active");
 
     if (isKeyboardEvent || settingButton.classList.contains("active")) {
@@ -84,6 +110,26 @@ function commonInitPopup(popupType: string, e: Event): void {
 
     // 클릭 이벤트인 경우와 키보드 이벤트인 경우를 구분하여 처리
     if (isKeyboardEvent || target.classList.contains("world-user-list-button")) {
+      // 다른 버튼들의 active 상태 제거
+      const helpButton = document.querySelector(".help-button") as HTMLElement;
+      const settingButton = document.querySelector(".setting-button") as HTMLElement;
+
+      if (helpButton?.classList.contains("active")) {
+        helpButton.classList.remove("active");
+        if (helpVirtualScroll) {
+          helpVirtualScroll.destroy();
+          helpVirtualScroll = null;
+        }
+      }
+
+      if (settingButton?.classList.contains("active")) {
+        settingButton.classList.remove("active");
+        if (settingVirtualScroll) {
+          settingVirtualScroll.destroy();
+          settingVirtualScroll = null;
+        }
+      }
+
       userListButton?.classList.toggle("active");
       isUserListButtonActive = userListButton?.classList.contains("active") || false;
 
@@ -125,6 +171,31 @@ function commonInitPopup(popupType: string, e: Event): void {
     const isKeyboardEvent = e instanceof KeyboardEvent;
 
     if (isKeyboardEvent || target.classList.contains("help-button")) {
+      // 다른 버튼들의 active 상태 제거
+      const settingButton = document.querySelector(".setting-button") as HTMLElement;
+      const userListButton = document.querySelector(".world-user-list-button") as HTMLElement;
+
+      if (settingButton?.classList.contains("active")) {
+        settingButton.classList.remove("active");
+        if (settingVirtualScroll) {
+          settingVirtualScroll.destroy();
+          settingVirtualScroll = null;
+        }
+      }
+
+      if (userListButton?.classList.contains("active")) {
+        userListButton.classList.remove("active");
+        isUserListButtonActive = false;
+        if (userListVirtualScroll) {
+          userListVirtualScroll.destroy();
+          userListVirtualScroll = null;
+        }
+        if (userListLoadTimeout) {
+          clearTimeout(userListLoadTimeout);
+          userListLoadTimeout = null;
+        }
+      }
+
       helpButton.classList.toggle("active");
 
       // 팝업이 열릴 때 가상 스크롤 초기화

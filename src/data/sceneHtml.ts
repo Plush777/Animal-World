@@ -214,7 +214,7 @@ export const sceneHtml: { [key: string]: any } = {
       <section class="popup-section">
         <div class="help-group-box">
           <div class="help-group">
-            <strong class="help-group-text">채팅 입력 및 전송 (PC 한정)</strong>
+            <strong class="help-group-text">채팅 입력 및 전송</strong>
             <span class="short-key has-border has-text"> Enter </span>
           </div>
           <p class="help-group-description">해당 단축키로 채팅을 입력하고 전송할 수 있어요.</p>

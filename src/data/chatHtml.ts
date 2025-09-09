@@ -11,38 +11,44 @@ export const chatHtml: { [key: string]: any } = {
 
                 <div class="chat-emoji-list" id="chat-emoji-list">
                     <div class="chat-emoji-item">
-                        <button type="button" class="chat-emoji-list-button" id="emoji-thumb-up">
-                        👍
+                        <button type="button" class="chat-emoji-list-button" title="따봉" id="emoji-thumb-up">
+                            ${svg.thumbsUp}
+                            <span class="hidden">👍</span>
                         </button>
                     </div>
 
                     <div class="chat-emoji-item">
-                        <button type="button" class="chat-emoji-list-button" id="emoji-clap">
-                        👏
+                        <button type="button" class="chat-emoji-list-button" title="박수" id="emoji-clap">
+                        ${svg.clap}
+                            <span class="hidden">👏</span>
                         </button>
                     </div>
 
                     <div class="chat-emoji-item">
-                        <button type="button" class="chat-emoji-list-button" id="emoji-heart">
-                        ❤️
+                        <button type="button" class="chat-emoji-list-button" title="하트" id="emoji-heart">
+                        ${svg.heart}
+                            <span class="hidden">❤️</span>
                         </button>
                     </div>
                    
                     <div class="chat-emoji-item">
-                        <button type="button" class="chat-emoji-list-button" id="emoji-wave">
-                        👋
+                        <button type="button" class="chat-emoji-list-button" title="손 흔들기" id="emoji-wave">
+                        ${svg.wave}
+                            <span class="hidden">👋</span>
                         </button>
                     </div>
                    
                      <div class="chat-emoji-item">
-                        <button type="button" class="chat-emoji-list-button" id="emoji-smile">
-                        😆
+                        <button type="button" class="chat-emoji-list-button" title="웃음" id="emoji-smile">
+                        ${svg.fun}
+                            <span class="hidden">😆</span>
                         </button>
                     </div>
 
                     <div class="chat-emoji-item">
-                        <button type="button" class="chat-emoji-list-button" id="emoji-cry">
-                        😢
+                        <button type="button" class="chat-emoji-list-button" title="울음" id="emoji-cry">
+                        ${svg.cry}
+                            <span class="hidden">😢</span>
                         </button>
                     </div>
                 </div>
@@ -51,7 +57,7 @@ export const chatHtml: { [key: string]: any } = {
                 <span class="tooltip" id="emoji-thumb-up-tooltip">(1) 따봉</span>
                 <span class="tooltip" id="emoji-clap-tooltip">(2) 박수</span>
                 <span class="tooltip" id="emoji-heart-tooltip">(3) 하트</span>
-                <span class="tooltip" id="emoji-wave-tooltip">(4) 박수</span>
+                <span class="tooltip" id="emoji-wave-tooltip">(4) 손 흔들기</span>
                 <span class="tooltip" id="emoji-smile-tooltip">(5) 웃음</span>
                 <span class="tooltip" id="emoji-cry-tooltip">(6) 울음</span>
             </div>

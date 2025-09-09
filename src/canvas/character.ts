@@ -28,6 +28,7 @@ export class CharacterManager {
   private characters: Map<string, Character> = new Map();
   private scene: THREE.Scene;
   private physicsWorld: any; // Ammo.js physics world
+  private currentSelectedCharacterId: string | null = null; // 현재 선택된 캐릭터 ID 추가
 
   // GLTF_SceneRootNode 경계 설정
   private sceneBounds: {
@@ -107,7 +108,7 @@ export class CharacterManager {
       const gltf = await loadGLBModel(modelPath);
       console.log("GLTF 로드 완료:", gltf);
 
-      const model = addGLBModelToScene(this.scene, gltf);
+      const model = addGLBModelToScene(this.scene, gltf, modelPath);
       console.log("모델을 scene에 추가 완료:", model);
 
       // 캐릭터 모델의 재질 확인 및 조정
@@ -148,9 +149,9 @@ export class CharacterManager {
       model.castShadow = true;
       model.receiveShadow = true;
 
-      // 캐릭터가 지면 위에 확실히 위치하도록 조정
-      if (model.position.y < 10) {
-        model.position.y = 10;
+      // 캐릭터가 지면 위에 확실히 위치하도록 조정 (더 높은 위치로 설정)
+      if (model.position.y < 15) {
+        model.position.y = Math.max(15, position.y);
         console.log(`캐릭터 ${characterId} 위치를 지면 위로 조정: y = ${model.position.y}`);
       }
 
@@ -202,6 +203,13 @@ export class CharacterManager {
       }
 
       this.characters.set(characterId, character);
+
+      // 현재 선택된 캐릭터로 설정 (첫 번째 캐릭터이거나 명시적으로 설정된 경우)
+      if (!this.currentSelectedCharacterId || this.characters.size === 1) {
+        this.currentSelectedCharacterId = characterId;
+        console.log(`현재 선택된 캐릭터로 설정: ${characterId}`);
+      }
+
       console.log(`캐릭터 로드 완료: ${characterId}`);
 
       return character;
@@ -262,6 +270,24 @@ export class CharacterManager {
     return Array.from(this.characters.values());
   }
 
+  // 현재 선택된 캐릭터 가져오기
+  getCurrentSelectedCharacter(): Character | null {
+    if (this.currentSelectedCharacterId) {
+      return this.characters.get(this.currentSelectedCharacterId) || null;
+    }
+    return null;
+  }
+
+  // 현재 선택된 캐릭터 ID 설정
+  setCurrentSelectedCharacter(characterId: string): void {
+    if (this.characters.has(characterId)) {
+      this.currentSelectedCharacterId = characterId;
+      console.log(`현재 선택된 캐릭터 변경: ${characterId}`);
+    } else {
+      console.warn(`존재하지 않는 캐릭터 ID: ${characterId}`);
+    }
+  }
+
   // 캐릭터 제거
   removeCharacter(characterId: string): void {
     const character = this.characters.get(characterId);
@@ -316,6 +342,12 @@ export class CharacterManager {
 
       // 씬에서 모델 제거
       this.scene.remove(character.model);
+    }
+
+    // 현재 선택된 캐릭터였다면 선택 해제
+    if (this.currentSelectedCharacterId === characterId) {
+      this.currentSelectedCharacterId = null;
+      console.log(`선택된 캐릭터 해제: ${characterId}`);
     }
 
     // 캐릭터 맵에서 제거

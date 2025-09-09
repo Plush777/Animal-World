@@ -248,6 +248,19 @@ io.on("connection", (socket) => {
     }
   });
 
+  // 이모지 전송 처리
+  socket.on("emoji", ({ emoji, timestamp }) => {
+    const userRoom = roomManager.getUserRoom(socket.id);
+    if (userRoom) {
+      const nickname = socket.data.nickname || "사용자";
+      io.to(userRoom).emit("emojiReceived", {
+        user: nickname,
+        emoji,
+        timestamp: timestamp || new Date().toISOString(),
+      });
+    }
+  });
+
   // 특정 방 입장 요청 처리
   socket.on("joinSpecificRoom", ({ roomNumber }) => {
     console.log(`사용자 ${socket.id}가 방 ${roomNumber} 입장 요청`);
@@ -382,7 +395,7 @@ io.on("connection", (socket) => {
 });
 
 // 방 목록 조회 API
-app.get("/rooms", (req, res) => {
+app.get("/rooms", (_req, res) => {
   const rooms = roomManager.getAllRooms();
   res.json({
     rooms,
@@ -391,13 +404,13 @@ app.get("/rooms", (req, res) => {
 });
 
 // 전체 통계 조회 API
-app.get("/stats", (req, res) => {
+app.get("/stats", (_req, res) => {
   const stats = roomManager.getStats();
   res.json(stats);
 });
 
 // 상세 정보 조회 API (방 목록 + 통계)
-app.get("/status", (req, res) => {
+app.get("/status", (_req, res) => {
   const rooms = roomManager.getAllRooms();
   const stats = roomManager.getStats();
   res.json({

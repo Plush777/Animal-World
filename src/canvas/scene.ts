@@ -280,7 +280,7 @@ export async function loadModel(
       (window as any).gltfLoader = new GLTFLoader();
     }
     const gltf = await loadGLBModel(modelPath);
-    const model = addGLBModelToScene(scene, gltf);
+    const model = addGLBModelToScene(scene, gltf, modelPath);
     model.position.copy(position);
     model.scale.copy(scale);
     model.rotation.copy(rotation);

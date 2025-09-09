@@ -13,6 +13,10 @@
 
 - https://cssloaders.github.io/
 
+### 😀 Emoji
+
+- https://twemoji-cheatsheet.vercel.app/
+
 ### 🌏 Models
 
 #### 🖼️ object

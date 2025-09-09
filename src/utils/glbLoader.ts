@@ -626,8 +626,19 @@ function adjustSingleWaterMaterial(material: THREE.Material, _meshName: string):
   }
 }
 
-export function addGLBModelToScene(scene: THREE.Scene, gltf: any): THREE.Group {
+export function addGLBModelToScene(scene: THREE.Scene, gltf: any, modelPath?: string): THREE.Group {
   const model = gltf.scene.clone(true); // 깊은 복사
+
+  // 모델 경로에서 캐릭터 타입 확인
+  const isCharacterModel =
+    modelPath &&
+    (modelPath.includes("character") ||
+      modelPath.includes("fox") ||
+      modelPath.includes("dog") ||
+      modelPath.includes("cat") ||
+      modelPath.includes("hamster") ||
+      modelPath.includes("rabbit") ||
+      modelPath.includes("wolf"));
 
   // 복사된 모델의 재질과 텍스처 확인 및 복원
   model.traverse((child: any) => {
@@ -650,16 +661,30 @@ export function addGLBModelToScene(scene: THREE.Scene, gltf: any): THREE.Group {
           // 기본 색상 확인 (검은색으로 바뀐 경우 복원)
           // 단, 캐릭터 모델의 경우 원래 검은색이어야 하는 부분(눈 등)은 보존
           if (mat.color && mat.color.getHex() === 0x000000) {
-            // 모델 이름이나 메시 이름에서 캐릭터인지 판단
+            // 캐릭터 모델인지 확인 (경로 기반 + 메시 이름 기반)
             const isCharacterMesh =
-              child.name &&
-              (child.name.toLowerCase().includes("eye") ||
-                child.name.toLowerCase().includes("pupil") ||
-                child.name.toLowerCase().includes("nose") ||
-                model.name.toLowerCase().includes("character") ||
-                model.name.toLowerCase().includes("fox") ||
-                model.name.toLowerCase().includes("dog") ||
-                model.name.toLowerCase().includes("cat"));
+              isCharacterModel ||
+              (child.name &&
+                (child.name.toLowerCase().includes("eye") ||
+                  child.name.toLowerCase().includes("pupil") ||
+                  child.name.toLowerCase().includes("nose") ||
+                  model.name.toLowerCase().includes("character") ||
+                  model.name.toLowerCase().includes("fox") ||
+                  model.name.toLowerCase().includes("dog") ||
+                  model.name.toLowerCase().includes("cat")));
+
+            // fox 모델 디버깅을 위한 로그
+            if (isCharacterModel && modelPath?.includes("fox")) {
+              console.log("Fox 모델 재질 처리:", {
+                modelPath: modelPath,
+                modelName: model.name,
+                meshName: child.name,
+                isCharacterMesh: isCharacterMesh,
+                currentColor: mat.color.getHexString(),
+                willChangeToWhite: !isCharacterMesh,
+              });
+            }
+
             if (!isCharacterMesh) {
               mat.color.setHex(0xffffff); // 캐릭터의 특정 부위가 아닌 경우만 흰색으로 복원
             }

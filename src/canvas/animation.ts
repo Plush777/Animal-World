@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { updateCharacterController } from "./physicsEngine"; // 추가
+import { CharacterStorage } from "./characterStorage"; // 추가
 
 interface FloatingAnimation {
   object: THREE.Object3D;
@@ -254,10 +255,41 @@ export function createAnimationLoop(
 
         // 시각적 캐릭터 모델을 컨트롤러 위치와 동기화
         if (characterManager && characterPos) {
-          const allCharacters = characterManager.getAllCharacters();
-          if (allCharacters.length > 0) {
-            const visualCharacter = allCharacters[0];
+          // CharacterManager의 새로운 메서드를 사용하여 현재 선택된 캐릭터 가져오기
+          let visualCharacter = null;
 
+          // 먼저 CharacterManager에서 현재 선택된 캐릭터 확인
+          if (characterManager.getCurrentSelectedCharacter) {
+            visualCharacter = characterManager.getCurrentSelectedCharacter();
+          }
+
+          // CharacterManager에 선택된 캐릭터가 없다면 CharacterStorage에서 확인
+          if (!visualCharacter) {
+            const allCharacters = characterManager.getAllCharacters();
+            if (allCharacters.length > 0) {
+              // CharacterStorage에서 현재 선택된 캐릭터 정보 가져오기
+              const currentCharacterInfo = CharacterStorage.getCurrentCharacter();
+              if (currentCharacterInfo) {
+                // 선택된 캐릭터 ID와 일치하는 캐릭터 찾기
+                visualCharacter = allCharacters.find((char: any) => char.id === currentCharacterInfo.id);
+
+                // CharacterManager에도 선택된 캐릭터로 설정
+                if (visualCharacter && characterManager.setCurrentSelectedCharacter) {
+                  characterManager.setCurrentSelectedCharacter(visualCharacter.id);
+                }
+              }
+
+              // 선택된 캐릭터를 찾지 못했다면 첫 번째 캐릭터 사용 (fallback)
+              if (!visualCharacter) {
+                visualCharacter = allCharacters[0];
+                if (visualCharacter && characterManager.setCurrentSelectedCharacter) {
+                  characterManager.setCurrentSelectedCharacter(visualCharacter.id);
+                }
+              }
+            }
+          }
+
+          if (visualCharacter) {
             // 시각적 모델을 컨트롤러 위치로 정확히 이동 (높이 조정 없음)
             const syncPosition = new THREE.Vector3(characterPos.x, characterPos.y, characterPos.z);
 
@@ -273,9 +305,9 @@ export function createAnimationLoop(
             if (Math.random() < 0.01) {
               // 1% 확률로 출력
               console.log(
-                `캐릭터 위치 동기화: smoothController(${characterPos.x.toFixed(2)}, ${characterPos.y.toFixed(2)}, ${characterPos.z.toFixed(
+                `캐릭터 위치 동기화: ${visualCharacter.id} smoothController(${characterPos.x.toFixed(2)}, ${characterPos.y.toFixed(
                   2
-                )}) -> model(${visualCharacter.model.position.x.toFixed(2)}, ${visualCharacter.model.position.y.toFixed(
+                )}, ${characterPos.z.toFixed(2)}) -> model(${visualCharacter.model.position.x.toFixed(2)}, ${visualCharacter.model.position.y.toFixed(
                   2
                 )}, ${visualCharacter.model.position.z.toFixed(2)})`
               );

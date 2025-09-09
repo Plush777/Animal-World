@@ -540,50 +540,54 @@ let smoothCharacterController: SmoothCharacterController | null = null;
       globalCharacterManager?.removeCharacter(char.id);
     });
 
+    // 공통 시작 위치 결정 (smoothCharacterController와 캐릭터 모델이 동일한 위치에서 시작)
+    const selectedPosition = getRandomStartPosition();
+    let controllerStartPosition: THREE.Vector3 | null = null;
+
     // 새로운 부드러운 캐릭터 컨트롤러 생성
     if (terrainRaycaster && globalScene) {
-      const initialHeight = terrainRaycaster.getTerrainHeight(70, 100);
-      const startPosition = new THREE.Vector3(70, initialHeight + 2, 100);
+      const initialHeight = terrainRaycaster.getTerrainHeight(selectedPosition.x, selectedPosition.z);
+      controllerStartPosition = new THREE.Vector3(selectedPosition.x, initialHeight + 2, selectedPosition.z);
 
-      smoothCharacterController = new TerrainAdaptiveCharacterController(globalScene, terrainRaycaster, startPosition);
+      smoothCharacterController = new TerrainAdaptiveCharacterController(globalScene, terrainRaycaster, controllerStartPosition);
 
-      console.log(`새로운 부드러운 캐릭터 컨트롤러 생성 완료 - 지형 높이: ${initialHeight.toFixed(2)}`);
+      console.log(
+        `새로운 부드러운 캐릭터 컨트롤러 생성 완료 - 시작 위치: (${selectedPosition.x.toFixed(2)}, ${selectedPosition.z.toFixed(
+          2
+        )}), 지형 높이: ${initialHeight.toFixed(2)}`
+      );
     }
 
-    // 선택된 캐릭터 로드 (시각적 모델용)
+    // 선택된 캐릭터 로드 (시각적 모델용) - smoothCharacterController와 동일한 위치에서 시작
     const characterInfo = CharacterStorage.getCurrentCharacter();
-    if (characterInfo) {
+    if (characterInfo && controllerStartPosition) {
       const characterSettings = getCharacterSettings(characterInfo.id);
 
-      // 공통 시작 위치 시스템 사용
-      const selectedPosition = getRandomStartPosition();
-      const position = new THREE.Vector3(selectedPosition.x, 0, selectedPosition.z);
+      // smoothCharacterController와 동일한 위치 사용
+      const position = controllerStartPosition.clone();
+      position.y += 3; // 컨트롤러보다 약간 위에 배치하여 시각적으로 보이도록
 
-      // Raycaster 기반 지형 높이 사용
-      if (terrainRaycaster) {
-        const terrainHeight = terrainRaycaster.getTerrainHeight(position.x, position.z);
-        position.y = terrainHeight + 5; // 지형에서 5 단위 위로 설정
-        console.log(`캐릭터 위치 조정 (Raycaster) - 지형 높이: ${terrainHeight.toFixed(2)}, 최종 Y: ${position.y.toFixed(2)}`);
-      }
+      console.log(`캐릭터 위치 설정 (컨트롤러 동기화) - 위치: (${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)})`);
 
       const scale = createScaleFromSettings(characterSettings);
 
       const loadedCharacter = await globalCharacterManager?.loadCharacter(characterInfo.id, characterInfo.modelPath, position, scale);
 
       if (loadedCharacter) {
-        console.log(`사용자 캐릭터 로드 완료: ${characterInfo.name}`);
+        console.log(`사용자 캐릭터 로드 완료: ${characterInfo.name} - 컨트롤러 위치와 동기화됨`);
       }
     }
   });
 
   // 초기 부드러운 캐릭터 컨트롤러 생성
+  let initialControllerStartPosition: THREE.Vector3 | null = null;
   if (terrainRaycaster && globalScene) {
     // 공통 시작 위치 시스템 사용
     const selectedPosition = getRandomStartPosition();
     const initialHeight = terrainRaycaster.getTerrainHeight(selectedPosition.x, selectedPosition.z);
-    const startPosition = new THREE.Vector3(selectedPosition.x, initialHeight + 2, selectedPosition.z);
+    initialControllerStartPosition = new THREE.Vector3(selectedPosition.x, initialHeight + 2, selectedPosition.z);
 
-    smoothCharacterController = new TerrainAdaptiveCharacterController(globalScene, terrainRaycaster, startPosition);
+    smoothCharacterController = new TerrainAdaptiveCharacterController(globalScene, terrainRaycaster, initialControllerStartPosition);
 
     console.log(
       `초기 부드러운 캐릭터 컨트롤러 생성 완료 - 시작 위치: (${selectedPosition.x.toFixed(2)}, ${selectedPosition.z.toFixed(
@@ -592,30 +596,25 @@ let smoothCharacterController: SmoothCharacterController | null = null;
     );
   }
 
-  // 초기 캐릭터 로드 (이미 선택된 캐릭터가 있는 경우)
+  // 초기 캐릭터 로드 (이미 선택된 캐릭터가 있는 경우) - smoothCharacterController와 동일한 위치에서 시작
   const currentCharacter = CharacterStorage.getCurrentCharacter();
-  if (currentCharacter) {
+  if (currentCharacter && initialControllerStartPosition) {
     console.log(`저장된 캐릭터 발견: ${currentCharacter.name}`);
 
     const characterSettings = getCharacterSettings(currentCharacter.id);
 
-    // 공통 시작 위치 시스템 사용
-    const selectedPosition = getRandomStartPosition();
-    const position = new THREE.Vector3(selectedPosition.x, 0, selectedPosition.z);
+    // smoothCharacterController와 동일한 위치 사용
+    const position = initialControllerStartPosition.clone();
+    position.y += 3; // 컨트롤러보다 약간 위에 배치하여 시각적으로 보이도록
 
-    // Raycaster 기반 지형 높이 사용
-    if (terrainRaycaster) {
-      const terrainHeight = terrainRaycaster.getTerrainHeight(position.x, position.z);
-      position.y = terrainHeight + 5; // 지형에서 5 단위 위로 설정
-      console.log(`저장된 캐릭터 위치 조정 (Raycaster) - 지형 높이: ${terrainHeight.toFixed(2)}, 최종 Y: ${position.y.toFixed(2)}`);
-    }
+    console.log(`저장된 캐릭터 위치 설정 (컨트롤러 동기화) - 위치: (${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)})`);
 
     const scale = createScaleFromSettings(characterSettings);
 
     const loadedCharacter = await globalCharacterManager?.loadCharacter(currentCharacter.id, currentCharacter.modelPath, position, scale);
 
     if (loadedCharacter) {
-      console.log(`저장된 캐릭터 로드 완료: ${currentCharacter.name}`);
+      console.log(`저장된 캐릭터 로드 완료: ${currentCharacter.name} - 컨트롤러 위치와 동기화됨`);
     }
   }
 

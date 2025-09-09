@@ -200,11 +200,11 @@ strong {
   user-select: none;
 }
 
-input,
+/* input,
 button,
 textarea {
   outline: 0;
-}
+} */
 
 textarea {
   resize: none;

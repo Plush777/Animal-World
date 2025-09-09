@@ -2,6 +2,23 @@ import { commonInitPopup } from "./popup";
 import { emojiToggle } from "./appClickEvents";
 import { toggleMapExplore, loadMapExploreState, syncMapExploreCheckboxWithLocalStorage, showMapExploreToast } from "./functions";
 
+// 이모지 단축키 처리 함수
+function handleEmojiShortcut(emojiText: string) {
+  console.log("이모지 단축키 사용:", emojiText);
+
+  // 해당 이모지 버튼 요소를 찾아서 전달
+  const targetButton = Array.from(document.querySelectorAll(".chat-emoji-list-button")).find(
+    (btn) => btn.textContent?.trim() === emojiText
+  ) as HTMLElement;
+
+  // 이모지 클릭과 동일한 동작 수행
+  if ((window as any).handleEmojiClick) {
+    (window as any).handleEmojiClick(emojiText, targetButton);
+  } else {
+    console.warn("handleEmojiClick 함수를 찾을 수 없습니다.");
+  }
+}
+
 /**
  * J키를 눌렀을 때 방에 참여하는 함수
  */
@@ -81,7 +98,33 @@ function questionKey() {
 
     if (e.key === "E" || e.key === "e" || e.key === "ㄷ") {
       e.preventDefault();
-      emojiToggle();
+      emojiToggle(e);
+    }
+
+    // 이모지 단축키 (1-6)
+    if (e.key === "1") {
+      e.preventDefault();
+      handleEmojiShortcut("👍");
+    }
+    if (e.key === "2") {
+      e.preventDefault();
+      handleEmojiShortcut("👏");
+    }
+    if (e.key === "3") {
+      e.preventDefault();
+      handleEmojiShortcut("❤️");
+    }
+    if (e.key === "4") {
+      e.preventDefault();
+      handleEmojiShortcut("👋");
+    }
+    if (e.key === "5") {
+      e.preventDefault();
+      handleEmojiShortcut("😆");
+    }
+    if (e.key === "6") {
+      e.preventDefault();
+      handleEmojiShortcut("😢");
     }
 
     if (e.key === "L" || e.key === "l" || e.key === "ㅣ") {
@@ -120,6 +163,11 @@ function questionKey() {
       main.classList.toggle("ui-visible");
     }
 
+    // C키 중복 방지 (해당 단축키는 개발자 도구 단축키임)
+    if ((e.ctrlKey && e.shiftKey && e.key === "c") || e.key === "C" || e.key === "ㅊ") {
+      return;
+    }
+
     if (isChatInputActive) {
       return;
     }
@@ -128,7 +176,7 @@ function questionKey() {
       e.preventDefault();
 
       const chatWrapper = document.querySelector(".chat-wrapper") as HTMLElement;
-      chatWrapper.classList.toggle("active");
+      chatWrapper?.classList?.toggle("active");
     }
 
     if (e.key === "J" || e.key === "j" || e.key === "ㅓ") {
