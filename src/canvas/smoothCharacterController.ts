@@ -1047,7 +1047,7 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     if (heightDiff > 0.1 && heightDiff <= PHYSICS_CONSTANTS.MAX_STEP_HEIGHT) {
       if (this.isValidStair(futureX, futureZ, heightDiff) || this.state.isOnGround) {
         this.state.position.y += heightDiff;
-        console.log(`계단 감지: 높이 ${heightDiff.toFixed(2)} 상승`);
+        // console.log(`계단 감지: 높이 ${heightDiff.toFixed(2)} 상승`);
       }
     }
 

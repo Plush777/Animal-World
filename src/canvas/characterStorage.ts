@@ -178,14 +178,14 @@ export class CharacterStorage {
   }
 
   // 사용 가능한 캐릭터 목록 가져오기
-  static getAvailableCharacters(): CharacterInfo[] {
-    return this.getCharacterSettings().filter((c) => c.isUnlocked);
-  }
+  // static getAvailableCharacters(): CharacterInfo[] {
+  //   return this.getCharacterSettings().filter((c) => c.isUnlocked);
+  // }
 
   // 잠긴 캐릭터 목록 가져오기
-  static getLockedCharacters(): CharacterInfo[] {
-    return this.getCharacterSettings().filter((c) => !c.isUnlocked);
-  }
+  // static getLockedCharacters(): CharacterInfo[] {
+  //   return this.getCharacterSettings().filter((c) => !c.isUnlocked);
+  // }
 
   // 캐릭터가 선택되어 있는지 확인
   static hasSelectedCharacter(): boolean {
@@ -204,13 +204,13 @@ export class CharacterStorage {
   }
 
   // 캐릭터 정보 가져오기 (ID로)
-  static getCharacterById(characterId: string): CharacterInfo | undefined {
-    return this.getCharacterSettings().find((c) => c.id === characterId);
-  }
+  // static getCharacterById(characterId: string): CharacterInfo | undefined {
+  //   return this.getCharacterSettings().find((c) => c.id === characterId);
+  // }
 
-  // 캐릭터가 잠겨있는지 확인
-  static isCharacterLocked(characterId: string): boolean {
-    const character = this.getCharacterById(characterId);
-    return character ? !character.isUnlocked : true;
-  }
+  // // 캐릭터가 잠겨있는지 확인
+  // static isCharacterLocked(characterId: string): boolean {
+  //   const character = this.getCharacterById(characterId);
+  //   return character ? !character.isUnlocked : true;
+  // }
 }

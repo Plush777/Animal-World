@@ -120,11 +120,6 @@ export function findGroundHeight(physicsWorld: any, x: number, z: number): numbe
     // 평균 높이 계산으로 스무딩 효과
     const averageHeight = rayResults.reduce((sum, height) => sum + height, 0) / rayResults.length;
 
-    // 디버깅 로그 (빈도 제한)
-    if (Math.random() < 0.01) {
-      console.log(`✅ 지형 높이 (${rayResults.length}개 샘플): ${averageHeight.toFixed(2)} at (${x.toFixed(1)}, ${z.toFixed(1)})`);
-    }
-
     return averageHeight + 1.5; // 지면에서 1.5 단위 위로 조정
   } else {
     // Forest 위치 기본값

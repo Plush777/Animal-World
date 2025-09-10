@@ -213,7 +213,6 @@ let globalPhysicsWorld: any = null;
 
 // 캐릭터 관련 변수
 let keys: { [key: string]: boolean } = {};
-let physicsCharacterController: any = null; // 통합된 물리 캐릭터
 
 // 새로운 Raycaster 기반 시스템
 let terrainRaycaster: TerrainRaycaster | null = null;
@@ -489,14 +488,6 @@ let smoothCharacterController: SmoothCharacterController | null = null;
   (window as any).setCircularBoundaryMargin = setCircularBoundaryMargin;
   (window as any).getCircularBoundarySettings = getCircularBoundarySettings;
 
-  (window as any).logSceneBounds = () => {
-    globalCharacterManager?.logSceneBounds();
-  };
-
-  (window as any).visualizeBounds = () => {
-    globalCharacterManager?.visualizeBounds();
-  };
-
   // 새로운 지형 시스템 디버깅 함수들
   (window as any).debugTerrain = () => {
     if (terrainRaycaster) {
@@ -524,14 +515,6 @@ let smoothCharacterController: SmoothCharacterController | null = null;
     if (smoothCharacterController) {
       smoothCharacterController.destroy();
       smoothCharacterController = null;
-    }
-
-    // 기존 물리 캐릭터 제거 (호환성을 위해 유지)
-    if (physicsCharacterController && globalPhysicsWorld) {
-      globalPhysicsWorld.removeCollisionObject(physicsCharacterController.ghostObject);
-      globalPhysicsWorld.removeAction && globalPhysicsWorld.removeAction(physicsCharacterController.controller);
-      globalScene?.remove(physicsCharacterController.mesh);
-      physicsCharacterController = null;
     }
 
     // 기존 캐릭터 매니저의 캐릭터들 제거
@@ -572,6 +555,7 @@ let smoothCharacterController: SmoothCharacterController | null = null;
       const scale = createScaleFromSettings(characterSettings);
 
       const loadedCharacter = await globalCharacterManager?.loadCharacter(characterInfo.id, characterInfo.modelPath, position, scale);
+      console.log(loadedCharacter);
 
       if (loadedCharacter) {
         console.log(`사용자 캐릭터 로드 완료: ${characterInfo.name} - 컨트롤러 위치와 동기화됨`);
@@ -602,6 +586,7 @@ let smoothCharacterController: SmoothCharacterController | null = null;
     console.log(`저장된 캐릭터 발견: ${currentCharacter.name}`);
 
     const characterSettings = getCharacterSettings(currentCharacter.id);
+    console.log(characterSettings);
 
     // smoothCharacterController와 동일한 위치 사용
     const position = initialControllerStartPosition.clone();
@@ -612,6 +597,7 @@ let smoothCharacterController: SmoothCharacterController | null = null;
     const scale = createScaleFromSettings(characterSettings);
 
     const loadedCharacter = await globalCharacterManager?.loadCharacter(currentCharacter.id, currentCharacter.modelPath, position, scale);
+    console.log(loadedCharacter);
 
     if (loadedCharacter) {
       console.log(`저장된 캐릭터 로드 완료: ${currentCharacter.name} - 컨트롤러 위치와 동기화됨`);

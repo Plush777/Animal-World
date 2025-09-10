@@ -30,65 +30,9 @@ export class CharacterManager {
   private physicsWorld: any; // Ammo.js physics world
   private currentSelectedCharacterId: string | null = null; // 현재 선택된 캐릭터 ID 추가
 
-  // GLTF_SceneRootNode 경계 설정
-  private sceneBounds: {
-    minX: number;
-    maxX: number;
-    minZ: number;
-    maxZ: number;
-  } = {
-    minX: -50,
-    maxX: 50,
-    minZ: -50,
-    maxZ: 50,
-  };
-
   constructor(scene: THREE.Scene, physicsWorld?: any) {
     this.scene = scene;
     this.physicsWorld = physicsWorld;
-  }
-
-  // 모든 오브젝트 이름 출력 (디버깅용)
-  public logAllObjectNames(): void {
-    console.log("=== 모든 오브젝트 이름 출력 ===");
-    this.scene.traverse((object) => {
-      if (object instanceof THREE.Mesh) {
-        console.log(
-          `오브젝트: ${object.name}, 위치: ${object.position.x.toFixed(2)}, ${object.position.y.toFixed(2)}, ${object.position.z.toFixed(2)}`
-        );
-      }
-    });
-    console.log("=== 오브젝트 이름 출력 완료 ===");
-  }
-
-  // 씬 경계 정보 출력 (디버깅용)
-  public logSceneBounds(): void {
-    console.log("=== 씬 경계 정보 ===");
-    console.log(`X축: ${this.sceneBounds.minX} ~ ${this.sceneBounds.maxX}`);
-    console.log(`Z축: ${this.sceneBounds.minZ} ~ ${this.sceneBounds.maxZ}`);
-    console.log("=== 씬 경계 정보 완료 ===");
-  }
-
-  // 경계 시각화 (디버깅용)
-  public visualizeBounds(): void {
-    // 기존 경계 시각화 제거
-    this.scene.children.forEach((child) => {
-      if (child.name === "bounds_visualization") {
-        this.scene.remove(child);
-      }
-    });
-
-    // 새로운 경계 시각화 생성
-    const boundsGeometry = new THREE.EdgesGeometry(
-      new THREE.BoxGeometry(this.sceneBounds.maxX - this.sceneBounds.minX, 10, this.sceneBounds.maxZ - this.sceneBounds.minZ)
-    );
-    const boundsMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-    const boundsLines = new THREE.LineSegments(boundsGeometry, boundsMaterial);
-    boundsLines.name = "bounds_visualization";
-    boundsLines.position.set((this.sceneBounds.minX + this.sceneBounds.maxX) / 2, 5, (this.sceneBounds.minZ + this.sceneBounds.maxZ) / 2);
-
-    this.scene.add(boundsLines);
-    console.log("경계 시각화 추가됨");
   }
 
   // 캐릭터 모델 로드
@@ -143,7 +87,7 @@ export class CharacterManager {
         }
       });
 
-      // 모델 설정 - 위치를 명확하게 설정
+      // 처음에 캐릭터가 로드될 때 position
       model.position.copy(position);
       model.scale.copy(scale);
       model.castShadow = true;
@@ -196,6 +140,8 @@ export class CharacterManager {
         scale: scale.clone(),
       };
 
+      console.log(character);
+
       // 기본 애니메이션 재생 (있는 경우)
       if (animations.length > 0) {
         character.currentAnimation = animations[0];
@@ -219,49 +165,9 @@ export class CharacterManager {
     }
   }
 
-  // 애니메이션 재생
-  playAnimation(characterId: string, animationName: string): void {
-    const character = this.characters.get(characterId);
-    if (!character || !character.mixer) return;
-
-    // 현재 애니메이션 정지
-    if (character.currentAnimation) {
-      character.currentAnimation.stop();
-    }
-
-    // 새로운 애니메이션 찾기
-    const animation = character.animations.find((action) => action.getClip().name.toLowerCase().includes(animationName.toLowerCase()));
-
-    if (animation) {
-      character.currentAnimation = animation;
-      animation.reset();
-      animation.play();
-      console.log(`캐릭터 애니메이션 재생: ${characterId} - ${animationName}`);
-    } else {
-      console.warn(`애니메이션을 찾을 수 없습니다: ${animationName}`);
-    }
-  }
-
-  // 캐릭터 회전
-  rotateCharacter(characterId: string, rotation: THREE.Euler): void {
-    const character = this.characters.get(characterId);
-    if (!character) return;
-
-    character.rotation.copy(rotation);
-    character.model.rotation.copy(rotation);
-  }
-
-  // 캐릭터 크기 조정
-  scaleCharacter(characterId: string, scale: THREE.Vector3): void {
-    const character = this.characters.get(characterId);
-    if (!character) return;
-
-    character.scale.copy(scale);
-    character.model.scale.copy(scale);
-  }
-
   // 캐릭터 가져오기
   getCharacter(characterId: string): Character | undefined {
+    console.log("캐릭터 가져오기:", characterId);
     return this.characters.get(characterId);
   }
 
@@ -355,79 +261,6 @@ export class CharacterManager {
     console.log(`캐릭터 제거 완료: ${characterId}`);
   }
 
-  // 캐릭터에 물리 바디 추가
-  addPhysicsToCharacter(characterId: string): void {
-    console.log(`물리 바디 추가 시작: ${characterId}`);
-
-    const character = this.characters.get(characterId);
-    if (!character) {
-      console.error(`캐릭터를 찾을 수 없습니다: ${characterId}`);
-      return;
-    }
-
-    if (!this.physicsWorld) {
-      console.error("물리 월드가 초기화되지 않았습니다.");
-      return;
-    }
-
-    const Ammo = window.Ammo;
-    if (!Ammo) {
-      console.warn("Ammo.js가 로드되지 않았습니다.");
-      return;
-    }
-
-    // 캐릭터의 바운딩 박스 계산
-    const box = new THREE.Box3().setFromObject(character.model);
-    const size = box.getSize(new THREE.Vector3());
-
-    console.log(`캐릭터 바운딩 박스: 크기=${size.x.toFixed(2)}, ${size.y.toFixed(2)}, ${size.z.toFixed(2)}`);
-
-    // 캡슐 모양의 물리 바디 생성 (캐릭터 크기에 맞춤)
-    const radius = Math.max(size.x, size.z) * 0.3;
-    const height = size.y * 0.8;
-
-    console.log(`물리 바디 크기: 반지름=${radius.toFixed(2)}, 높이=${height.toFixed(2)}`);
-
-    // Ammo ghostObject 생성 (보이지 않는 물리 바디)
-    const shape = new Ammo.btCapsuleShape(radius, height);
-    const ghostObject = new Ammo.btPairCachingGhostObject();
-    const transform = new Ammo.btTransform();
-    transform.setIdentity();
-
-    // 현재 캐릭터 모델 위치를 기준으로 물리 바디 위치 설정
-    transform.setOrigin(
-      new Ammo.btVector3(
-        character.model.position.x,
-        character.model.position.y + size.y * 0.5, // 모델 바닥에서 중심까지의 높이
-        character.model.position.z
-      )
-    );
-
-    ghostObject.setWorldTransform(transform);
-    ghostObject.setCollisionShape(shape);
-
-    // *** 중요: CF_NO_CONTACT_RESPONSE 플래그 제거하여 충돌 감지 활성화 ***
-    ghostObject.setCollisionFlags(16); // CF_CHARACTER_OBJECT만 설정
-
-    // Character controller 생성
-    const stepHeight = 0.35;
-    const characterController = new Ammo.btKinematicCharacterController(ghostObject, shape, stepHeight);
-    characterController.setGravity(-9.8); // 음수로 설정 (아래쪽으로)
-
-    // 물리 월드에 추가
-    this.physicsWorld.addCollisionObject(ghostObject, 2, 1);
-    this.physicsWorld.addAction(characterController);
-
-    // 캐릭터에 물리 바디 저장
-    character.physicsBody = ghostObject;
-    character.physicsController = characterController;
-
-    console.log(`캐릭터 ${characterId}에 물리 바디 추가 완료`);
-    console.log(
-      `모델 위치: (${character.model.position.x.toFixed(2)}, ${character.model.position.y.toFixed(2)}, ${character.model.position.z.toFixed(2)})`
-    );
-  }
-
   // 캐릭터 위치를 외부에서 직접 설정하는 메서드 추가
   setCharacterPosition(characterId: string, position: THREE.Vector3): void {
     const character = this.characters.get(characterId);
@@ -435,7 +268,7 @@ export class CharacterManager {
       return;
     }
 
-    // 모델 위치 직접 설정
+    // wasd 조작키로 움직이는 position
     character.model.position.copy(position);
     character.position.copy(position);
 
@@ -457,18 +290,7 @@ export class CharacterManager {
       return;
     }
 
-    // smoothCharacterController를 사용하는 경우 물리 업데이트 건너뛰기
-    // animation.ts에서 위치 동기화가 처리됨
-    if (Math.random() < 0.1) {
-      // 10% 확률로만 로그 출력 (스팸 방지)
-      console.log(`캐릭터 ${characterId} 물리 업데이트 건너뛰기 (smoothCharacterController 사용 중)`);
-    }
     return;
-  }
-
-  // 물리 월드 설정
-  setPhysicsWorld(physicsWorld: any): void {
-    this.physicsWorld = physicsWorld;
   }
 
   // 업데이트 (애니메이션과 물리 처리)
@@ -487,37 +309,5 @@ export class CharacterManager {
         this.updateCharacterPhysics(character.id, keys, fixedDeltaTime);
       }
     });
-
-    // 디버깅 로그 빈도 줄이기
-    if (keys && Math.random() < 0.02) {
-      // 2% 확률
-      const pressedKeys = Object.keys(keys).filter((key) => keys[key]);
-      if (pressedKeys.length > 0) {
-        console.log("CharacterManager update - 활성 키:", pressedKeys);
-        console.log("관리 중인 캐릭터 수:", this.characters.size);
-      }
-    }
-  }
-}
-
-// 캐릭터 로더 유틸리티
-export class CharacterLoader {
-  private static characterModels = {
-    cat: "/models/character/cat_ps1_low_poly_rigged.glb",
-    dog: "/models/character/low_poly_dog.glb",
-    fox: "/models/character/low_poly_fox.glb",
-    hamster: "/models/character/hamster.glb",
-    rabbit: "/models/character/rabbit.glb",
-    wolf: "/models/character/wolf.glb",
-  };
-
-  // 사용 가능한 캐릭터 목록 반환
-  static getAvailableCharacters(): string[] {
-    return Object.keys(this.characterModels);
-  }
-
-  // 캐릭터 모델 경로 가져오기
-  static getCharacterModelPath(characterType: string): string | null {
-    return this.characterModels[characterType as keyof typeof this.characterModels] || null;
   }
 }

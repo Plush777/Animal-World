@@ -229,11 +229,11 @@ export function setupOrbitControls(camera: THREE.PerspectiveCamera, renderer: TH
   }
 
   controls.addEventListener("change", () => {
-    console.log("카메라 위치:", {
-      x: camera.position.x.toFixed(2),
-      y: camera.position.y.toFixed(2),
-      z: camera.position.z.toFixed(2),
-    });
+    // console.log("카메라 위치:", {
+    //   x: camera.position.x.toFixed(2),
+    //   y: camera.position.y.toFixed(2),
+    //   z: camera.position.z.toFixed(2),
+    // });
   });
 
   return controls;
@@ -468,9 +468,6 @@ export async function loadMultipleModels(scene: THREE.Scene): Promise<void> {
     );
 
     console.log("lighthouse 모델 로드 완료:", lighthouseModel);
-
-    // 등대 주변에 맵 경계 생성 (등대에 접근하지 못하도록)
-    // createLighthouseBoundary(scene); // 시각적 문제로 인해 비활성화, 캐릭터 컨트롤러에서만 체크
 
     // lighthouse 모델의 Node-Mesh_9 오브젝트 제어
     if (lighthouseModel) {

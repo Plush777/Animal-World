@@ -248,11 +248,6 @@ export function createAnimationLoop(
           characterPos = characterController.mesh ? characterController.mesh.position : null;
         }
 
-        // 카메라 고정 - 캐릭터를 따라가지 않음
-        // if (controls && controls.target && characterPos) {
-        //   controls.target.lerp(characterPos, 0.1); // 부드럽게 따라가기
-        // }
-
         // 시각적 캐릭터 모델을 컨트롤러 위치와 동기화
         if (characterManager && characterPos) {
           // CharacterManager의 새로운 메서드를 사용하여 현재 선택된 캐릭터 가져오기
@@ -299,18 +294,6 @@ export function createAnimationLoop(
             } else {
               // 기존 방식 (fallback)
               visualCharacter.model.position.copy(syncPosition);
-            }
-
-            // 디버깅을 위한 로그 (간혹 출력)
-            if (Math.random() < 0.01) {
-              // 1% 확률로 출력
-              console.log(
-                `캐릭터 위치 동기화: ${visualCharacter.id} smoothController(${characterPos.x.toFixed(2)}, ${characterPos.y.toFixed(
-                  2
-                )}, ${characterPos.z.toFixed(2)}) -> model(${visualCharacter.model.position.x.toFixed(2)}, ${visualCharacter.model.position.y.toFixed(
-                  2
-                )}, ${visualCharacter.model.position.z.toFixed(2)})`
-              );
             }
 
             // 캐릭터 회전 처리 (이동 방향에 따라)

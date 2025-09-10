@@ -247,8 +247,8 @@ export function isAnonymousUser(user: any): boolean {
   const providers = user?.app_metadata?.providers;
 
   // 로깅으로 실제 값 확인
-  console.log("isAnonymousUser 체크 - provider:", provider);
-  console.log("isAnonymousUser 체크 - providers:", providers);
+  // console.log("isAnonymousUser 체크 - provider:", provider);
+  // console.log("isAnonymousUser 체크 - providers:", providers);
 
   return provider === "anon" || provider === "anonymous" || providers?.includes("anon") || providers?.includes("anonymous") || !provider; // provider가 없는 경우도 익명으로 간주
 }

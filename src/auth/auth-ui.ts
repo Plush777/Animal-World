@@ -64,12 +64,12 @@ export function reconnectLogoutEventListener(): void {
 
 // 유저 정보 렌더링 함수
 export function renderUser(user: User | null): void {
-  console.log("renderUser 호출됨:", user);
+  // console.log("renderUser 호출됨:", user);
 
   if (user) {
-    console.log("renderUser - app_metadata:", user.app_metadata);
-    console.log("renderUser - user_metadata:", user.user_metadata);
-    console.log("renderUser - isGuestUser 결과:", isGuestUser(user));
+    // console.log("renderUser - app_metadata:", user.app_metadata);
+    // console.log("renderUser - user_metadata:", user.user_metadata);
+    // console.log("renderUser - isGuestUser 결과:", isGuestUser(user));
   }
 
   // 현재 사용자 정보 업데이트
@@ -140,5 +140,5 @@ export function renderUser(user: User | null): void {
     (window as any).setupJoinButton();
   }
 
-  console.log("로그인된 사용자:", user);
+  // console.log("로그인된 사용자:", user);
 }

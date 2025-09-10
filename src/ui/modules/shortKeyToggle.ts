@@ -24,7 +24,7 @@ function setupEventListenerTracking(): void {
   EventTarget.prototype.addEventListener = function (type: string, listener: EventListener, options?: boolean | AddEventListenerOptions) {
     // 키보드 관련 이벤트이고 단축키 관련으로 추정되는 경우 추적
     if (type === "keydown" || type === "keyup" || type === "keypress") {
-      console.log(`🎯 키보드 이벤트 리스너 등록 감지: ${type} on`, this);
+      // console.log(`🎯 키보드 이벤트 리스너 등록 감지: ${type} on`, this);
 
       shortKeyEventListeners.push({
         target: this,
@@ -41,7 +41,7 @@ function setupEventListenerTracking(): void {
   EventTarget.prototype.removeEventListener = function (type: string, listener: EventListener, options?: boolean | AddEventListenerOptions) {
     // 추적 목록에서 제거
     if (type === "keydown" || type === "keyup" || type === "keypress") {
-      console.log(`🗑️ 키보드 이벤트 리스너 제거 감지: ${type} from`, this);
+      // console.log(`🗑️ 키보드 이벤트 리스너 제거 감지: ${type} from`, this);
 
       shortKeyEventListeners = shortKeyEventListeners.filter((item) => !(item.target === this && item.type === type && item.listener === listener));
     }
@@ -49,14 +49,14 @@ function setupEventListenerTracking(): void {
     return originalRemoveEventListener.call(this, type, listener, options);
   };
 
-  console.log(`✅ 이벤트 리스너 추적 시스템 설정 완료`);
+  // console.log(`✅ 이벤트 리스너 추적 시스템 설정 완료`);
 }
 
 /**
  * 등록된 모든 단축키 이벤트 리스너들을 강제로 제거
  */
 function removeAllShortKeyListeners(): void {
-  console.log(`🧹 등록된 단축키 리스너 강제 제거 시작 (총 ${shortKeyEventListeners.length}개)`);
+  // console.log(`🧹 등록된 단축키 리스너 강제 제거 시작 (총 ${shortKeyEventListeners.length}개)`);
 
   shortKeyEventListeners.forEach((item, index) => {
     try {
@@ -69,18 +69,18 @@ function removeAllShortKeyListeners(): void {
 
   // 추적 목록 초기화
   shortKeyEventListeners = [];
-  console.log(`✅ 단축키 리스너 제거 완료`);
+  // console.log(`✅ 단축키 리스너 제거 완료`);
 }
 
 /**
  * initShortKey 함수를 래핑하여 추적 기능 추가
  */
 function wrappedInitShortKey(): void {
-  console.log(`🔧 initShortKey 래핑 실행 시작`);
+  // console.log(`🔧 initShortKey 래핑 실행 시작`);
 
   // 기존 리스너들 정리
   if (shortKeyEventListeners.length > 0) {
-    console.log(`기존 단축키 리스너들 정리 중...`);
+    // console.log(`기존 단축키 리스너들 정리 중...`);
     removeAllShortKeyListeners();
   }
 
@@ -89,7 +89,7 @@ function wrappedInitShortKey(): void {
   initShortKey();
   const afterListenerCount = shortKeyEventListeners.length;
 
-  console.log(`initShortKey 실행 완료: ${afterListenerCount - beforeListenerCount}개 리스너 추가됨`);
+  // console.log(`initShortKey 실행 완료: ${afterListenerCount - beforeListenerCount}개 리스너 추가됨`);
 }
 
 /**
@@ -99,8 +99,8 @@ function safeInitShortKey(reason: string): void {
   const now = Date.now();
   initShortKeyCallCount++;
 
-  console.log(`\n[${initShortKeyCallCount}] 단축키 초기화 시도: ${reason}`);
-  console.log(`이전 호출로부터 ${now - lastInitTime}ms 경과`);
+  // console.log(`\n[${initShortKeyCallCount}] 단축키 초기화 시도: ${reason}`);
+  // console.log(`이전 호출로부터 ${now - lastInitTime}ms 경과`);
 
   try {
     // 중복 호출 방지 (100ms 이내 중복 호출 차단)
@@ -114,12 +114,12 @@ function safeInitShortKey(reason: string): void {
     // DOM이 준비되었는지 확인
     if (document.readyState !== "loading") {
       wrappedInitShortKey();
-      console.log(`✅ 단축키 초기화 성공: ${reason}`);
+      // console.log(`✅ 단축키 초기화 성공: ${reason}`);
     } else {
       console.warn(`DOM이 준비되지 않아 지연 실행: ${reason}`);
       document.addEventListener("DOMContentLoaded", () => {
         wrappedInitShortKey();
-        console.log(`✅ 단축키 지연 초기화 완료: ${reason}`);
+        // console.log(`✅ 단축키 지연 초기화 완료: ${reason}`);
       });
     }
   } catch (error) {
@@ -131,36 +131,36 @@ function safeInitShortKey(reason: string): void {
  * 단축키를 완전히 비활성화하는 함수
  */
 function disableShortKey(reason: string): void {
-  console.log(`\n🚫 단축키 비활성화 시작: ${reason}`);
-  console.log(`현재 등록된 리스너 개수: ${shortKeyEventListeners.length}`);
+  // console.log(`\n🚫 단축키 비활성화 시작: ${reason}`);
+  // console.log(`현재 등록된 리스너 개수: ${shortKeyEventListeners.length}`);
 
   if (shortKeyEventListeners.length > 0) {
     removeAllShortKeyListeners();
   } else {
-    console.log(`제거할 리스너가 없습니다`);
+    // console.log(`제거할 리스너가 없습니다`);
   }
 
-  console.log(`✅ 단축키 비활성화 완료: ${reason}\n`);
+  // console.log(`✅ 단축키 비활성화 완료: ${reason}\n`);
 }
 
 /**
  * 단축키 상태 처리 로직
  */
 function handleShortKeyState(isDisabled: boolean, reason: string = ""): void {
-  console.log(`\n=== 단축키 상태 처리 시작 ===`);
-  console.log(`현재 상태: ${currentShortKeyState === null ? "null" : currentShortKeyState ? "비활성화" : "활성화"}`);
-  console.log(`새로운 상태: ${isDisabled ? "비활성화" : "활성화"}`);
-  console.log(`처리 이유: ${reason}`);
-  console.log(`현재 등록된 리스너 개수: ${shortKeyEventListeners.length}`);
+  // console.log(`\n=== 단축키 상태 처리 시작 ===`);
+  // console.log(`현재 상태: ${currentShortKeyState === null ? "null" : currentShortKeyState ? "비활성화" : "활성화"}`);
+  // console.log(`새로운 상태: ${isDisabled ? "비활성화" : "활성화"}`);
+  // console.log(`처리 이유: ${reason}`);
+  // console.log(`현재 등록된 리스너 개수: ${shortKeyEventListeners.length}`);
 
   // 상태가 변경된 경우에만 처리
   if (currentShortKeyState !== isDisabled) {
     const previousState = currentShortKeyState;
     currentShortKeyState = isDisabled;
 
-    console.log(
-      `🔄 상태 변경 감지: ${previousState === null ? "null" : previousState ? "비활성화" : "활성화"} → ${isDisabled ? "비활성화" : "활성화"}`
-    );
+    // console.log(
+    //   `🔄 상태 변경 감지: ${previousState === null ? "null" : previousState ? "비활성화" : "활성화"} → ${isDisabled ? "비활성화" : "활성화"}`
+    // );
 
     if (!isDisabled) {
       // 단축키 활성화
@@ -170,7 +170,7 @@ function handleShortKeyState(isDisabled: boolean, reason: string = ""): void {
       disableShortKey(`상태 변경 (${reason})`);
     }
   } else {
-    console.log(`ℹ️ 상태 변화 없음 - 처리 건너뜀`);
+    // console.log(`ℹ️ 상태 변화 없음 - 처리 건너뜀`);
 
     // 상태 변화는 없지만 실제 리스너 상태와 다를 수 있으므로 검증
     const shouldHaveListeners = !isDisabled;
@@ -183,23 +183,23 @@ function handleShortKeyState(isDisabled: boolean, reason: string = ""): void {
 
       // 강제 동기화
       if (shouldHaveListeners && !hasListeners) {
-        console.log(`🔧 리스너 강제 생성`);
+        // console.log(`🔧 리스너 강제 생성`);
         safeInitShortKey(`상태 동기화 (${reason})`);
       } else if (!shouldHaveListeners && hasListeners) {
-        console.log(`🔧 리스너 강제 제거`);
+        // console.log(`🔧 리스너 강제 제거`);
         disableShortKey(`상태 동기화 (${reason})`);
       }
     }
   }
 
-  console.log(`=== 단축키 상태 처리 완료 ===\n`);
+  // console.log(`=== 단축키 상태 처리 완료 ===\n`);
 }
 
 /**
  * 단축키 설정 변경 감지 및 처리
  */
 function handleShortKeySettingChange(): void {
-  console.log(`\n🚀 단축키 설정 감지 시스템 초기화`);
+  // console.log(`\n🚀 단축키 설정 감지 시스템 초기화`);
 
   // 이벤트 리스너 추적 시스템 설정
   setupEventListenerTracking();
@@ -209,9 +209,6 @@ function handleShortKeySettingChange(): void {
     const bodyAttribute = document.body.getAttribute("data-short-key-disable");
     const isDisabled = bodyAttribute === "true";
 
-    console.log(`body data-short-key-disable 속성: "${bodyAttribute}"`);
-    console.log(`해석된 상태: ${isDisabled ? "비활성화" : "활성화"}`);
-
     handleShortKeyState(isDisabled, "초기 상태 확인");
   };
 
@@ -220,26 +217,26 @@ function handleShortKeySettingChange(): void {
 
   // 약간의 지연 후 재확인 (다른 스크립트가 속성을 변경할 수 있음)
   setTimeout(() => {
-    console.log(`\n⏰ 지연된 초기 상태 재확인`);
+    // console.log(`\n⏰ 지연된 초기 상태 재확인`);
     checkInitialState();
   }, 100);
 
   // MutationObserver로 변화 감지
   const observer = new MutationObserver((mutations) => {
-    console.log(`\n👀 MutationObserver 감지됨 (${mutations.length}개 변화)`);
+    // console.log(`\n👀 MutationObserver 감지됨 (${mutations.length}개 변화)`);
 
     mutations.forEach((mutation, index) => {
       console.log(`변화 ${index + 1}:`);
-      console.log(`  - 타입: ${mutation.type}`);
-      console.log(`  - 속성명: ${mutation.attributeName}`);
-      console.log(`  - 이전 값: "${mutation.oldValue}"`);
+      // console.log(`  - 타입: ${mutation.type}`);
+      // console.log(`  - 속성명: ${mutation.attributeName}`);
+      // console.log(`  - 이전 값: "${mutation.oldValue}"`);
 
       if (mutation.type === "attributes" && mutation.attributeName === "data-short-key-disable") {
         const newValue = document.body.getAttribute("data-short-key-disable");
         const isDisabled = newValue === "true";
 
-        console.log(`  - 새로운 값: "${newValue}"`);
-        console.log(`  - 해석된 상태: ${isDisabled ? "비활성화" : "활성화"}`);
+        // console.log(`  - 새로운 값: "${newValue}"`);
+        // console.log(`  - 해석된 상태: ${isDisabled ? "비활성화" : "활성화"}`);
 
         handleShortKeyState(isDisabled, "MutationObserver 감지");
       }
@@ -253,7 +250,7 @@ function handleShortKeySettingChange(): void {
     attributeOldValue: true,
   });
 
-  console.log(`✅ MutationObserver 설정 완료`);
+  // console.log(`✅ MutationObserver 설정 완료`);
 }
 
 export { handleShortKeySettingChange, handleShortKeyState, shortKeyEventListeners };

@@ -1,6 +1,5 @@
 import { CharacterStorage } from "../../canvas/characterStorage";
 import { sceneHtml } from "../../data/sceneHtml";
-import { getCharacterSettings, createScaleFromSettings, getRandomStartPosition } from "../../data/characterInfo";
 
 export class CharacterSettingPopup {
   private popup: HTMLElement | null = null;
@@ -137,9 +136,6 @@ export class CharacterSettingPopup {
     if (success) {
       console.log(`캐릭터 설정 완료: ${this.selectedCharacterId}`);
 
-      // scene에 캐릭터 즉시 로드
-      this.loadCharacterToScene(this.selectedCharacterId);
-
       // 콜백 호출
       if (this.onCharacterSelected) {
         this.onCharacterSelected(this.selectedCharacterId);
@@ -148,134 +144,6 @@ export class CharacterSettingPopup {
       this.closePopupOnly();
     } else {
       console.error("캐릭터 설정 실패");
-    }
-  }
-
-  // scene에 캐릭터 로드
-  private async loadCharacterToScene(characterId: string): Promise<void> {
-    try {
-      console.log("=== 캐릭터 scene 로드 시작 ===");
-
-      // 전역 캐릭터 매니저와 입력 매니저 가져오기
-      const characterManager = (window as any).globalCharacterManager;
-      const inputManager = (window as any).globalInputManager;
-      const scene = (window as any).globalScene;
-
-      console.log("전역 객체 확인:", {
-        characterManager: !!characterManager,
-        inputManager: !!inputManager,
-        scene: !!scene,
-      });
-
-      if (!characterManager) {
-        console.error("캐릭터 매니저를 찾을 수 없습니다.");
-        return;
-      }
-
-      if (!scene) {
-        console.error("scene을 찾을 수 없습니다.");
-        return;
-      }
-
-      // 기존 캐릭터들 제거
-      const existingCharacters = characterManager.getAllCharacters();
-      console.log("기존 캐릭터 수:", existingCharacters.length);
-      existingCharacters.forEach((char: any) => {
-        console.log("기존 캐릭터 제거:", char.id);
-        characterManager.removeCharacter(char.id);
-      });
-
-      // 선택된 캐릭터 정보 가져오기
-      const characterInfo = CharacterStorage.getCurrentCharacter();
-      if (!characterInfo) {
-        console.error("캐릭터 정보를 찾을 수 없습니다.");
-        return;
-      }
-
-      console.log("로드할 캐릭터 정보:", characterInfo);
-
-      // 캐릭터 로드 - 물 위로 올려서 위치
-      const characterSettings = getCharacterSettings(characterInfo.id);
-
-      // 랜덤 시작 위치 생성 (공통 상수 사용)
-      const selectedPosition = getRandomStartPosition();
-      const position = new (window as any).THREE.Vector3(selectedPosition.x, selectedPosition.y, selectedPosition.z);
-
-      console.log(
-        `🎯 ${characterInfo.name} 랜덤 시작 위치: (${selectedPosition.x.toFixed(2)}, ${selectedPosition.y.toFixed(2)}, ${selectedPosition.z.toFixed(
-          2
-        )})`
-      );
-      const scale = createScaleFromSettings(characterSettings);
-
-      console.log("캐릭터 로드 파라미터:", {
-        id: characterInfo.id,
-        modelPath: characterInfo.modelPath,
-        position: position,
-        scale: scale,
-      });
-
-      const loadedCharacter = await characterManager.loadCharacter(characterInfo.id, characterInfo.modelPath, position, scale);
-
-      if (loadedCharacter) {
-        console.log("캐릭터 로드 성공:", loadedCharacter);
-        console.log("캐릭터 모델 정보:", {
-          position: loadedCharacter.model.position,
-          scale: loadedCharacter.model.scale,
-          visible: loadedCharacter.model.visible,
-          children: loadedCharacter.model.children.length,
-        });
-
-        // scene에 캐릭터가 추가되었는지 확인
-        const sceneChildren = scene.children;
-        console.log("scene의 자식 객체 수:", sceneChildren.length);
-
-        // 캐릭터 모델이 scene에 있는지 확인
-        const characterInScene = sceneChildren.find((child: any) => child === loadedCharacter.model);
-        console.log("캐릭터가 scene에 있는지:", !!characterInScene);
-
-        if (inputManager) {
-          inputManager.setActiveCharacter(loadedCharacter.id);
-          console.log(`캐릭터가 scene에 로드되었습니다: ${characterInfo.name}`);
-
-          // 카메라를 캐릭터 위치로 이동
-          this.moveCameraToCharacter(loadedCharacter.model.position);
-        }
-      } else {
-        console.error("캐릭터 로드 실패");
-      }
-    } catch (error) {
-      console.error("scene에 캐릭터 로드 실패:", error);
-    }
-  }
-
-  // 카메라를 캐릭터 위치로 이동
-  private moveCameraToCharacter(characterPosition: any): void {
-    try {
-      const camera = (window as any).globalCamera;
-      const controls = (window as any).globalControls;
-
-      if (camera) {
-        // 캐릭터 위치에서 약간 뒤쪽으로 카메라 이동
-        const cameraOffset = new (window as any).THREE.Vector3(0, 2, 5); // 원래 오프셋으로 복원
-        const newCameraPosition = characterPosition.clone().add(cameraOffset);
-
-        camera.position.copy(newCameraPosition);
-        camera.lookAt(characterPosition);
-
-        console.log("카메라가 캐릭터 위치로 이동됨:", {
-          characterPosition: characterPosition,
-          cameraPosition: camera.position,
-        });
-
-        // OrbitControls가 있다면 타겟도 업데이트
-        if (controls) {
-          controls.target.copy(characterPosition);
-          controls.update();
-        }
-      }
-    } catch (error) {
-      console.error("카메라 이동 실패:", error);
     }
   }
 
