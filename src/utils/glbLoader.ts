@@ -284,43 +284,23 @@ export function loadGLBModel(
 
               // 나무 모델의 재질을 초록색으로 조정하고 충돌 감지 비활성화
               if (path.includes("low_poly_trees")) {
-                console.log(`나무 모델 발견: ${child.name}`);
                 adjustTreeMaterial(child.material);
-                // 캐릭터가 오브젝트로 인식하지 않도록 물리 속성 비활성화
-                child.userData.isCollidable = false;
-                child.userData.isTerrain = false;
               }
               // floating island 모델의 재질 조정 (색상 보존) 및 충돌 감지 비활성화
-              else if (path.includes("low_poly_floating_island")) {
-                console.log(`Floating Island 모델 발견: ${child.name}`);
-                console.log(`재질 색상:`, child.material.color);
-                console.log(`그림자 설정 - castShadow: ${child.castShadow}, receiveShadow: ${child.receiveShadow}`);
-                // adjustFloatingIslandMaterial(child.material, child.name);
-
+              if (path.includes("low_poly_floating_island")) {
                 // Floating Island 모델에 대해 추가 그림자 설정
                 child.castShadow = true;
                 child.receiveShadow = true;
-
-                // 캐릭터가 오브젝트로 인식하지 않도록 물리 속성 비활성화
-                child.userData.isCollidable = false;
-                child.userData.isTerrain = false;
               }
               // water 모델의 재질 조정 (물 효과를 위한 투명도와 반사 설정)
               else if (path.includes("water")) {
-                console.log(`Water 모델 발견: ${child.name}`);
                 adjustWaterMaterial(child.material, child.name);
 
                 // 물 모델에 대해 그림자 설정
                 child.castShadow = false; // 물은 그림자를 드리지 않음
                 child.receiveShadow = true; // 물은 그림자를 받음
               }
-              // triple trees 모델의 충돌 감지 비활성화
-              else if (path.includes("low_poly_triple_trees")) {
-                console.log(`Triple Trees 모델 발견: ${child.name}`);
-                // 캐릭터가 오브젝트로 인식하지 않도록 물리 속성 비활성화
-                child.userData.isCollidable = false;
-                child.userData.isTerrain = false;
-              }
+
               // night_sky_scene 모델의 재질 조정 (밤 하늘 배경 보존)
               else if (path.includes("night_sky_scene")) {
                 console.log(`Night Sky Scene 모델 발견: ${child.name}`);

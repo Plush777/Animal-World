@@ -23,7 +23,7 @@
     "noFallthroughCasesInSwitch": true,
 
     /* Type definitions */
-    "typeRoots": ["./node_modules/@types", "./src/types", "./node_modules/ammojs-typed/ammo/ambient"]
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]

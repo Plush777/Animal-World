@@ -14,7 +14,7 @@ export const AVAILABLE_CHARACTERS: CharacterInfo[] = [
     id: "dog",
     type: "dog",
     name: "강아지",
-    modelPath: "/models/character/low_poly_dog.glb",
+    modelPath: "/models/character/Beagle.glb",
     isUnlocked: true,
     selectedAt: 0,
   },
@@ -30,7 +30,7 @@ export const AVAILABLE_CHARACTERS: CharacterInfo[] = [
     id: "cat",
     type: "cat",
     name: "고양이",
-    modelPath: "/models/character/cat_ps1_low_poly_rigged.glb",
+    modelPath: "/models/character/low_poly_cat_cartoon.glb",
     isUnlocked: true,
     selectedAt: 0,
   },
@@ -39,7 +39,7 @@ export const AVAILABLE_CHARACTERS: CharacterInfo[] = [
     type: "hamster",
     name: "햄스터",
     modelPath: "/models/character/hamster.glb",
-    isUnlocked: false,
+    isUnlocked: true,
     selectedAt: 0,
   },
   {
@@ -47,7 +47,7 @@ export const AVAILABLE_CHARACTERS: CharacterInfo[] = [
     type: "rabbit",
     name: "토끼",
     modelPath: "/models/character/rabbit.glb",
-    isUnlocked: false,
+    isUnlocked: true,
     selectedAt: 0,
   },
   {
@@ -84,6 +84,9 @@ export class CharacterStorage {
   static setCurrentCharacter(characterId: string): boolean {
     try {
       const character = AVAILABLE_CHARACTERS.find((c) => c.id === characterId);
+
+      console.log(character);
+
       if (!character) {
         console.error(`캐릭터를 찾을 수 없습니다: ${characterId}`);
         return false;

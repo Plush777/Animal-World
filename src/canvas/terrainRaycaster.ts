@@ -9,7 +9,7 @@ export class TerrainRaycaster {
   private terrainMeshes: THREE.Mesh[] = [];
   private smoothingEnabled: boolean = true;
   private lastHeightMap: Map<string, number[]> = new Map(); // 최근 높이 기록 (배열)
-  private heightChangeThreshold: number = 5.0;
+  public heightChangeThreshold: number = 5.0;
   private smoothingWindowSize: number = 5; // 이동평균 크기
 
   constructor(scene: THREE.Scene) {
@@ -251,16 +251,16 @@ export class TerrainRaycaster {
    */
   public debugTerrainMeshes(): void {
     console.log("=== 지형 메시 디버깅 ===");
-    this.terrainMeshes.forEach((mesh, idx) => {
+    this.terrainMeshes.forEach((mesh, _idx) => {
       const bbox = new THREE.Box3().setFromObject(mesh);
       const size = new THREE.Vector3();
       bbox.getSize(size);
       const center = new THREE.Vector3();
       bbox.getCenter(center);
 
-      console.log(`${idx + 1}. ${mesh.name || "unnamed"}`);
-      console.log(`   위치(센터): (${center.x.toFixed(1)}, ${center.y.toFixed(1)}, ${center.z.toFixed(1)})`);
-      console.log(`   크기: (${size.x.toFixed(1)}, ${size.y.toFixed(1)}, ${size.z.toFixed(1)})`);
+      // console.log(`${idx + 1}. ${mesh.name || "unnamed"}`);
+      // console.log(`   위치(센터): (${center.x.toFixed(1)}, ${center.y.toFixed(1)}, ${center.z.toFixed(1)})`);
+      // console.log(`   크기: (${size.x.toFixed(1)}, ${size.y.toFixed(1)}, ${size.z.toFixed(1)})`);
     });
     console.log("=====================");
   }

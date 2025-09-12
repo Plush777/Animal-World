@@ -7,7 +7,6 @@ import {
   setupResizeHandler,
   setupOrbitControls,
   loadMultipleModels,
-  createCircularGradientGround,
   setupCameraEventListeners,
 } from "./scene";
 
@@ -16,8 +15,7 @@ import { createAnimationLoop } from "./animation";
 import { CharacterManager } from "./character";
 import { CharacterStorage } from "./characterStorage";
 import { joinButtonManager } from "../ui/modules/joinButton";
-import { getCharacterSettings, createScaleFromSettings, getRandomStartPosition } from "../data/characterInfo";
-import { initializeAmmo, initPhysicsWorld } from "./physicsEngine";
+import { getCharacterSettings, createScaleFromSettings, getCharacterHeightOffset, getCharacterRotationOffset } from "../data/characterInfo";
 
 import { TerrainRaycaster } from "./terrainRaycaster";
 import {
@@ -377,27 +375,11 @@ let smoothCharacterController: SmoothCharacterController | null = null;
   // 캐시 버스팅 비활성화 (정상적인 캐싱을 위해)
   (window as any).clearCacheEnabled = false;
 
-  // Ammo.js 초기화 (선택적)
-  try {
-    await initializeAmmo();
-    console.log("Ammo.js 초기화 성공");
-
-    // 물리 엔진 초기화
-    globalPhysicsWorld = initPhysicsWorld();
-    if (globalPhysicsWorld) {
-      console.log("물리 엔진 초기화 성공");
-    }
-  } catch (error) {
-    console.warn("Ammo.js 초기화 실패:", error);
-    return; // 물리 엔진 없이는 진행하지 않음
-  }
-
   globalScene = createScene();
   const camera = createCamera();
   globalRenderer = createRenderer();
 
   setupLighting(globalScene);
-  createCircularGradientGround(globalScene);
 
   await loadMultipleModels(globalScene);
 
@@ -446,7 +428,7 @@ let smoothCharacterController: SmoothCharacterController | null = null;
   });
 
   // 캐릭터 매니저 초기화
-  globalCharacterManager = new CharacterManager(globalScene, globalPhysicsWorld);
+  globalCharacterManager = new CharacterManager(globalScene);
 
   // 전역 변수들을 window 객체에 노출
   (window as any).globalCharacterManager = globalCharacterManager;
@@ -454,22 +436,6 @@ let smoothCharacterController: SmoothCharacterController | null = null;
   (window as any).globalRenderer = globalRenderer;
   (window as any).globalCamera = camera;
   (window as any).globalPhysicsWorld = globalPhysicsWorld; // 물리 월드도 전역에 노출
-  // 레거시 함수들을 새로운 시스템으로 래핑 (호환성 유지)
-  (window as any).findGroundHeight = (x: number, z: number) => {
-    return terrainRaycaster ? terrainRaycaster.getTerrainHeight(x, z) : 150;
-  };
-  (window as any).analyzeTerrainAroundCharacter = (x: number, z: number, range: number = 5) => {
-    if (terrainRaycaster) {
-      const analysis = terrainRaycaster.analyzeTerrainAroundPosition(x, z, range);
-      return {
-        currentHeight: analysis.currentHeight,
-        averageHeight: analysis.averageHeight,
-        slope: analysis.slope,
-        canMove: analysis.canMove,
-      };
-    }
-    return { currentHeight: 150, averageHeight: 150, slope: 0, canMove: true };
-  };
 
   // 새로운 시스템 전역 노출
   (window as any).terrainRaycaster = terrainRaycaster;
@@ -523,42 +489,60 @@ let smoothCharacterController: SmoothCharacterController | null = null;
       globalCharacterManager?.removeCharacter(char.id);
     });
 
-    // 공통 시작 위치 결정 (smoothCharacterController와 캐릭터 모델이 동일한 위치에서 시작)
-    const selectedPosition = getRandomStartPosition();
-    let controllerStartPosition: THREE.Vector3 | null = null;
-
     // 새로운 부드러운 캐릭터 컨트롤러 생성
+    let controllerStartPosition: THREE.Vector3 | null = null;
     if (terrainRaycaster && globalScene) {
-      const initialHeight = terrainRaycaster.getTerrainHeight(selectedPosition.x, selectedPosition.z);
-      controllerStartPosition = new THREE.Vector3(selectedPosition.x, initialHeight + 2, selectedPosition.z);
+      // 참여 버튼을 눌렀을 때는 새로운 랜덤 위치를 사용하도록 전역 위치 초기화
+      // (smoothCharacterController 내부에서 처리됨)
+      const dummyPosition = new THREE.Vector3(0, 0, 0);
+      smoothCharacterController = new TerrainAdaptiveCharacterController(globalScene, terrainRaycaster, dummyPosition);
 
-      smoothCharacterController = new TerrainAdaptiveCharacterController(globalScene, terrainRaycaster, controllerStartPosition);
-
-      console.log(
-        `새로운 부드러운 캐릭터 컨트롤러 생성 완료 - 시작 위치: (${selectedPosition.x.toFixed(2)}, ${selectedPosition.z.toFixed(
-          2
-        )}), 지형 높이: ${initialHeight.toFixed(2)}`
-      );
+      // 컨트롤러가 생성된 후 실제 위치 가져오기
+      controllerStartPosition = smoothCharacterController.getPosition();
+      console.log(`[Main] 새로운 SmoothCharacterController 생성 완료 - 실제 시작 위치:`, controllerStartPosition);
     }
 
     // 선택된 캐릭터 로드 (시각적 모델용) - smoothCharacterController와 동일한 위치에서 시작
     const characterInfo = CharacterStorage.getCurrentCharacter();
     if (characterInfo && controllerStartPosition) {
+      console.log(`[Main] 참여 완료 - 캐릭터 로드 시작: ${characterInfo.name} (${characterInfo.id})`);
+
       const characterSettings = getCharacterSettings(characterInfo.id);
+      const heightOffset = getCharacterHeightOffset(characterInfo.id);
+      const rotationOffset = getCharacterRotationOffset(characterInfo.id);
 
       // smoothCharacterController와 동일한 위치 사용
       const position = controllerStartPosition.clone();
-      position.y += 3; // 컨트롤러보다 약간 위에 배치하여 시각적으로 보이도록
+      position.y += heightOffset; // 캐릭터별 높이 오프셋 적용
 
-      console.log(`캐릭터 위치 설정 (컨트롤러 동기화) - 위치: (${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)})`);
+      console.log(`[Main] 캐릭터 위치 설정 (컨트롤러 동기화):`, {
+        characterId: characterInfo.id,
+        position: position,
+        controllerPosition: controllerStartPosition,
+        characterSettings: characterSettings,
+        heightOffset: heightOffset,
+        rotationOffset: rotationOffset,
+      });
 
       const scale = createScaleFromSettings(characterSettings);
+      console.log(`[Main] 캐릭터 스케일 설정:`, scale);
 
-      const loadedCharacter = await globalCharacterManager?.loadCharacter(characterInfo.id, characterInfo.modelPath, position, scale);
-      console.log(loadedCharacter);
+      const loadedCharacter = await globalCharacterManager?.loadCharacter(characterInfo.id, characterInfo.modelPath, position, scale, rotationOffset);
 
       if (loadedCharacter) {
-        console.log(`사용자 캐릭터 로드 완료: ${characterInfo.name} - 컨트롤러 위치와 동기화됨`);
+        console.log(`[Main] ✅ 사용자 캐릭터 로드 성공: ${characterInfo.name} - 컨트롤러 위치와 동기화됨`);
+
+        // 캐릭터가 실제로 보이는지 추가 확인
+        if (loadedCharacter.model) {
+          console.log(`[Main] 로드된 캐릭터 상태 확인:`, {
+            visible: loadedCharacter.model.visible,
+            position: loadedCharacter.model.position,
+            scale: loadedCharacter.model.scale,
+            children: loadedCharacter.model.children.length,
+          });
+        }
+      } else {
+        console.error(`[Main] ❌ 캐릭터 로드 실패: ${characterInfo.name}`);
       }
     }
   });
@@ -566,41 +550,63 @@ let smoothCharacterController: SmoothCharacterController | null = null;
   // 초기 부드러운 캐릭터 컨트롤러 생성
   let initialControllerStartPosition: THREE.Vector3 | null = null;
   if (terrainRaycaster && globalScene) {
-    // 공통 시작 위치 시스템 사용
-    const selectedPosition = getRandomStartPosition();
-    const initialHeight = terrainRaycaster.getTerrainHeight(selectedPosition.x, selectedPosition.z);
-    initialControllerStartPosition = new THREE.Vector3(selectedPosition.x, initialHeight + 2, selectedPosition.z);
+    // 더미 위치로 컨트롤러 생성 (실제 위치는 내부에서 랜덤 선택됨)
+    const dummyPosition = new THREE.Vector3(0, 0, 0);
+    smoothCharacterController = new TerrainAdaptiveCharacterController(globalScene, terrainRaycaster, dummyPosition);
 
-    smoothCharacterController = new TerrainAdaptiveCharacterController(globalScene, terrainRaycaster, initialControllerStartPosition);
-
-    console.log(
-      `초기 부드러운 캐릭터 컨트롤러 생성 완료 - 시작 위치: (${selectedPosition.x.toFixed(2)}, ${selectedPosition.z.toFixed(
-        2
-      )}), 지형 높이: ${initialHeight.toFixed(2)}`
-    );
+    // 컨트롤러가 생성된 후 실제 위치 가져오기
+    initialControllerStartPosition = smoothCharacterController.getPosition();
+    console.log(`[Main] SmoothCharacterController 생성 완료 - 실제 시작 위치:`, initialControllerStartPosition);
   }
 
   // 초기 캐릭터 로드 (이미 선택된 캐릭터가 있는 경우) - smoothCharacterController와 동일한 위치에서 시작
   const currentCharacter = CharacterStorage.getCurrentCharacter();
   if (currentCharacter && initialControllerStartPosition) {
-    console.log(`저장된 캐릭터 발견: ${currentCharacter.name}`);
+    console.log(`[Main] 초기 로드 - 저장된 캐릭터 발견: ${currentCharacter.name} (${currentCharacter.id})`);
 
     const characterSettings = getCharacterSettings(currentCharacter.id);
-    console.log(characterSettings);
+    const heightOffset = getCharacterHeightOffset(currentCharacter.id);
+    const rotationOffset = getCharacterRotationOffset(currentCharacter.id);
+    console.log(`[Main] 캐릭터 설정:`, characterSettings);
 
     // smoothCharacterController와 동일한 위치 사용
     const position = initialControllerStartPosition.clone();
-    position.y += 3; // 컨트롤러보다 약간 위에 배치하여 시각적으로 보이도록
+    position.y += heightOffset; // 캐릭터별 높이 오프셋 적용
 
-    console.log(`저장된 캐릭터 위치 설정 (컨트롤러 동기화) - 위치: (${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)})`);
+    console.log(`[Main] 초기 캐릭터 위치 설정 (컨트롤러 동기화):`, {
+      characterId: currentCharacter.id,
+      position: position,
+      controllerPosition: initialControllerStartPosition,
+      characterSettings: characterSettings,
+      heightOffset: heightOffset,
+      rotationOffset: rotationOffset,
+    });
 
     const scale = createScaleFromSettings(characterSettings);
+    console.log(`[Main] 초기 캐릭터 스케일 설정:`, scale);
 
-    const loadedCharacter = await globalCharacterManager?.loadCharacter(currentCharacter.id, currentCharacter.modelPath, position, scale);
-    console.log(loadedCharacter);
+    const loadedCharacter = await globalCharacterManager?.loadCharacter(
+      currentCharacter.id,
+      currentCharacter.modelPath,
+      position,
+      scale,
+      rotationOffset
+    );
 
     if (loadedCharacter) {
-      console.log(`저장된 캐릭터 로드 완료: ${currentCharacter.name} - 컨트롤러 위치와 동기화됨`);
+      console.log(`[Main] ✅ 초기 캐릭터 로드 성공: ${currentCharacter.name} - 컨트롤러 위치와 동기화됨`);
+
+      // 캐릭터가 실제로 보이는지 추가 확인
+      if (loadedCharacter.model) {
+        console.log(`[Main] 초기 로드된 캐릭터 상태 확인:`, {
+          visible: loadedCharacter.model.visible,
+          position: loadedCharacter.model.position,
+          scale: loadedCharacter.model.scale,
+          children: loadedCharacter.model.children.length,
+        });
+      }
+    } else {
+      console.error(`[Main] ❌ 초기 캐릭터 로드 실패: ${currentCharacter.name}`);
     }
   }
 
@@ -623,7 +629,6 @@ let smoothCharacterController: SmoothCharacterController | null = null;
     globalRenderer,
     controls,
     globalCharacterManager,
-    globalPhysicsWorld,
     keys,
     () => smoothCharacterController // 새로운 부드러운 컨트롤러 사용
   );

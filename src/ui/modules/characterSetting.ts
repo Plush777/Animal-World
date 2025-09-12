@@ -6,7 +6,7 @@ export class CharacterSettingPopup {
   private characterButtons: NodeListOf<HTMLButtonElement> | null = null;
   private selectedCharacterId: string | null = null;
   private onCharacterSelected: ((characterId: string) => void) | null = null;
-  private isInitialized: boolean = false;
+  public isInitialized: boolean = false;
 
   constructor() {
     // 초기화는 show() 메서드에서 수행

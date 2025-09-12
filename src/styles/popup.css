@@ -304,6 +304,15 @@
   transition: all 0.2s ease;
 }
 
+.popup-character-tab-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.popup-character-tab-button[disabled] .character-lock-overlay {
+  display: flex;
+}
+
 .popup-character-tab-button:hover:not(.locked) {
   border-color: var(--blue-400);
   background-color: var(--blue-50);
@@ -313,16 +322,8 @@
   border-color: var(--blue-500);
 }
 
-.popup-character-tab-button.locked {
-  opacity: 0.6;
-  cursor: not-allowed;
-  border-color: var(--gray-400);
-  background-color: var(--gray-100);
-}
-
-.popup-character-tab-button.locked:hover {
-  border-color: var(--gray-400);
-  background-color: var(--gray-100);
+.popup-character-tab-button[disabled] {
+  opacity: 1;
 }
 
 .character-lock-overlay {
@@ -331,8 +332,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  display: flex;
+  display: none;
   flex-direction: column;
+  row-gap: 4px;
   align-items: center;
   justify-content: center;
   background-color: rgba(0, 0, 0, 0.7);
@@ -346,8 +348,8 @@
 }
 
 .lock-text {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--white);
 }
 

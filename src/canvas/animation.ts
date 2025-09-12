@@ -1,8 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
-import { updateCharacterController } from "./physicsEngine"; // 추가
-import { CharacterStorage } from "./characterStorage"; // 추가
 
 interface FloatingAnimation {
   object: THREE.Object3D;
@@ -178,7 +176,7 @@ export function createAnimationLoop(
   renderer: THREE.WebGLRenderer,
   controls: OrbitControls | TrackballControls,
   characterManager?: any,
-  physicsWorld?: any,
+
   keys?: any,
   getPhysicsCharacterController?: () => any
 ): () => number {
@@ -198,17 +196,6 @@ export function createAnimationLoop(
     updateFloatingAnimations(time);
     updateWaterWaveAnimations(time);
     updateCameraAnimation(); // 카메라 애니메이션 업데이트 추가
-
-    // 물리 시뮬레이션 업데이트 - 호환성을 위해 유지 (기존 시스템과 병행)
-    if (physicsWorld) {
-      try {
-        // 고정 타임스텝 사용으로 안정성 보장
-        const fixedTimeStep = 1 / 60; // 60 FPS 고정
-        physicsWorld.stepSimulation(fixedTimeStep, 1, fixedTimeStep);
-      } catch (error) {
-        console.error("물리 시뮬레이션 에러:", error);
-      }
-    }
 
     // 캐릭터 컨트롤러 업데이트 (부드러운 컨트롤러 우선)
     const characterController = getPhysicsCharacterController ? getPhysicsCharacterController() : null;
@@ -242,10 +229,6 @@ export function createAnimationLoop(
           if (keys["KeyS"] || keys["ArrowDown"]) moveZ = 1;
 
           moveInfo = { moveX, moveZ, isMoving };
-        } else {
-          // 기존 물리 컨트롤러
-          moveInfo = updateCharacterController(characterController, keys, 1 / 60);
-          characterPos = characterController.mesh ? characterController.mesh.position : null;
         }
 
         // 시각적 캐릭터 모델을 컨트롤러 위치와 동기화
@@ -258,32 +241,6 @@ export function createAnimationLoop(
             visualCharacter = characterManager.getCurrentSelectedCharacter();
           }
 
-          // CharacterManager에 선택된 캐릭터가 없다면 CharacterStorage에서 확인
-          if (!visualCharacter) {
-            const allCharacters = characterManager.getAllCharacters();
-            if (allCharacters.length > 0) {
-              // CharacterStorage에서 현재 선택된 캐릭터 정보 가져오기
-              const currentCharacterInfo = CharacterStorage.getCurrentCharacter();
-              if (currentCharacterInfo) {
-                // 선택된 캐릭터 ID와 일치하는 캐릭터 찾기
-                visualCharacter = allCharacters.find((char: any) => char.id === currentCharacterInfo.id);
-
-                // CharacterManager에도 선택된 캐릭터로 설정
-                if (visualCharacter && characterManager.setCurrentSelectedCharacter) {
-                  characterManager.setCurrentSelectedCharacter(visualCharacter.id);
-                }
-              }
-
-              // 선택된 캐릭터를 찾지 못했다면 첫 번째 캐릭터 사용 (fallback)
-              if (!visualCharacter) {
-                visualCharacter = allCharacters[0];
-                if (visualCharacter && characterManager.setCurrentSelectedCharacter) {
-                  characterManager.setCurrentSelectedCharacter(visualCharacter.id);
-                }
-              }
-            }
-          }
-
           if (visualCharacter) {
             // 시각적 모델을 컨트롤러 위치로 정확히 이동 (높이 조정 없음)
             const syncPosition = new THREE.Vector3(characterPos.x, characterPos.y, characterPos.z);
@@ -291,10 +248,11 @@ export function createAnimationLoop(
             // CharacterManager의 새로운 메서드를 사용하여 위치 설정
             if (characterManager.setCharacterPosition) {
               characterManager.setCharacterPosition(visualCharacter.id, syncPosition);
-            } else {
-              // 기존 방식 (fallback)
-              visualCharacter.model.position.copy(syncPosition);
             }
+
+            // 추가로 직접 모델 위치도 설정 (이중 보장)
+            visualCharacter.model.position.copy(syncPosition);
+            visualCharacter.model.updateMatrixWorld(true);
 
             // 캐릭터 회전 처리 (이동 방향에 따라)
             if (moveInfo && moveInfo.isMoving) {

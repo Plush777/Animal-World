@@ -40,12 +40,12 @@
 - https://skfb.ly/opQpx (low poly fox)
 - Wolf by jeremy [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/2PDe5PSncTC)
 
-#### 🛠️ Physics Engine
+#### 🛠️ Raycaster
 
-- https://github.com/kripken/ammo.js
-- https://medium.com/@bluemagnificent/intro-to-javascript-3d-physics-using-ammo-js-and-three-js-dd48df81f591
-- https://medium.com/@bluemagnificent/moving-objects-in-javascript-3d-physics-using-ammo-js-and-three-js-6e39eff6d9e5
-- https://medium.com/@bluemagnificent/collision-detection-in-javascript-3d-physics-using-ammo-js-and-three-js-31a5569291ef
+- https://threejs.org/docs/#api/ko/core/Raycaster
+- https://webdoli.tistory.com/60
+- https://dimorin.tistory.com/entry/Raycaster
+- https://velog.io/@thdrldud369/RayCaster%EB%A0%88%EC%9D%B4%EC%BA%90%EC%8A%A4%ED%84%B0
 
 #### 🔗 site
 

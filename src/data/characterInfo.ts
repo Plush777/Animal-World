@@ -1,25 +1,40 @@
 export const characterScale = {
   default: {
-    scale: { x: 10, y: 10, z: 10 },
+    x: 1,
+    y: 1,
+    z: 1,
+    heightOffset: 10, // 지형에서의 높이 오프셋
+    rotationOffset: { x: 0, y: 0, z: 0 }, // 회전
   },
-
   dog: {
-    scale: { x: 12, y: 12, z: 12 }, // 여우와 동일한 크기로 조정
+    scale: { x: 0.3, y: 0.3, z: 0.3 },
+    heightOffset: 10,
+    rotationOffset: { x: 0, y: 0, z: 0 },
   },
   fox: {
     scale: { x: 10, y: 10, z: 10 },
+    heightOffset: -2,
+    rotationOffset: { x: 0, y: 0, z: 0 },
   },
   cat: {
-    scale: { x: 12, y: 12, z: 12 }, // 여우와 동일한 크기로 조정
+    scale: { x: 3, y: 3, z: 3 },
+    heightOffset: 10,
+    rotationOffset: { x: 0, y: 0, z: 0 },
   },
   hamster: {
-    scale: { x: 10, y: 10, z: 10 },
+    scale: { x: 0.3, y: 0.3, z: 0.3 },
+    heightOffset: 5,
+    rotationOffset: { x: 0, y: 0, z: 0 },
   },
   rabbit: {
-    scale: { x: 10, y: 10, z: 10 },
+    scale: { x: 0.6, y: 0.6, z: 0.6 },
+    heightOffset: 10,
+    rotationOffset: { x: 0, y: 0, z: 0 },
   },
   wolf: {
-    scale: { x: 10, y: 10, z: 10 },
+    scale: { x: 2.5, y: 2.5, z: 2.5 },
+    heightOffset: 0,
+    rotationOffset: { x: 0, y: 0, z: 0 },
   },
 };
 
@@ -53,4 +68,20 @@ export function createScaleFromSettings(settings: any) {
     return new (window as any).THREE.Vector3(settings.scale.x, settings.scale.y, settings.scale.z);
   }
   return settings.scale;
+}
+
+// 캐릭터별 높이 오프셋을 반환하는 헬퍼 함수
+export function getCharacterHeightOffset(characterId?: string): number {
+  if (characterId && characterScale[characterId as keyof typeof characterScale]) {
+    return characterScale[characterId as keyof typeof characterScale].heightOffset || 0;
+  }
+  return characterScale.default.heightOffset || 0;
+}
+
+// 캐릭터별 회전 오프셋을 반환하는 헬퍼 함수
+export function getCharacterRotationOffset(characterId?: string): { x: number; y: number; z: number } {
+  if (characterId && characterScale[characterId as keyof typeof characterScale]) {
+    return characterScale[characterId as keyof typeof characterScale].rotationOffset || { x: 0, y: 0, z: 0 };
+  }
+  return characterScale.default.rotationOffset || { x: 0, y: 0, z: 0 };
 }

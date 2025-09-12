@@ -14,16 +14,6 @@ export function createScene(): THREE.Scene {
 
   const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
 
-  if (isDayTime()) {
-    gradient.addColorStop(0, "#87CEEB"); // 밝은 하늘색 (위쪽)
-    gradient.addColorStop(0.5, "#4682B4"); // 중간 파란색
-    gradient.addColorStop(1, "#000080"); // 진한 파란색 (아래쪽)
-  } else {
-    gradient.addColorStop(0, "#1a1a2e"); // 어두운 보라색 (위쪽)
-    gradient.addColorStop(0.5, "#16213e"); // 어두운 남색
-    gradient.addColorStop(1, "#0f0f0f"); // 검은색에 가까운 색 (아래쪽)
-  }
-
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -115,92 +105,6 @@ export function setupLighting(scene: THREE.Scene): void {
   scene.add(fillLight);
 }
 
-export function createCircularGradientGround(scene: THREE.Scene): void {
-  // 원형 지면의 반지름과 세그먼트 수
-  const radius = 700;
-  const segments = 128;
-
-  const groundGeometry = new THREE.CircleGeometry(radius, segments);
-
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d")!;
-  canvas.width = 1024;
-  canvas.height = 1024;
-
-  // 원형 그라데이션 생성 (중앙에서 바깥쪽으로)
-  const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
-
-  // 시간에 따라 다른 그라데이션 색상 적용
-  if (isDayTime()) {
-    // 낮 시간: 밝은 파란색 그라데이션
-    gradient.addColorStop(0, "#0dd8fc"); // 밝은 하늘색 (중앙)
-    gradient.addColorStop(0.5, "#0d94fc"); // 중간 파란색
-    gradient.addColorStop(1, "#0329ff"); // 진한 파란색 (가장자리)
-  } else {
-    // 밤 시간: 어두운 보라/남색 그라데이션
-    gradient.addColorStop(0, "#1a2540"); // 어두운 회색-파랑 (중앙)
-    gradient.addColorStop(0.5, "#0f1b2e"); // 더 어두운 남색
-    gradient.addColorStop(1, "#06101c"); // 거의 검은색 (가장자리)
-  }
-
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-
-  // 그림자를 더 잘 받을 수 있도록 MeshStandardMaterial 사용
-  const groundMaterial = new THREE.MeshStandardMaterial({
-    map: texture,
-    transparent: true,
-    side: THREE.DoubleSide,
-    roughness: 0.8,
-    metalness: 0.0,
-  });
-
-  const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -1;
-  ground.receiveShadow = true;
-
-  scene.add(ground);
-
-  // 추가 그림자 평면 생성 (더 나은 그림자 품질을 위해)
-  createShadowPlane(scene);
-}
-
-// 그림자 품질 향상을 위한 추가 그림자 평면
-function createShadowPlane(scene: THREE.Scene): void {
-  // 메인 그림자 평면 (성능을 고려한 적당한 크기)
-  const mainShadowPlaneGeometry = new THREE.PlaneGeometry(6000, 6000); // 성능을 위해 크기 조정
-  const mainShadowMaterial = new THREE.ShadowMaterial({
-    transparent: true,
-    opacity: 0.15, // 적당한 투명도로 조정
-  });
-
-  const mainShadowPlane = new THREE.Mesh(mainShadowPlaneGeometry, mainShadowMaterial);
-  mainShadowPlane.rotation.x = -Math.PI / 2;
-  mainShadowPlane.position.y = -0.3; // 바닥에 더 가깝게 배치
-  mainShadowPlane.receiveShadow = true;
-
-  scene.add(mainShadowPlane);
-
-  // 추가 그림자 평면 (애니메이션 중 높은 위치의 그림자를 위해)
-  const extraShadowPlaneGeometry = new THREE.PlaneGeometry(8000, 8000);
-  const extraShadowMaterial = new THREE.ShadowMaterial({
-    transparent: true,
-    opacity: 0.08, // 더 투명하게 설정하여 자연스러운 그림자 효과
-  });
-
-  const extraShadowPlane = new THREE.Mesh(extraShadowPlaneGeometry, extraShadowMaterial);
-  extraShadowPlane.rotation.x = -Math.PI / 2;
-  extraShadowPlane.position.y = -0.2; // 메인 평면보다 약간 위에 배치
-  extraShadowPlane.receiveShadow = true;
-
-  scene.add(extraShadowPlane);
-}
-
 export function setupOrbitControls(camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer): OrbitControls {
   const controls = new OrbitControls(camera, renderer.domElement);
 
@@ -210,12 +114,12 @@ export function setupOrbitControls(camera: THREE.PerspectiveCamera, renderer: TH
 
   // 캐릭터 중심으로 카메라 조작 설정
   controls.target.set(70, 45, 100); // 캐릭터 위치를 중심으로 설정
-  controls.minDistance = 400; // 최소 거리
-  controls.maxDistance = 570; // 최대 거리
+  // controls.minDistance = 400; // 최소 거리
+  // controls.maxDistance = 570; // 최대 거리
   controls.enableZoom = true; // 줌 활성화
 
-  controls.minPolarAngle = Math.PI / 3; //위로 올라가는거 제한
-  controls.maxPolarAngle = Math.PI / 2.5; // 수평선 아래로 내려가지 않도록
+  // controls.minPolarAngle = Math.PI / 3; //위로 올라가는거 제한
+  // controls.maxPolarAngle = Math.PI / 2.5; // 수평선 아래로 내려가지 않도록
 
   // 초기 map-explore 상태 확인 및 적용
   const savedMapExploreState = localStorage.getItem("mapExplore");
@@ -229,11 +133,11 @@ export function setupOrbitControls(camera: THREE.PerspectiveCamera, renderer: TH
   }
 
   controls.addEventListener("change", () => {
-    // console.log("카메라 위치:", {
-    //   x: camera.position.x.toFixed(2),
-    //   y: camera.position.y.toFixed(2),
-    //   z: camera.position.z.toFixed(2),
-    // });
+    console.log("카메라 위치:", {
+      x: camera.position.x.toFixed(2),
+      y: camera.position.y.toFixed(2),
+      z: camera.position.z.toFixed(2),
+    });
   });
 
   return controls;

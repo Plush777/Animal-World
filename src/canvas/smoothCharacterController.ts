@@ -3,6 +3,8 @@ import { TerrainRaycaster } from "./terrainRaycaster";
 import { isDayTime } from "./time";
 import { sceneHtml } from "../data/sceneHtml";
 import { getSceneModelBoundaryInfo } from "../utils/glbLoader";
+import { getCharacterHeightOffset } from "../data/characterInfo";
+import { CharacterStorage } from "./characterStorage";
 
 /**
  * Three.js Raycaster 기반 부드러운 캐릭터 컨트롤러
@@ -60,6 +62,9 @@ let dynamicBoundaryMarginZ: number = PHYSICS_CONSTANTS.SCENE_BOUNDARY_MARGIN_Z;
 // 원형 경계 관련 변수
 let useCircularBoundary: boolean = PHYSICS_CONSTANTS.USE_CIRCULAR_BOUNDARY;
 let circularBoundaryMargin: number = PHYSICS_CONSTANTS.CIRCULAR_BOUNDARY_MARGIN;
+
+// 전역 시작 위치 저장 (한 번 생성된 후 재사용)
+let globalStartPosition: THREE.Vector3 | null = null;
 
 // 시작 위치 상수
 const START_POSITIONS = [
@@ -482,16 +487,33 @@ export function getCircularBoundarySettings(): { enabled: boolean; margin: numbe
 // 유틸리티 클래스
 class TerrainUtils {
   public static generateRandomStartPosition(): THREE.Vector3 {
+    // 이미 생성된 위치가 있으면 재사용
+    if (globalStartPosition) {
+      console.log(
+        `🎯 기존 시작 위치 재사용: (${globalStartPosition.x.toFixed(2)}, ${globalStartPosition.y.toFixed(2)}, ${globalStartPosition.z.toFixed(2)})`
+      );
+      return globalStartPosition.clone();
+    }
+
+    // 새로운 랜덤 위치 생성
     const randomIndex = Math.floor(Math.random() * START_POSITIONS.length);
     const selectedPosition = START_POSITIONS[randomIndex];
 
     console.log(
-      `🎯 선택된 시작 위치 ${randomIndex + 1}번: (${selectedPosition.x.toFixed(2)}, ${selectedPosition.y.toFixed(2)}, ${selectedPosition.z.toFixed(
+      `🎯 새로운 시작 위치 ${randomIndex + 1}번 선택: (${selectedPosition.x.toFixed(2)}, ${selectedPosition.y.toFixed(
         2
-      )})`
+      )}, ${selectedPosition.z.toFixed(2)})`
     );
 
-    return new THREE.Vector3(selectedPosition.x, selectedPosition.y, selectedPosition.z);
+    // 전역 변수에 저장
+    globalStartPosition = new THREE.Vector3(selectedPosition.x, selectedPosition.y, selectedPosition.z);
+    return globalStartPosition.clone();
+  }
+
+  // 새로운 시작 위치를 강제로 생성하는 함수 (참여 버튼 등에서 사용)
+  public static generateNewStartPosition(): THREE.Vector3 {
+    globalStartPosition = null; // 기존 위치 초기화
+    return this.generateRandomStartPosition();
   }
 
   public static getWaterZones(): WaterZone[] {
@@ -519,6 +541,9 @@ class TerrainUtils {
   public static checkBounds(position: THREE.Vector3, scene?: THREE.Scene): THREE.Vector3 {
     const newPosition = position.clone();
     let boundaryChanged = false;
+
+    // 디버깅을 위한 로그 (경계 체크가 위치를 변경하는지 확인)
+    // const originalPosition = position.clone();
 
     // 씬 모델의 실제 경계를 사용한 체크
     if (scene) {
@@ -694,13 +719,27 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     this.uiManager = new UIManager();
     this.cloudManager = new CloudManager(scene);
 
+    // START_POSITIONS 배열에서 랜덤 위치 선택
     const randomStartPosition = TerrainUtils.generateRandomStartPosition();
+    console.log(`🎯 SmoothCharacterController 초기화 - 랜덤 시작 위치:`, randomStartPosition);
     this.state = new CharacterState(randomStartPosition);
 
     this.createCharacterMesh();
 
-    this.state.lastGroundHeight = this.terrainRaycaster.getTerrainHeight(this.state.position.x, this.state.position.z);
-    this.state.position.y = this.state.lastGroundHeight;
+    const baseTerrainHeight = this.terrainRaycaster.getTerrainHeight(this.state.position.x, this.state.position.z);
+
+    // 캐릭터별 높이 오프셋 적용
+    const currentCharacter = CharacterStorage.getCurrentCharacter();
+    const heightOffset = currentCharacter ? getCharacterHeightOffset(currentCharacter.id) : 0;
+    const adjustedTerrainHeight = baseTerrainHeight + heightOffset;
+
+    this.state.lastGroundHeight = adjustedTerrainHeight;
+    console.log(
+      `🌍 지형 높이 적용: 원래 Y(${this.state.position.y.toFixed(2)}) → 지형 높이(${baseTerrainHeight.toFixed(2)}) + 오프셋(${heightOffset.toFixed(
+        2
+      )}) = ${adjustedTerrainHeight.toFixed(2)}`
+    );
+    this.state.position.y = adjustedTerrainHeight;
 
     this.setupEventListeners();
     this.initializeFloatingObjects();
@@ -829,6 +868,16 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
 
     // 부드러운 메시 위치 업데이트
     this.mesh.position.copy(this.state.position);
+
+    // 디버깅을 위한 로그 (빈도 제한)
+    if (Math.random() < 0.01) {
+      // 1% 확률로만 로그 출력
+      console.log(`[SmoothController] 위치 업데이트:`, {
+        statePosition: this.state.position,
+        meshPosition: this.mesh.position,
+        positionMatch: this.mesh.position.equals(this.state.position),
+      });
+    }
   }
 
   // 개선된 오브젝트 충돌 상태 업데이트
@@ -1129,7 +1178,13 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
   // 개선된 일반 지형 적응
   private adaptToLandTerrainImproved(deltaTime: number): void {
     const currentGroundHeight = this.terrainRaycaster.getTerrainHeight(this.state.position.x, this.state.position.z);
-    const distanceToTarget = this.state.position.y - currentGroundHeight;
+
+    // 캐릭터별 높이 오프셋 적용
+    const currentCharacter = CharacterStorage.getCurrentCharacter();
+    const heightOffset = currentCharacter ? getCharacterHeightOffset(currentCharacter.id) : 0;
+    const adjustedGroundHeight = currentGroundHeight + heightOffset;
+
+    const distanceToTarget = this.state.position.y - adjustedGroundHeight;
     const wasOnGround = this.state.isOnGround;
 
     const isNearGround = distanceToTarget <= PHYSICS_CONSTANTS.GROUND_CHECK_DISTANCE;
@@ -1163,12 +1218,17 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     this.state.groundContactTime += deltaTime;
     this.state.airTime = 0;
 
+    // 캐릭터별 높이 오프셋 적용
+    const currentCharacter = CharacterStorage.getCurrentCharacter();
+    const heightOffset = currentCharacter ? getCharacterHeightOffset(currentCharacter.id) : 0;
+    const adjustedGroundHeight = currentGroundHeight + heightOffset;
+
     const snapDistance = PHYSICS_CONSTANTS.GROUND_SNAP_DISTANCE;
 
     if (distanceToTarget < snapDistance || (this.state.velocity.y <= 0 && distanceToTarget < snapDistance * 2.5)) {
       const lerpFactor = Math.min(deltaTime * PHYSICS_CONSTANTS.HEIGHT_LERP_FACTOR_GROUND, 1.0);
-      this.state.position.y = THREE.MathUtils.lerp(this.state.position.y, currentGroundHeight, lerpFactor);
-      this.state.lastGroundHeight = currentGroundHeight;
+      this.state.position.y = THREE.MathUtils.lerp(this.state.position.y, adjustedGroundHeight, lerpFactor);
+      this.state.lastGroundHeight = adjustedGroundHeight;
 
       if (this.state.velocity.y <= 0) {
         this.state.velocity.y *= PHYSICS_CONSTANTS.DAMPING_FACTOR_LANDING;
@@ -1265,7 +1325,13 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     this.state.position.y = newPosition.y;
 
     const terrainHeight = this.terrainRaycaster.getTerrainHeight(this.state.position.x, this.state.position.z);
-    const minHeight = Math.max(terrainHeight, -1000);
+
+    // 캐릭터별 높이 오프셋 적용
+    const currentCharacter = CharacterStorage.getCurrentCharacter();
+    const heightOffset = currentCharacter ? getCharacterHeightOffset(currentCharacter.id) : 0;
+    const adjustedTerrainHeight = terrainHeight + heightOffset;
+
+    const minHeight = Math.max(adjustedTerrainHeight, -1000);
     const heightDifference = this.state.position.y - minHeight;
 
     if (heightDifference < -1.0 && this.state.velocity.y <= 0) {

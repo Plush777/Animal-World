@@ -243,30 +243,30 @@ export const sceneHtml: { [key: string]: any } = {
     <ul class="popup-character-tab-list">
       <li class="popup-character-tab-item">
         <button type="button" id="character-dog" class="popup-character-tab-button" data-character="dog">
-          <model-viewer
-            src="/models/character/low_poly_dog.glb"
-            camera-controls
-            tone-mapping="neutral"
-            shadow-intensity="1"
-            camera-target="0m 1.568m -0.3797m"
-            camera-orbit="-22.13deg 80.93deg 10.19m"
-            field-of-view="30deg"
-            touch-action="pan-y"
-          ></model-viewer>
+          <model-viewer src="/models/character/Beagle.glb" 
+            camera-controls 
+            tone-mapping="neutral" 
+            poster="poster.webp" 
+            shadow-intensity="1" 
+            camera-orbit="40.31deg 76.58deg 262.6m" 
+            field-of-view="30deg"></model-viewer>
           <span class="character-name">강아지</span>
         </button>
       </li>
 
       <li class="popup-character-tab-item">
         <button type="button" id="character-cat" class="popup-character-tab-button" data-character="cat">
-          <model-viewer
-            src="/models/character/cat_ps1_low_poly_rigged.glb"
-            camera-controls
-            tone-mapping="neutral"
-            shadow-intensity="1"
-            camera-orbit="-23.32deg 88.04deg 19.91m"
-            field-of-view="30deg"
+          <model-viewer src="/models/character/low_poly_cat_cartoon.glb" 
+            camera-controls 
+            tone-mapping="neutral" 
+            poster="poster.webp" 
+            shadow-intensity="1" 
+            exposure="1" 
+            camera-target="0m 0m 0m" 
+            camera-orbit="14.23deg 83.69deg 52.05m" 
+            field-of-view="22.98deg"
           ></model-viewer>
+
           <span class="character-name">고양이</span>
         </button>
       </li>
@@ -287,9 +287,9 @@ export const sceneHtml: { [key: string]: any } = {
       </li>
 
       <li class="popup-character-tab-item">
-        <button type="button" id="character-hamster" class="popup-character-tab-button locked" data-character="hamster" disabled>
+        <button type="button" id="character-hamster" class="popup-character-tab-button locked" data-character="hamster" >
           <div class="character-lock-overlay">
-            <div class="lock-icon">🔒</div>
+            ${svg.lock}
             <span class="lock-text">잠금</span>
           </div>
           <model-viewer
@@ -305,9 +305,9 @@ export const sceneHtml: { [key: string]: any } = {
       </li>
 
       <li class="popup-character-tab-item">
-        <button type="button" id="character-rabbit" class="popup-character-tab-button locked" data-character="rabbit" disabled>
+        <button type="button" id="character-rabbit" class="popup-character-tab-button locked" data-character="rabbit">
           <div class="character-lock-overlay">
-            <div class="lock-icon">🔒</div>
+            ${svg.lock}
             <span class="lock-text">잠금</span>
           </div>
           <model-viewer
@@ -324,9 +324,9 @@ export const sceneHtml: { [key: string]: any } = {
       </li>
 
       <li class="popup-character-tab-item">
-        <button type="button" id="character-wolf" class="popup-character-tab-button locked" data-character="wolf" disabled>
+        <button type="button" id="character-wolf" class="popup-character-tab-button locked" data-character="wolf" >
           <div class="character-lock-overlay">
-            <div class="lock-icon">🔒</div>
+            ${svg.lock}
             <span class="lock-text">잠금</span>
           </div>
           <model-viewer
