@@ -29,7 +29,6 @@
 
 .short-key.has-border {
   border: 1px solid var(--theme-element1);
-  background-color: var(--theme-element1);
 }
 
 .short-key.has-border svg {
@@ -173,15 +172,141 @@ video {
   object-fit: cover;
 }
 
+.splash-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+}
+
+.splash-logo-box {
+  display: flex;
+  align-items: center;
+  column-gap: 4px;
+}
+
+.splash-logo-box svg {
+  width: 60px;
+  height: 60px;
+}
+
+.splash-logo-area {
+  display: flex;
+  flex-direction: column;
+  row-gap: 6px;
+  animation: fadeIn 1.5s ease-in-out forwards;
+}
+
+.splash-text {
+  margin-left: 5px;
+  font-family: "NexonLv1Gothic";
+  font-size: 14px;
+}
+
+.splash-logo-box-text {
+  font-size: 22px;
+  font-family: "NexonLv1Gothic";
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.threejs-logo-light {
+  display: none;
+  width: 128px;
+  height: 65px;
+}
+
+.threejs-logo-dark {
+  display: none;
+  width: 150px;
+  height: 79px;
+  object-position: 10px 0px;
+}
+
+.copyright-text {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-family: "NexonLv1Gothic";
+  letter-spacing: 0.5px;
+  animation: fadeIn 1.5s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 @media (prefers-color-scheme: light) {
   body {
     background-color: #fff;
+  }
+
+  .splash-wrapper {
+    background-color: #fff;
+  }
+
+  .splash-logo-box svg {
+    color: #333;
+  }
+
+  .splash-text,
+  .splash-logo-box-text,
+  .copyright-text {
+    color: #333;
+  }
+
+  .threejs-logo-light {
+    display: block;
+  }
+
+  .threejs-logo-dark {
+    display: none;
+  }
+
+  .threejs-logo {
+    bottom: 10px;
+    right: 10px;
   }
 }
 
 @media (prefers-color-scheme: dark) {
   body {
     background-color: #000;
+  }
+
+  .splash-wrapper {
+    background-color: #333;
+  }
+
+  .splash-logo-box svg {
+    color: #fff;
+  }
+
+  .threejs-logo-light {
+    display: none;
+  }
+
+  .threejs-logo-dark {
+    display: block;
+  }
+
+  .splash-text,
+  .splash-logo-box-text,
+  .copyright-text {
+    color: #fff;
   }
 }
 

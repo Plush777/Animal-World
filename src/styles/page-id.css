@@ -32,7 +32,11 @@
 #userbox-user-logout-element {
   position: absolute;
   top: 12px;
-  right: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% - 24px);
 }
 
 #user-info {

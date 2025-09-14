@@ -78,6 +78,15 @@ export function renderUser(user: User | null): void {
   const userLogoutElement = document.getElementById("user-logout-element") as HTMLDivElement | null;
   const userBoxLogoutElement = document.getElementById("userbox-user-logout-element") as HTMLDivElement | null;
 
+  // DOM 요소들이 존재하지 않으면 잠시 후 다시 시도
+  if (!userLoginElement || !userLogoutElement || !userBoxLogoutElement) {
+    console.log("DOM 요소들이 아직 준비되지 않음, 100ms 후 재시도");
+    setTimeout(() => {
+      renderUser(user);
+    }, 100);
+    return;
+  }
+
   if (!user) {
     // 로그아웃 상태 UI 렌더링
     if (userLoginElement) {
@@ -111,20 +120,72 @@ export function renderUser(user: User | null): void {
   }
 
   if (userLogoutElement) {
-    // 요소가 이미 존재하는지 확인
-    const existingDescriptionBox = userLogoutElement.querySelector(".intro-description-box");
-    const existingJoinButton = userLogoutElement.querySelector("#join-button");
+    // // 요소가 이미 존재하는지 확인
+    // const existingDescriptionBox = userLogoutElement.querySelector(".intro-description-box");
+    // const existingJoinButton = userLogoutElement.querySelector("#join-button");
 
-    // 요소가 존재하지 않을 때만 렌더링
-    if (!existingDescriptionBox || !existingJoinButton) {
-      userLogoutElement.innerHTML = authHtml.logout.buttons;
-    }
-    userLogoutElement.style.display = "block";
+    // // 요소가 존재하지 않을 때만 렌더링
+    // if (!existingDescriptionBox || !existingJoinButton) {
+
+    // }
+    userLogoutElement.innerHTML = authHtml.logout.buttons;
+    userLogoutElement.style.display = "flex";
   }
 
   if (userBoxLogoutElement) {
-    userBoxLogoutElement.innerHTML = authHtml.logout.userBoxDiv;
-    userBoxLogoutElement.style.display = "block";
+    userBoxLogoutElement.innerHTML = `
+      ${authHtml.logout.sidebarButton}
+      ${authHtml.logout.userBoxDiv}
+    `;
+    userBoxLogoutElement.style.display = "flex";
+
+    const main = document.querySelector(".main") as HTMLDivElement;
+    const sidebarButton = userBoxLogoutElement.querySelector(".sidebar-hamburger-menu") as HTMLButtonElement;
+    const sidebar = document.getElementById("sidebar") as HTMLDivElement;
+
+    // 사이드바 닫기 함수
+    function closeSidebar() {
+      sidebar.classList.remove("transition-start");
+      setTimeout(() => {
+        main.classList.remove("sidebar-open");
+        sidebar.innerHTML = "";
+      }, 500);
+    }
+
+    sidebarButton?.addEventListener("click", (e) => {
+      console.log(e.target);
+
+      main.classList.toggle("sidebar-open");
+
+      if (main?.classList.contains("sidebar-open")) {
+        sidebar.innerHTML = authHtml.logout.sidebarContent;
+
+        setTimeout(() => {
+          sidebar.classList.add("transition-start");
+        }, 1);
+
+        const sidebarCloseButton = sidebar.querySelector(".sidebar-close-button") as HTMLButtonElement;
+
+        sidebarCloseButton?.addEventListener("click", () => {
+          closeSidebar();
+        });
+      }
+    });
+
+    const app = document.querySelector("#app") as HTMLElement;
+
+    app?.addEventListener("click", (e) => {
+      const sidebarButton = userBoxLogoutElement.querySelector(".sidebar-hamburger-menu") as HTMLButtonElement;
+      const sidebar = document.getElementById("sidebar") as HTMLDivElement;
+
+      // 사이드바가 열려있는지 확인
+      const isSidebarOpen = main.classList.contains("sidebar-open");
+
+      // 사이드바가 열려있고, 클릭된 요소가 사이드바 버튼이나 사이드바 내부 요소가 아닌 경우
+      if (isSidebarOpen && e.target !== sidebarButton && !sidebar.contains(e.target as Node)) {
+        closeSidebar();
+      }
+    });
   }
 
   // 사용자 정보 표시 - 마이페이지 모듈에서 처리하도록 위임

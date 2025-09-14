@@ -5,6 +5,7 @@
 
 import { createAndShowLoadingUI, setTotalModels, updateProgressText, onLoadingError } from "./loading.js";
 import { getCurrentLoggedInUser } from "../../auth/auth-ui.js";
+import { initializeIntroAudioManager, disposeGlobalIntroAudioManager } from "./introAudio.js";
 
 /**
  * 로그인 상태 확인 함수
@@ -117,6 +118,13 @@ async function setupJoinButton(): Promise<void> {
       // 인트로 화면 즉시 숨기기 (카메라 이동 없음)
       hideIntroWrapperOnly();
 
+      // 인트로 오디오 정지 (Three.js 오디오로 전환)
+      const introAudioManager = (window as any).globalIntroAudioManager;
+      if (introAudioManager) {
+        introAudioManager.stopBGM();
+        console.log("인트로 BGM 정지 - Three.js 오디오로 전환");
+      }
+
       // 로딩 화면 표시 및 초기 설정
       createAndShowLoadingUI();
 
@@ -155,6 +163,25 @@ function initIntroModule(): void {
   if (typeof window !== "undefined") {
     (window as any).setupJoinButton = setupJoinButton;
   }
+
+  // 인트로 오디오 매니저 초기화
+  initializeIntroAudioManager();
+  console.log("인트로 오디오 매니저 초기화 완료");
+
+  // 시간대 변경 이벤트 리스너 등록 (인트로 화면용)
+  document.addEventListener("timeChange", (event: any) => {
+    console.log("인트로 화면 시간대 변경 이벤트 수신:", event.detail);
+
+    const introAudioManager = (window as any).globalIntroAudioManager;
+    if (introAudioManager) {
+      try {
+        introAudioManager.switchBGMForTimeChange();
+        console.log("인트로 화면 시간대 변경에 따른 BGM 전환 완료");
+      } catch (error) {
+        console.error("인트로 화면 시간대 변경 BGM 전환 중 오류:", error);
+      }
+    }
+  });
 
   // 저장된 방 정보가 있으면 자동으로 방에 입장
   if ((window as any).autoJoinStoredRoom) {

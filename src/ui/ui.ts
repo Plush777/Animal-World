@@ -10,6 +10,8 @@ import { initPopupModule } from "./modules/popup.ts";
 import { initThemeModule } from "./modules/theme.ts";
 import { initUserBoxModule } from "./modules/userbox.ts";
 import { initializeMyPageEventListeners } from "./modules/myPage.ts";
+import { initAudioControls } from "./modules/audioControls.ts";
+import { initSplashModule } from "./modules/splash.ts";
 
 import "./modules/loading.ts";
 import "./modules/characterSetting.ts";
@@ -26,12 +28,14 @@ import { handleShortKeySettingChange, handleShortKeyState, shortKeyEventListener
  * 모든 UI 모듈 초기화
  */
 function initAllUIModules(): void {
+  initSplashModule();
   appTransition();
   initIntroModule();
   initPopupModule();
   initThemeModule();
   initUserBoxModule();
   initializeMyPageEventListeners();
+  initAudioControls();
   canvasLoadingComplete();
   appClickEvents();
   appMouseoverEvent();

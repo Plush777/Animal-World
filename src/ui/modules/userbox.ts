@@ -1,28 +1,33 @@
-function initUserBoxModule(): void {
+export function initUserBoxModule(): void {
   const app = document.querySelector("#app") as HTMLElement;
-  const userBoxLogoutElement = document.getElementById("userbox-user-logout-element") as HTMLElement;
-
-  if (userBoxLogoutElement) {
-    userBoxLogoutElement.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const userBoxList = document.querySelector(".user-box-list") as HTMLElement;
-      if (userBoxList) {
-        userBoxList.classList.toggle("active");
-      }
-    });
-  }
 
   if (app) {
-    app.addEventListener("click", (e) => {
-      const userBoxList = document.querySelector(".user-box-list") as HTMLElement;
+    app.removeEventListener("click", handleUserBoxClick);
 
-      if (userBoxList && userBoxList.classList.contains("active")) {
-        if (!userBoxList.contains(e.target as Node) && e.target !== userBoxLogoutElement) {
-          userBoxList.classList.remove("active");
-        }
-      }
-    });
+    app.addEventListener("click", handleUserBoxClick);
   }
 }
 
-export { initUserBoxModule };
+function handleUserBoxClick(e: Event): void {
+  const userBoxList = document.querySelector(".user-box-list") as HTMLElement;
+  const userBoxButton = document.querySelector(".user-box-button") as HTMLElement;
+
+  if (!userBoxList || !userBoxButton) {
+    return;
+  }
+
+  const target = e.target as HTMLElement;
+
+  if (userBoxButton.contains(target)) {
+    e.preventDefault();
+    e.stopPropagation();
+    userBoxList.classList.toggle("active");
+    return;
+  }
+
+  if (userBoxList.classList.contains("active")) {
+    if (!userBoxList.contains(target) && !userBoxButton.contains(target)) {
+      userBoxList.classList.remove("active");
+    }
+  }
+}

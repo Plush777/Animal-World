@@ -157,7 +157,8 @@ hr,
   overflow: hidden;
 }
 
-canvas {
+canvas,
+picture {
   display: block;
 }
 
@@ -198,6 +199,13 @@ strong {
 
 #app {
   user-select: none;
+  width: 100%;
+  height: 100%;
+}
+
+main {
+  width: 100%;
+  height: 100%;
 }
 
 /* input,

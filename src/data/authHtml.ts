@@ -55,6 +55,117 @@ export const authHtml: { [key: string]: any } = {
             </ul>
         </div>
     `,
+
+    sidebarButton: `
+      <div class="sidebar-wrapper">
+        <button type="button" class="sidebar-hamburger-menu">
+          ${svg.sidebarHamburgerMenu}
+          <span class="hidden">사이드바 열기</span>
+        </button>
+      </div>
+    `,
+
+    sidebarContent: `
+      <aside class="sidebar-content">
+        <header class="sidebar-header">
+          <h2 class="popup-title">
+            <span class="popup-title-text">메뉴</span>
+          </h2>
+        </header>
+
+        <div class="sidebar-body">
+          <ul class="sidebar-list">
+            <li class="sidebar-item">
+              <a href="#preferences" class="sidebar-item-button" id="preferences-button">
+                ${svg.sidebarSetting}
+                <span>환경설정</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <button type="button" class="sidebar-item-button" id="credits">
+              ${svg.credit}
+                <span>크레딧</span>
+              </button>
+            </li>
+            <li class="sidebar-item">
+              <button type="button" class="sidebar-item-button" id="credits">
+              ${svg.credit}
+                <span>크레딧</span>
+              </button>
+            </li>
+            <li class="sidebar-item">
+              <button type="button" class="sidebar-item-button" id="credits">
+              ${svg.credit}
+                <span>크레딧</span>
+              </button>
+            </li>
+            <li class="sidebar-item">
+              <button type="button" class="sidebar-item-button" id="credits">
+              ${svg.credit}
+                <span>크레딧</span>
+              </button>
+            </li>
+            <li class="sidebar-item">
+              <button type="button" class="sidebar-item-button" id="credits">
+              ${svg.credit}
+                <span>크레딧</span>
+              </button>
+            </li>
+            <li class="sidebar-item">
+              <button type="button" class="sidebar-item-button" id="credits">
+              ${svg.credit}
+                <span>크레딧</span>
+              </button>
+            </li>
+            <li class="sidebar-item">
+              <button type="button" class="sidebar-item-button" id="credits">
+              ${svg.credit}
+                <span>크레딧</span>
+              </button>
+            </li>
+            <li class="sidebar-item">
+              <button type="button" class="sidebar-item-button" id="credits">
+              ${svg.credit}
+                <span>크레딧</span>
+              </button>
+            </li>
+            <li class="sidebar-item">
+              <button type="button" class="sidebar-item-button" id="credits">
+              ${svg.credit}
+                <span>크레딧</span>
+              </button>
+            </li>
+            <li class="sidebar-item">
+              <button type="button" class="sidebar-item-button" id="credits">
+              ${svg.credit}
+                <span>크레딧</span>
+              </button>
+            </li>
+            <li class="sidebar-item">
+              <button type="button" class="sidebar-item-button" id="credits">
+              ${svg.credit}
+                <span>크레딧</span>
+              </button>
+            </li>
+            <li class="sidebar-item">
+              <button type="button" class="sidebar-item-button" id="credits">
+              ${svg.credit}
+                <span>크레딧</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+        
+        <div class="sidebar-bottom">
+          <div class="sidebar-bottom-button-group">
+            <button type="button" class="sidebar-close-button">
+              <span class="short-key has-border has-text"> ESC </span>
+              <span class="sidebar-bottom-button-text">닫기</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+    `,
   },
 
   mypage: {

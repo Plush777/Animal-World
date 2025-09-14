@@ -51,3 +51,47 @@ export function isNightTime(): boolean {
 export function getSceneModelPath(): string {
   return isDayTime() ? "/models/scene.glb" : "/models/night_sky_scene.glb";
 }
+
+// 시간대 변경 감지를 위한 변수
+let lastTimeState: boolean | null = null;
+
+/**
+ * 시간대 변경을 감지하고 이벤트를 발생시킵니다.
+ * 매분마다 호출되어야 합니다.
+ */
+export function checkTimeChange(): void {
+  const currentIsDay = isDayTime();
+
+  // 첫 번째 호출이거나 시간대가 변경된 경우
+  if (lastTimeState !== null && lastTimeState !== currentIsDay) {
+    console.log(`시간대 변경 감지: ${lastTimeState ? "낮" : "밤"} → ${currentIsDay ? "낮" : "밤"}`);
+
+    // 시간대 변경 이벤트 발생
+    const timeChangeEvent = new CustomEvent("timeChange", {
+      detail: {
+        isDay: currentIsDay,
+        isNight: !currentIsDay,
+        previousState: lastTimeState ? "day" : "night",
+        currentState: currentIsDay ? "day" : "night",
+      },
+    });
+
+    document.dispatchEvent(timeChangeEvent);
+  }
+
+  lastTimeState = currentIsDay;
+}
+
+/**
+ * 시간대 변경 감지 시작
+ * 1분마다 시간대 변경을 확인합니다.
+ */
+export function startTimeChangeDetection(): void {
+  console.log("시간대 변경 감지 시작");
+
+  // 초기 상태 설정
+  lastTimeState = isDayTime();
+
+  // 1분마다 시간대 변경 확인
+  setInterval(checkTimeChange, 60000); // 60초 = 1분
+}

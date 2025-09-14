@@ -34,6 +34,8 @@ import {
 
 import { initializeTheme, startAutoThemeUpdater } from "../ui/theme";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { initializeAudioManager, disposeGlobalAudioManager } from "./audioManager";
+import { startTimeChangeDetection } from "./time";
 
 // THREE.js를 전역에서 사용할 수 있도록 노출
 (window as any).THREE = THREE;
@@ -205,6 +207,7 @@ let globalScene: THREE.Scene | null = null;
 let globalRenderer: THREE.WebGLRenderer | null = null;
 let globalCharacterManager: CharacterManager | null = null;
 let animationId: number | null = null;
+let globalAudioManager: any = null;
 
 // 물리 엔진 관련 변수
 let globalPhysicsWorld: any = null;
@@ -353,6 +356,12 @@ let smoothCharacterController: SmoothCharacterController | null = null;
     (window as any).clearGLTFCache();
   }
 
+  // 오디오 매니저 정리
+  if (globalAudioManager) {
+    disposeGlobalAudioManager();
+    globalAudioManager = null;
+  }
+
   console.log("캔버스 정리 완료");
 };
 
@@ -380,6 +389,27 @@ let smoothCharacterController: SmoothCharacterController | null = null;
   globalRenderer = createRenderer();
 
   setupLighting(globalScene);
+
+  // 오디오 매니저 초기화
+  globalAudioManager = initializeAudioManager(globalScene, camera);
+  console.log("오디오 매니저 초기화 완료");
+
+  // 시간대 변경 감지 시작
+  startTimeChangeDetection();
+
+  // 시간대 변경 이벤트 리스너 등록
+  document.addEventListener("timeChange", async (event: any) => {
+    console.log("시간대 변경 이벤트 수신:", event.detail);
+
+    if (globalAudioManager) {
+      try {
+        await globalAudioManager.switchBGMForTimeChange();
+        console.log("시간대 변경에 따른 BGM 전환 완료");
+      } catch (error) {
+        console.error("시간대 변경 BGM 전환 중 오류:", error);
+      }
+    }
+  });
 
   await loadMultipleModels(globalScene);
 
