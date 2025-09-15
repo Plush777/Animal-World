@@ -75,7 +75,7 @@ export function toggleMapExplore(isEnabled: boolean): void {
     } else {
       // 맵 둘러보기 비활성화 - 카메라 고정
       window.globalControls.enabled = false;
-      // 카메라를 지정된 위치로 고정
+
       if (window.globalCamera) {
         window.globalCamera.position.set(456.93, 249.97, 464.93);
         window.globalCamera.lookAt(70, 45, 100);

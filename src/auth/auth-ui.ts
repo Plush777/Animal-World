@@ -2,6 +2,7 @@ import { type User } from "@supabase/supabase-js";
 import { authHtml } from "../data/authHtml";
 import { handleGoogleLogin, handleKakaoLogin, handleLogout, handleGuestLogin, handleGuestLogout, isGuestUser } from "./auth-core";
 import { renderMyPageProfileImage, reconnectMyPageEventListeners, loadMyPageFormData } from "../ui/modules/myPage";
+import { closeSidebar } from "../utils/sidebar";
 
 const userInfoDiv = document.getElementById("user-info") as HTMLDivElement | null;
 
@@ -142,15 +143,6 @@ export function renderUser(user: User | null): void {
     const main = document.querySelector(".main") as HTMLDivElement;
     const sidebarButton = userBoxLogoutElement.querySelector(".sidebar-hamburger-menu") as HTMLButtonElement;
     const sidebar = document.getElementById("sidebar") as HTMLDivElement;
-
-    // 사이드바 닫기 함수
-    function closeSidebar() {
-      sidebar.classList.remove("transition-start");
-      setTimeout(() => {
-        main.classList.remove("sidebar-open");
-        sidebar.innerHTML = "";
-      }, 500);
-    }
 
     sidebarButton?.addEventListener("click", (e) => {
       console.log(e.target);

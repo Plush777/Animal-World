@@ -240,6 +240,23 @@ video {
   animation: fadeIn 1.5s ease-in-out forwards;
 }
 
+.thin-white-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.thin-white-scrollbar::-webkit-scrollbar-button {
+  display: none;
+}
+
+.thin-white-scrollbar::-webkit-scrollbar-track {
+  background-color: var(--gray-500);
+}
+
+.thin-white-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--gray-300);
+}
+
 @keyframes fadeIn {
   0% {
     opacity: 0;

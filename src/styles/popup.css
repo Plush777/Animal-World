@@ -388,3 +388,37 @@
 .popup.help .short-key {
   display: flex;
 }
+
+.popup.preferences {
+  z-index: 1000;
+}
+
+.preferences-wrapper .popup-section + .popup-section {
+  margin-top: 60px;
+}
+
+.preferences-wrapper .popup-section-title {
+  font-size: 18px;
+}
+
+.preferences-wrapper .popup-section-item {
+  padding: 8px 12px;
+}
+
+.preferences-wrapper .popup-section-item-title {
+  font-size: 15px;
+}
+
+.preferences-wrapper input[type="checkbox"] + label::before {
+  width: 14px;
+  height: 14px;
+}
+
+.preferences-wrapper input[type="checkbox"] + label span {
+  padding-left: 24px;
+}
+
+.preferences-wrapper {
+  overflow-y: auto;
+  height: calc(100vh - 280px);
+}

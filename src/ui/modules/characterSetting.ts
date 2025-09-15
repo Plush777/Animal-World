@@ -45,12 +45,16 @@ export class CharacterSettingPopup {
       return;
     }
 
+    console.log("#character-setting 컨테이너를 찾았습니다:", container);
+
     // sceneHtml에서 캐릭터 설정 HTML 가져오기
     const characterSettingHtml = sceneHtml.characterSetting;
     if (!characterSettingHtml) {
       console.error("캐릭터 설정 HTML을 찾을 수 없습니다.");
       return;
     }
+
+    console.log("캐릭터 설정 HTML을 가져왔습니다. 길이:", characterSettingHtml.length);
 
     // HTML을 컨테이너에 추가
     container.innerHTML = characterSettingHtml;
@@ -59,10 +63,17 @@ export class CharacterSettingPopup {
     this.popup = container.querySelector(".popup.character-setting");
 
     if (this.popup) {
-      console.log("캐릭터 설정 팝업이 동적으로 생성되었습니다.");
+      console.log("캐릭터 설정 팝업이 동적으로 생성되었습니다:", this.popup);
 
       // 팝업 생성 후 요소들 다시 찾기
       this.characterButtons = this.popup.querySelectorAll(".popup-character-tab-button");
+      console.log("캐릭터 버튼 개수:", this.characterButtons.length);
+
+      // 팝업이 생성되면 즉시 이벤트 리스너 설정
+      this.setupEventListeners();
+    } else {
+      console.error("캐릭터 설정 팝업 요소를 찾을 수 없습니다.");
+      console.log("컨테이너 내용:", container.innerHTML);
     }
   }
 
@@ -189,25 +200,32 @@ export class CharacterSettingPopup {
 
   // 팝업 표시
   show(onCharacterSelected?: (characterId: string) => void): void {
+    console.log("캐릭터 설정 팝업 show() 메서드 호출됨");
+
     // 초기화 수행
     this.init();
 
-    if (!this.popup) return;
+    if (!this.popup) {
+      console.error("캐릭터 설정 팝업을 찾을 수 없습니다.");
+      return;
+    }
+
+    console.log("팝업 요소를 찾았습니다:", this.popup);
 
     // 팝업이 이미 존재하는 경우 characterButtons 다시 찾기
     this.characterButtons = this.popup.querySelectorAll(".popup-character-tab-button");
+    console.log("캐릭터 버튼 개수:", this.characterButtons.length);
 
     this.onCharacterSelected = onCharacterSelected || null;
 
-    // transition을 위해 requestAnimationFrame 사용
-    requestAnimationFrame(() => {
-      this.popup!.classList.add("active");
-    });
+    // 팝업을 즉시 표시
+    this.popup.classList.add("active");
+    console.log("팝업에 'active' 클래스 추가됨");
 
     // 상태 업데이트
     this.updateCharacterStates();
 
-    console.log("캐릭터 설정 팝업 표시됨 (transition 시작)");
+    console.log("캐릭터 설정 팝업 표시됨");
   }
 
   // 팝업 숨기기 (뒤로 버튼 클릭 시 - intro-wrapper로 복원)

@@ -114,12 +114,7 @@ export function setupOrbitControls(camera: THREE.PerspectiveCamera, renderer: TH
 
   // 캐릭터 중심으로 카메라 조작 설정
   controls.target.set(70, 45, 100); // 캐릭터 위치를 중심으로 설정
-  // controls.minDistance = 400; // 최소 거리
-  // controls.maxDistance = 570; // 최대 거리
   controls.enableZoom = true; // 줌 활성화
-
-  // controls.minPolarAngle = Math.PI / 3; //위로 올라가는거 제한
-  // controls.maxPolarAngle = Math.PI / 2.5; // 수평선 아래로 내려가지 않도록
 
   // 초기 map-explore 상태 확인 및 적용
   const savedMapExploreState = localStorage.getItem("mapExplore");
@@ -128,7 +123,8 @@ export function setupOrbitControls(camera: THREE.PerspectiveCamera, renderer: TH
   if (!isMapExploreEnabled) {
     // 맵 둘러보기 비활성화 상태면 카메라 고정
     controls.enabled = false;
-    camera.position.set(456.93, 249.97, 464.93);
+    // 카메라 애니메이션이 완료된 후에는 위치를 변경하지 않음
+    // camera.position.set(456.93, 249.97, 464.93);
     camera.lookAt(70, 45, 100);
   }
 
@@ -143,19 +139,47 @@ export function setupOrbitControls(camera: THREE.PerspectiveCamera, renderer: TH
   return controls;
 }
 
+// 카메라 제한을 동적으로 활성화/비활성화하는 함수
+export function setCameraRestrictions(controls: OrbitControls, enabled: boolean): void {
+  if (enabled) {
+    // 카메라 제한 활성화
+    controls.minDistance = 300; // 최소 거리
+    controls.maxDistance = 615; // 최대 거리
+
+    controls.minPolarAngle = Math.PI / 3; // 위로 올라가는거 제한
+    controls.maxPolarAngle = Math.PI / 2.5; // 수평선 아래로 내려가지 않도록
+    console.log("카메라 제한이 활성화되었습니다.");
+  }
+}
+
 // 카메라 위치 변경 이벤트 처리
 export function setupCameraEventListeners(camera: THREE.PerspectiveCamera, controls: OrbitControls): void {
+  // 카메라 위치 변경 이벤트
   document.addEventListener("changeCameraPosition", (event: Event) => {
     const customEvent = event as CustomEvent;
-    const { x, y, z, duration = 2000 } = customEvent.detail;
+    const { x, y, z, duration = 8000, enableRestrictionsAfterAnimation = true } = customEvent.detail;
 
     import("./animation")
       .then((animationModule) => {
-        animationModule.startCameraAnimation(camera, controls, x, y, z, duration);
+        // 카메라 애니메이션 완료 후 제한을 활성화하는 콜백 함수
+        const onComplete = () => {
+          if (enableRestrictionsAfterAnimation) {
+            setCameraRestrictions(controls, true);
+          }
+        };
+
+        animationModule.startCameraAnimation(camera, controls, x, y, z, duration, onComplete);
       })
       .catch((error) => {
         console.error("카메라 애니메이션 시작 중 오류:", error);
       });
+  });
+
+  // 카메라 제한 활성화/비활성화 이벤트
+  document.addEventListener("setCameraRestrictions", (event: Event) => {
+    const customEvent = event as CustomEvent;
+    const { enabled } = customEvent.detail;
+    setCameraRestrictions(controls, enabled);
   });
 }
 

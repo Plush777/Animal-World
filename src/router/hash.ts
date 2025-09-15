@@ -3,6 +3,7 @@ import { getCurrentLoggedInUser } from "../auth/auth-ui";
 import { authHtml } from "../data/authHtml";
 import { chatHtml } from "../data/chatHtml";
 import { reconnectMyPageEventListeners } from "../ui/modules/myPage";
+import { closeSidebar } from "../utils/sidebar";
 
 interface RouteHandler {
   show: () => void;
@@ -150,6 +151,38 @@ router.registerRoute("world", {
   hide: () => {
     const world = document.getElementById("chat") as HTMLElement;
     world.innerHTML = "";
+  },
+});
+
+router.registerRoute("preferences", {
+  show: () => {
+    const preferences = document.getElementById("preferences") as HTMLElement;
+    preferences.innerHTML = authHtml.preferences;
+
+    setTimeout(() => {
+      const popup = document.querySelector(".popup.preferences") as HTMLElement;
+
+      if (popup) {
+        popup.classList.add("active");
+        closeSidebar();
+      }
+    }, 50);
+
+    const preferencesCloseBtn = document.querySelector(".popup.preferences .esc-button") as HTMLElement;
+    preferencesCloseBtn?.addEventListener("click", () => {
+      (window as any).pageClose?.();
+    });
+  },
+  hide: () => {
+    const preferences = document.getElementById("preferences") as HTMLElement;
+    const popup = document.querySelector(".popup.preferences") as HTMLElement;
+
+    if (popup) {
+      popup.classList.remove("active");
+      setTimeout(() => {
+        preferences.innerHTML = "";
+      }, 500);
+    }
   },
 });
 

@@ -3,9 +3,10 @@
  * 로그인 상태에 따른 인트로 요소들의 순차적 애니메이션 처리
  */
 
-import { createAndShowLoadingUI, setTotalModels, updateProgressText, onLoadingError } from "./loading.js";
+// import { createAndShowLoadingUI, setTotalModels, updateProgressText, onLoadingError } from "./loading.js";
 import { getCurrentLoggedInUser } from "../../auth/auth-ui.js";
 import { initializeIntroAudioManager, disposeGlobalIntroAudioManager } from "./introAudio.js";
+import { joinButtonManager } from "./joinButton.js";
 
 /**
  * 로그인 상태 확인 함수
@@ -83,21 +84,24 @@ async function setupJoinButton(): Promise<void> {
     joinButtonClickListener = async () => {
       console.log("join-button 클릭됨!");
 
-      // 현재 사용자 정보 가져오기
-      const currentUser = getCurrentLoggedInUser();
-      const userName = currentUser?.user_metadata?.name || currentUser?.email || "게스트";
-
-      // 채팅 시스템 초기화
-      if ((window as any).initializeChatSystem) {
-        (window as any).initializeChatSystem(userName);
-      }
-
       // Canvas 로딩 완료 이벤트 리스너 등록 (참여하기 버튼 클릭 시점에 등록)
       document.addEventListener(
         "canvasLoadingComplete",
         () => {
           // 카메라 위치 변경 (Canvas 준비 완료 후)
           dispatchCameraChangeEvent();
+
+          // 팝업 모듈 재초기화 (방 참여 후 버튼 클릭 이벤트 등록)
+          if ((window as any).initPopupModule) {
+            (window as any).initPopupModule();
+            console.log("방 참여 후 팝업 모듈 재초기화 완료");
+          }
+
+          // 앱 클릭 이벤트 재등록 (방 참여 후 이모지 버튼 등 클릭 이벤트 등록)
+          if ((window as any).appClickEvents) {
+            (window as any).appClickEvents();
+            console.log("방 참여 후 앱 클릭 이벤트 재등록 완료");
+          }
 
           setTimeout(() => {
             const mainTag = document.querySelector(".main") as HTMLElement;
@@ -115,36 +119,20 @@ async function setupJoinButton(): Promise<void> {
         { once: true }
       );
 
-      // 인트로 화면 즉시 숨기기 (카메라 이동 없음)
-      hideIntroWrapperOnly();
+      // JoinButtonManager를 통해 캐릭터 설정 처리
+      if (joinButtonManager) {
+        console.log("JoinButtonManager를 통해 캐릭터 설정 처리 시작");
 
-      // 인트로 오디오 정지 (Three.js 오디오로 전환)
-      const introAudioManager = (window as any).globalIntroAudioManager;
-      if (introAudioManager) {
-        introAudioManager.stopBGM();
-        console.log("인트로 BGM 정지 - Three.js 오디오로 전환");
-      }
+        // JoinButtonManager의 참여 완료 콜백 설정
+        joinButtonManager.setJoinCompleteCallback(async (characterId: string) => {
+          console.log(`캐릭터 선택 완료: ${characterId}`);
+          console.log("캐릭터 선택 완료 - 추가 처리 없음 (캔버스는 이미 초기화됨)");
+        });
 
-      // 로딩 화면 표시 및 초기 설정
-      createAndShowLoadingUI();
-
-      // 로딩할 총 모델 수를 미리 설정 (8개 모델)
-      setTotalModels(8);
-
-      // 초기 진행률 표시
-      updateProgressText("월드를 준비하는 중...");
-
-      try {
-        // Canvas 초기화 (전역 함수 호출)
-        console.log("initCanvas 함수 확인:", typeof (window as any).initCanvas);
-        if (typeof (window as any).initCanvas !== "function") {
-          throw new Error("initCanvas 함수를 찾을 수 없습니다.");
-        }
-        await (window as any).initCanvas();
-      } catch (error) {
-        console.error("Canvas 초기화 중 오류:", error);
-        onLoadingError(error);
-        return;
+        // JoinButtonManager의 handleJoinClick 메서드 호출
+        joinButtonManager.handleJoinClick();
+      } else {
+        console.error("JoinButtonManager를 찾을 수 없습니다.");
       }
     };
 

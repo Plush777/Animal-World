@@ -253,7 +253,7 @@
 }
 
 .sidebar-body {
-  padding: 20px 36px;
+  padding: 20px;
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(20px);
 }
@@ -263,23 +263,6 @@
   flex-direction: column;
   overflow-y: auto;
   height: calc(100vh - 177px);
-}
-
-.sidebar-list::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.sidebar-list::-webkit-scrollbar-button {
-  display: none;
-}
-
-.sidebar-list::-webkit-scrollbar-track {
-  background-color: var(--gray-500);
-}
-
-.sidebar-list::-webkit-scrollbar-thumb {
-  background-color: var(--gray-300);
 }
 
 .sidebar-item-button {
@@ -322,4 +305,9 @@
 .sidebar-bottom-button-text {
   color: var(--gray-800);
   font-weight: 500;
+}
+
+.sidebar-item-button {
+  border-radius: 8px;
+  padding: 0 16px;
 }

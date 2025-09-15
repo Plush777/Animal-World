@@ -94,11 +94,11 @@ export const sceneHtml: { [key: string]: any } = {
       <div class="popup-section-item-box">
         <div class="popup-section-item">
           <strong class="popup-section-item-title">배경음 음량</strong>
-          <input type="range" class="range-bar" />
+          <input type="range" id="scene-bgm-volume" class="range-bar" />
         </div>
         <div class="popup-section-item">
           <strong class="popup-section-item-title">효과음 음량</strong>
-          <input type="range" class="range-bar" />
+          <input type="range" id="scene-sound-effect-volume" class="range-bar" />
         </div>
       </div>
     </section>

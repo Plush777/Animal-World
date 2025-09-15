@@ -28,6 +28,7 @@ interface CameraAnimation {
   startTime: number;
   duration: number;
   isActive: boolean;
+  onComplete?: () => void; // 애니메이션 완료 시 호출될 콜백 함수
 }
 
 const floatingObjects: FloatingAnimation[] = [];
@@ -72,7 +73,8 @@ export function startCameraAnimation(
   targetX: number,
   targetY: number,
   targetZ: number,
-  duration: number = 2000
+  duration: number = 2000,
+  onComplete?: () => void
 ): void {
   // 기존 애니메이션이 있으면 중단
   if (cameraAnimation?.isActive) {
@@ -88,6 +90,7 @@ export function startCameraAnimation(
     startTime: Date.now(),
     duration,
     isActive: true,
+    onComplete, // 완료 콜백 함수 추가
   };
 
   console.log(`카메라 애니메이션 시작: (${targetX}, ${targetY}, ${targetZ})`);
@@ -147,7 +150,7 @@ function updateCameraAnimation(): void {
     return;
   }
 
-  const { camera, controls, startPosition, targetPosition, startTime, duration } = cameraAnimation;
+  const { camera, controls, startPosition, targetPosition, startTime, duration, onComplete } = cameraAnimation;
   const elapsed = Date.now() - startTime;
   const progress = Math.min(elapsed / duration, 1);
 
@@ -167,6 +170,11 @@ function updateCameraAnimation(): void {
   if (progress >= 1) {
     cameraAnimation.isActive = false;
     console.log("카메라 애니메이션 완료");
+
+    // 완료 콜백 함수가 있으면 호출
+    if (onComplete) {
+      onComplete();
+    }
   }
 }
 

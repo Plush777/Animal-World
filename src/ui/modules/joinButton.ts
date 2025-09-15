@@ -1,5 +1,7 @@
 import { CharacterStorage } from "../../canvas/characterStorage";
 import { characterSettingPopup } from "./characterSetting";
+import { createAndShowLoadingUI, setTotalModels, updateProgressText, onLoadingError } from "./loading";
+import { getCurrentLoggedInUser } from "../../auth/auth-ui";
 
 export class JoinButtonManager {
   private joinButton: HTMLElement | null = null;
@@ -57,11 +59,50 @@ export class JoinButtonManager {
     });
   }
 
-  private handleJoinClick(): void {
+  public handleJoinClick(): void {
     console.log("참여 버튼 클릭됨");
 
-    // 이미 캐릭터가 선택되어 있는지 확인
-    if (CharacterStorage.hasSelectedCharacter()) {
+    // 캔버스 초기화 시작 (캐릭터 선택 여부와 관계없이)
+    this.startCanvasInitialization();
+
+    // 캔버스 로딩 완료 후 캐릭터 설정 처리
+    this.waitForCanvasLoading();
+  }
+
+  private waitForCanvasLoading(): void {
+    // 참여 버튼 비활성화 (중복 클릭 방지)
+    this.disableJoinButton();
+
+    // Canvas 로딩 완료 이벤트 리스너 등록
+    const handleCanvasLoadingComplete = () => {
+      console.log("Canvas 로딩 완료 이벤트 수신됨");
+      // 이벤트 리스너 제거 (한 번만 실행)
+      document.removeEventListener("canvasLoadingComplete", handleCanvasLoadingComplete);
+
+      // 캔버스 로딩 완료 후 캐릭터 설정 처리
+      this.handleCharacterSetting();
+    };
+
+    document.addEventListener("canvasLoadingComplete", handleCanvasLoadingComplete);
+
+    // 만약 이미 로딩이 완료된 상태라면 즉시 실행
+    if (document.querySelector(".main.ui-visible")) {
+      console.log("이미 월드가 로딩된 상태입니다. 캐릭터 설정을 처리합니다.");
+      this.handleCharacterSetting();
+    } else {
+      console.log("월드가 아직 로딩 중입니다. canvasLoadingComplete 이벤트를 기다립니다.");
+    }
+  }
+
+  private handleCharacterSetting(): void {
+    console.log("캐릭터 설정 처리 시작");
+
+    // 로컬스토리지에서 캐릭터 정보 확인
+    const hasCharacter = CharacterStorage.hasSelectedCharacter();
+    console.log("CharacterStorage.hasSelectedCharacter():", hasCharacter);
+
+    if (hasCharacter) {
+      // 캐릭터가 이미 선택되어 있으면 바로 완료
       const currentCharacter = CharacterStorage.getCurrentCharacter();
       if (currentCharacter) {
         console.log(`이미 캐릭터가 선택되어 있습니다: ${currentCharacter.name}`);
@@ -70,37 +111,61 @@ export class JoinButtonManager {
       }
     }
 
-    // 캐릭터가 선택되지 않았다면 월드 로딩 완료 후 팝업 표시
-    console.log("캐릭터가 선택되지 않았습니다. 월드 로딩 완료 후 캐릭터 설정 팝업을 표시합니다.");
-    this.waitForWorldLoading();
+    // 캐릭터가 선택되지 않았다면 캐릭터 설정 팝업 표시
+    console.log("캐릭터가 선택되지 않았습니다. 캐릭터 설정 팝업을 표시합니다.");
+    this.showCharacterSettingPopup();
   }
 
-  private waitForWorldLoading(): void {
-    // 참여 버튼 비활성화 (중복 클릭 방지)
-    this.disableJoinButton();
+  private startCanvasInitialization(): void {
+    console.log("캔버스 초기화 시작...");
 
-    // HTML을 즉시 삽입 (숨겨진 상태로)
-    characterSettingPopup.createPopup();
+    // 현재 사용자 정보 가져오기
+    const currentUser = getCurrentLoggedInUser();
+    const userName = currentUser?.user_metadata?.name || currentUser?.email || "게스트";
 
-    // Canvas 로딩 완료 이벤트 리스너 등록
-    const handleCanvasLoadingComplete = () => {
-      // 이벤트 리스너 제거 (한 번만 실행)
-      document.removeEventListener("canvasLoadingComplete", handleCanvasLoadingComplete);
+    // 채팅 시스템 초기화
+    if ((window as any).initializeChatSystem) {
+      (window as any).initializeChatSystem(userName);
+    }
 
-      // 5초 지연 후 팝업 표시
-      setTimeout(() => {
-        this.showCharacterSettingPopup();
-      }, 4000);
+    // 인트로 화면 즉시 숨기기 (카메라 이동 없음)
+    const hideIntroWrapperOnly = () => {
+      const introWrapper = document.querySelector(".intro-wrapper") as HTMLElement;
+      if (introWrapper) {
+        introWrapper.style.display = "none";
+        introWrapper.style.opacity = "0";
+      }
     };
+    hideIntroWrapperOnly();
 
-    document.addEventListener("canvasLoadingComplete", handleCanvasLoadingComplete);
+    // 인트로 오디오 정지 (Three.js 오디오로 전환)
+    const introAudioManager = (window as any).globalIntroAudioManager;
+    if (introAudioManager) {
+      introAudioManager.stopBGM();
+      console.log("인트로 BGM 정지 - Three.js 오디오로 전환");
+    }
 
-    // 만약 이미 로딩이 완료된 상태라면 즉시 실행
-    if (document.querySelector(".main.ui-visible")) {
-      console.log("이미 월드가 로딩된 상태입니다. 5초 후 캐릭터 설정 팝업을 표시합니다.");
-      setTimeout(() => {
-        this.showCharacterSettingPopup();
-      }, 5000);
+    // 로딩 화면 표시 및 초기 설정
+    console.log("로딩 UI 표시 시작...");
+    createAndShowLoadingUI();
+    setTotalModels(8);
+    updateProgressText("월드를 준비하는 중...");
+
+    // Canvas 초기화 실행
+    this.initializeCanvas();
+  }
+
+  private async initializeCanvas(): Promise<void> {
+    try {
+      console.log("initCanvas 함수 확인:", typeof (window as any).initCanvas);
+      if (typeof (window as any).initCanvas !== "function") {
+        throw new Error("initCanvas 함수를 찾을 수 없습니다.");
+      }
+      await (window as any).initCanvas();
+      console.log("캔버스 초기화 완료");
+    } catch (error) {
+      console.error("Canvas 초기화 중 오류:", error);
+      onLoadingError(error);
     }
   }
 
@@ -108,8 +173,15 @@ export class JoinButtonManager {
     // 참여 버튼 다시 활성화 (캐릭터 선택 취소 시를 대비)
     this.enableJoinButton();
 
+    console.log("캐릭터 설정 팝업을 생성하고 표시합니다...");
+
+    // 캐릭터 설정 팝업 HTML 생성
+    characterSettingPopup.createPopup();
+
+    // 팝업 표시
     characterSettingPopup.show((characterId: string) => {
       // 캐릭터 선택 완료 시 콜백
+      console.log(`캐릭터 선택 완료: ${characterId}`);
       this.completeJoin(characterId);
     });
   }
@@ -119,7 +191,10 @@ export class JoinButtonManager {
 
     // 참여 완료 콜백 호출
     if (this.onJoinComplete) {
+      console.log("참여 완료 콜백 호출 중...");
       this.onJoinComplete(characterId);
+    } else {
+      console.warn("참여 완료 콜백이 설정되지 않았습니다.");
     }
 
     // 참여 버튼 비활성화 또는 숨기기

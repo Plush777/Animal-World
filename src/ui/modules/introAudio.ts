@@ -14,7 +14,8 @@ export class IntroAudioManager {
   private volume: number = 0.3; // 기본 볼륨 (30%)
 
   constructor() {
-    this.setupInitialBGM();
+    // 메인화면에서 자동 오디오 재생 비활성화
+    // this.setupInitialBGM();
   }
 
   /**

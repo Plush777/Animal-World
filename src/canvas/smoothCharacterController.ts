@@ -870,14 +870,14 @@ export class TerrainAdaptiveCharacterController implements SmoothCharacterContro
     this.mesh.position.copy(this.state.position);
 
     // 디버깅을 위한 로그 (빈도 제한)
-    if (Math.random() < 0.01) {
-      // 1% 확률로만 로그 출력
-      console.log(`[SmoothController] 위치 업데이트:`, {
-        statePosition: this.state.position,
-        meshPosition: this.mesh.position,
-        positionMatch: this.mesh.position.equals(this.state.position),
-      });
-    }
+    // if (Math.random() < 0.01) {
+    //   // 1% 확률로만 로그 출력
+    //   console.log(`[SmoothController] 위치 업데이트:`, {
+    //     statePosition: this.state.position,
+    //     meshPosition: this.mesh.position,
+    //     positionMatch: this.mesh.position.equals(this.state.position),
+    //   });
+    // }
   }
 
   // 개선된 오브젝트 충돌 상태 업데이트

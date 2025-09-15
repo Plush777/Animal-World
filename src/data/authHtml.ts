@@ -74,78 +74,12 @@ export const authHtml: { [key: string]: any } = {
         </header>
 
         <div class="sidebar-body">
-          <ul class="sidebar-list">
+          <ul class="sidebar-list thin-white-scrollbar">
             <li class="sidebar-item">
               <a href="#preferences" class="sidebar-item-button" id="preferences-button">
                 ${svg.sidebarSetting}
                 <span>환경설정</span>
               </a>
-            </li>
-            <li class="sidebar-item">
-              <button type="button" class="sidebar-item-button" id="credits">
-              ${svg.credit}
-                <span>크레딧</span>
-              </button>
-            </li>
-            <li class="sidebar-item">
-              <button type="button" class="sidebar-item-button" id="credits">
-              ${svg.credit}
-                <span>크레딧</span>
-              </button>
-            </li>
-            <li class="sidebar-item">
-              <button type="button" class="sidebar-item-button" id="credits">
-              ${svg.credit}
-                <span>크레딧</span>
-              </button>
-            </li>
-            <li class="sidebar-item">
-              <button type="button" class="sidebar-item-button" id="credits">
-              ${svg.credit}
-                <span>크레딧</span>
-              </button>
-            </li>
-            <li class="sidebar-item">
-              <button type="button" class="sidebar-item-button" id="credits">
-              ${svg.credit}
-                <span>크레딧</span>
-              </button>
-            </li>
-            <li class="sidebar-item">
-              <button type="button" class="sidebar-item-button" id="credits">
-              ${svg.credit}
-                <span>크레딧</span>
-              </button>
-            </li>
-            <li class="sidebar-item">
-              <button type="button" class="sidebar-item-button" id="credits">
-              ${svg.credit}
-                <span>크레딧</span>
-              </button>
-            </li>
-            <li class="sidebar-item">
-              <button type="button" class="sidebar-item-button" id="credits">
-              ${svg.credit}
-                <span>크레딧</span>
-              </button>
-            </li>
-            <li class="sidebar-item">
-              <button type="button" class="sidebar-item-button" id="credits">
-              ${svg.credit}
-                <span>크레딧</span>
-              </button>
-            </li>
-            <li class="sidebar-item">
-              <button type="button" class="sidebar-item-button" id="credits">
-              ${svg.credit}
-                <span>크레딧</span>
-              </button>
-            </li>
-            <li class="sidebar-item">
-              <button type="button" class="sidebar-item-button" id="credits">
-              ${svg.credit}
-                <span>크레딧</span>
-              </button>
             </li>
             <li class="sidebar-item">
               <button type="button" class="sidebar-item-button" id="credits">
@@ -319,4 +253,51 @@ export const authHtml: { [key: string]: any } = {
       `,
     },
   },
+
+  preferences: `
+    <div class="popup preferences fullscreen" role="dialog">
+      <div class="popup-inner">
+        <div class="popup-title-box">
+          <h2 class="popup-title">환경설정</h2>
+          <p class="popup-description">환경설정을 할 수 있어요.</p>
+        </div>
+
+        <div class="preferences-wrapper thin-white-scrollbar">
+          <section class="popup-section">
+            <h3 class="popup-section-title">Sound setting</h3>
+            <div class="popup-section-item-box">
+              <div class="popup-section-item">
+                <strong class="popup-section-item-title">배경음 음량</strong>
+                <input type="range" id="preferences-bgm-volume" class="range-bar" />
+              </div>
+              <div class="popup-section-item">
+                <strong class="popup-section-item-title">효과음 음량</strong>
+                <input type="range" id="preferences-sound-effect-volume" class="range-bar" />
+              </div>
+            </div>
+          </section>
+
+           <section class="popup-section">
+              <h3 class="popup-section-title">Common setting</h3>
+              <div class="popup-section-item-box">
+                <div class="popup-section-item">
+                  <input type="checkbox" id="preferences-short-key-disable" />
+                  <label for="preferences-short-key-disable" class="popup-section-item-title">
+                    ${svg.check}
+                    <span>단축키 비활성화</span>
+                  </label>
+                </div>
+              </div>
+            </section>
+        </div>
+        
+        <div class="popup-bottom-button-group">
+            <button type="button" class="esc-button button button-blue button-size-lg has-short-key">
+                <span class="short-key has-border has-text">ESC</span>
+                <span>닫기</span>
+            </button>
+        </div>
+      </div>
+    </div>
+  `,
 };

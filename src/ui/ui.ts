@@ -23,6 +23,8 @@ import { appMouseoverEvent } from "./modules/appMouseoverEvent.ts";
 import { appTransition } from "./modules/appTransition.ts";
 import { applyShortKeyDisabledToAllElements } from "./modules/functions.ts";
 import { handleShortKeySettingChange, handleShortKeyState, shortKeyEventListeners } from "./modules/shortKeyToggle.ts";
+import { initVolumeControls } from "./modules/volumeControls";
+import { initSound } from "./sound";
 
 /**
  * 모든 UI 모듈 초기화
@@ -36,6 +38,8 @@ function initAllUIModules(): void {
   initUserBoxModule();
   initializeMyPageEventListeners();
   initAudioControls();
+  initVolumeControls();
+  initSound();
   canvasLoadingComplete();
   appClickEvents();
   appMouseoverEvent();

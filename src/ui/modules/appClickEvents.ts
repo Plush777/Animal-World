@@ -203,3 +203,4 @@ export function appClickEvents() {
 // 전역에서 접근할 수 있도록 함수 노출
 (window as any).handleEmojiClick = handleEmojiClick;
 (window as any).getAvailableEmojis = getAvailableEmojis;
+(window as any).appClickEvents = appClickEvents;

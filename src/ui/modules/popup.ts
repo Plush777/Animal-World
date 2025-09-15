@@ -442,6 +442,19 @@ function addSettingItems(): void {
       scrollContainer.style.height = `${totalHeight + 28}px`; // scrollMargin 추가 (패딩 12px + 여백 4px)
     }
 
+    // 볼륨 컨트롤 초기화 (HTML이 DOM에 추가된 후)
+    setTimeout(() => {
+      import("./volumeControls")
+        .then(({ initializeVolumeControls }) => {
+          if (initializeVolumeControls) {
+            initializeVolumeControls();
+          }
+        })
+        .catch((error) => {
+          console.warn("볼륨 컨트롤 초기화 실패:", error);
+        });
+    }, 100);
+
     // 스크롤바 업데이트
     (settingVirtualScroll as any).updateScrollbarThumb();
   }
@@ -782,5 +795,8 @@ function initPopupModule(): void {
   setupCharacterSelection();
   setupRealTimeUserListUpdates();
 }
+
+// 전역에서 접근할 수 있도록 window 객체에 등록
+(window as any).initPopupModule = initPopupModule;
 
 export { initPopupModule, commonInitPopup, setupPopupClose, setupCharacterSelection, restoreSelectedCharacter };
