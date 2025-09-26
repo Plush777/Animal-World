@@ -735,37 +735,3 @@ export class ChatVirtualScroll extends VirtualScroll {
     this.updateScrollbarThumb();
   }
 }
-
-// 팝업용 특화된 가상 스크롤 클래스
-export class PopupVirtualScroll extends VirtualScroll {
-  constructor(container: HTMLElement, options?: Partial<VirtualScrollOptions>) {
-    super({
-      container,
-      itemHeight: 60, // 팝업 기본 아이템 높이
-      smoothScroll: true,
-      scrollDuration: 200,
-      showScrollbar: true,
-      autoResize: true, // 팝업 리사이즈 자동 감지
-      scrollbarWidth: 6, // 팝업용 얇은 스크롤바
-      scrollbarColor: "#666",
-      scrollbarTrackColor: "rgba(0,0,0,0.1)",
-      scrollbarThumbColor: "#999",
-      scrollbarRadius: 3,
-      enableTouchScroll: true,
-      touchSensitivity: 1.2,
-      maxScrollSpeed: 30,
-      scrollMargin: 28, // 팝업 패딩 12px + 추가 여백 4px
-      ...options,
-    });
-  }
-
-  // 팝업이 열릴 때 스크롤 위치 초기화
-  resetScroll(): void {
-    this.scrollToTop();
-  }
-
-  // 팝업 크기 변경 시 스크롤바 업데이트
-  updateForPopupResize(): void {
-    this.handleResize();
-  }
-}

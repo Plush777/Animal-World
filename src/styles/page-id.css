@@ -105,3 +105,7 @@
 #room-info {
   color: var(--sky-300);
 }
+
+#credit-popup .popup.credit {
+  display: block;
+}

@@ -4,56 +4,11 @@
  */
 
 import { showErrorState } from "./state";
-import { PopupVirtualScroll } from "../virtualScroll";
-import { sceneHtml } from "../../data/sceneHtml";
 
 // 전역 변수로 이벤트 리스너 관리
 let userListUpdateHandler: ((event: CustomEvent) => void) | null = null;
 let isUserListButtonActive = false;
 let userListLoadTimeout: NodeJS.Timeout | null = null;
-
-// 가상 스크롤 인스턴스들
-let userListVirtualScroll: PopupVirtualScroll | null = null;
-let settingVirtualScroll: PopupVirtualScroll | null = null;
-let helpVirtualScroll: PopupVirtualScroll | null = null;
-
-// 스크롤바 thumb 가시성 감지 및 클래스 관리 함수
-function setupScrollbarThumbVisibilityObserver(thumbClass: string): void {
-  const checkScrollbarThumbVisibility = () => {
-    const thumbElement = document.querySelector(`.${thumbClass}`) as HTMLElement;
-    if (thumbElement) {
-      const computedStyle = window.getComputedStyle(thumbElement);
-      // thumb를 감싸고 있는 virtual-scrollbar 요소 찾기
-      const scrollbarElement = thumbElement.closest(`.${thumbClass.replace("-thumb", "")}`) as HTMLElement;
-      if (scrollbarElement) {
-        if (computedStyle.display === "none") {
-          scrollbarElement.classList.add("virtual-scrollbar-hidden");
-        } else {
-          scrollbarElement.classList.remove("virtual-scrollbar-hidden");
-        }
-      }
-    }
-  };
-
-  // 초기 상태 확인
-  setTimeout(checkScrollbarThumbVisibility, 100);
-
-  // MutationObserver를 사용하여 스크롤바 thumb 요소의 변화 감지
-  const observer = new MutationObserver(() => {
-    checkScrollbarThumbVisibility();
-  });
-
-  // 스크롤바 컨테이너를 관찰 (thumbClass에서 -thumb 부분을 제거하여 컨테이너 클래스 추출)
-  const containerClass = thumbClass.replace("-thumb", "");
-  const scrollbarContainer = document.querySelector(`.${containerClass}`);
-  if (scrollbarContainer) {
-    observer.observe(scrollbarContainer, {
-      attributes: true,
-      attributeFilter: ["style"],
-      subtree: true,
-    });
-  }
-}
 
 function commonInitPopup(popupType: string, e: Event): void {
   const target = e.target as HTMLElement;
@@ -61,27 +16,18 @@ function commonInitPopup(popupType: string, e: Event): void {
   if (popupType === "setting") {
     const settingButton = document.querySelector(".setting-button") as HTMLElement;
 
-    const isKeyboardEvent = e instanceof KeyboardEvent;
-
     // 다른 버튼들의 active 상태 제거
     const helpButton = document.querySelector(".help-button") as HTMLElement;
     const userListButton = document.querySelector(".world-user-list-button") as HTMLElement;
 
     if (helpButton?.classList.contains("active")) {
       helpButton.classList.remove("active");
-      if (helpVirtualScroll) {
-        helpVirtualScroll.destroy();
-        helpVirtualScroll = null;
-      }
     }
 
     if (userListButton?.classList.contains("active")) {
       userListButton.classList.remove("active");
       isUserListButtonActive = false;
-      if (userListVirtualScroll) {
-        userListVirtualScroll.destroy();
-        userListVirtualScroll = null;
-      }
+
       if (userListLoadTimeout) {
         clearTimeout(userListLoadTimeout);
         userListLoadTimeout = null;
@@ -89,19 +35,6 @@ function commonInitPopup(popupType: string, e: Event): void {
     }
 
     settingButton.classList.toggle("active");
-
-    if (isKeyboardEvent || settingButton.classList.contains("active")) {
-      initializeSettingVirtualScroll();
-
-      if (settingVirtualScroll) {
-        settingVirtualScroll.resetScroll();
-      }
-    } else {
-      if (settingVirtualScroll) {
-        settingVirtualScroll.destroy();
-        settingVirtualScroll = null;
-      }
-    }
   }
 
   if (popupType === "user-list") {
@@ -116,33 +49,19 @@ function commonInitPopup(popupType: string, e: Event): void {
 
       if (helpButton?.classList.contains("active")) {
         helpButton.classList.remove("active");
-        if (helpVirtualScroll) {
-          helpVirtualScroll.destroy();
-          helpVirtualScroll = null;
-        }
       }
 
       if (settingButton?.classList.contains("active")) {
         settingButton.classList.remove("active");
-        if (settingVirtualScroll) {
-          settingVirtualScroll.destroy();
-          settingVirtualScroll = null;
-        }
       }
 
       userListButton?.classList.toggle("active");
       isUserListButtonActive = userListButton?.classList.contains("active") || false;
 
-      // 팝업이 열릴 때만 사용자 목록 로드 및 가상 스크롤 초기화
+      // 팝업이 열릴 때만 사용자 목록 로드
       if (isUserListButtonActive) {
-        initializeUserListVirtualScroll();
         loadUsersList();
       } else {
-        // 팝업이 닫힐 때 가상 스크롤 정리 및 타임아웃 제거
-        if (userListVirtualScroll) {
-          userListVirtualScroll.destroy();
-          userListVirtualScroll = null;
-        }
         if (userListLoadTimeout) {
           clearTimeout(userListLoadTimeout);
           userListLoadTimeout = null;
@@ -154,11 +73,6 @@ function commonInitPopup(popupType: string, e: Event): void {
     if (!isKeyboardEvent && userListButton?.classList.contains("active") && target !== userListButton && !target.closest(".popup.user-list")) {
       userListButton?.classList.remove("active");
       isUserListButtonActive = false;
-      // 팝업이 닫힐 때 가상 스크롤 정리 및 타임아웃 제거
-      if (userListVirtualScroll) {
-        userListVirtualScroll.destroy();
-        userListVirtualScroll = null;
-      }
       if (userListLoadTimeout) {
         clearTimeout(userListLoadTimeout);
         userListLoadTimeout = null;
@@ -177,19 +91,12 @@ function commonInitPopup(popupType: string, e: Event): void {
 
       if (settingButton?.classList.contains("active")) {
         settingButton.classList.remove("active");
-        if (settingVirtualScroll) {
-          settingVirtualScroll.destroy();
-          settingVirtualScroll = null;
-        }
       }
 
       if (userListButton?.classList.contains("active")) {
         userListButton.classList.remove("active");
         isUserListButtonActive = false;
-        if (userListVirtualScroll) {
-          userListVirtualScroll.destroy();
-          userListVirtualScroll = null;
-        }
+
         if (userListLoadTimeout) {
           clearTimeout(userListLoadTimeout);
           userListLoadTimeout = null;
@@ -197,30 +104,10 @@ function commonInitPopup(popupType: string, e: Event): void {
       }
 
       helpButton.classList.toggle("active");
-
-      // 팝업이 열릴 때 가상 스크롤 초기화
-      if (helpButton.classList.contains("active")) {
-        initializeHelpVirtualScroll();
-        // 스크롤 위치 초기화
-        if (helpVirtualScroll) {
-          helpVirtualScroll.resetScroll();
-        }
-      } else {
-        // 팝업이 닫힐 때 가상 스크롤 정리
-        if (helpVirtualScroll) {
-          helpVirtualScroll.destroy();
-          helpVirtualScroll = null;
-        }
-      }
     }
 
     if (!isKeyboardEvent && helpButton?.classList.contains("active") && target !== helpButton && !target.closest(".popup.help")) {
       helpButton?.classList.remove("active");
-
-      if (helpVirtualScroll) {
-        helpVirtualScroll.destroy();
-        helpVirtualScroll = null;
-      }
     }
   }
 }
@@ -267,253 +154,6 @@ function setupHelpPopup(): void {
   }
 }
 
-// 유저 목록 팝업 가상 스크롤 초기화
-function initializeUserListVirtualScroll(): void {
-  const popupBody = document.querySelector(".popup.user-list .popup-body") as HTMLElement;
-
-  if (!popupBody) {
-    console.error("유저 목록 팝업 요소를 찾을 수 없습니다.");
-    return;
-  }
-
-  // 기존 가상 스크롤이 있다면 정리
-  if (userListVirtualScroll) {
-    userListVirtualScroll.destroy();
-  }
-
-  // 팝업 바디 스타일 설정 (chat div와 동일한 방식)
-  popupBody.style.position = "relative";
-  popupBody.style.overflow = "hidden";
-  popupBody.style.height = "300px"; // 고정 높이 설정
-
-  // 팝업 바디에 가상 스크롤 적용
-  userListVirtualScroll = new PopupVirtualScroll(popupBody, {
-    itemHeight: 30, // 각 사용자 아이템 간격 (top 값 간격과 동일)
-    scrollbarWidth: 6,
-    scrollbarColor: "#666",
-    scrollbarTrackColor: "rgba(0,0,0,0.1)",
-    scrollbarThumbColor: "#999",
-    scrollbarRadius: 3,
-    enableTouchScroll: true,
-    touchSensitivity: 1.2,
-    maxScrollSpeed: 30,
-    scrollMargin: 28, // 패딩 12px + 추가 여백 4px
-    containerClass: "user-list-virtual-scroll-container",
-    scrollbarClass: "user-list-virtual-scrollbar",
-    scrollbarThumbClass: "user-list-virtual-scrollbar-thumb",
-  });
-
-  // 스크롤바 thumb 가시성 감지 설정
-  setupScrollbarThumbVisibilityObserver("user-list-virtual-scrollbar-thumb");
-}
-
-// 설정 팝업 가상 스크롤 초기화
-function initializeSettingVirtualScroll(): void {
-  const popupBody = document.querySelector(".popup.setting .popup-body") as HTMLElement;
-
-  if (!popupBody) {
-    console.error("설정 팝업 요소를 찾을 수 없습니다.");
-    return;
-  }
-
-  // 기존 가상 스크롤이 있다면 정리
-  if (settingVirtualScroll) {
-    settingVirtualScroll.destroy();
-  }
-
-  // 팝업 바디 스타일 설정 (chat div와 동일한 방식)
-  popupBody.style.position = "relative";
-  popupBody.style.overflow = "hidden";
-  popupBody.style.height = "300px"; // 설정팝업 높이 조정
-
-  // 팝업 바디에 가상 스크롤 적용
-  settingVirtualScroll = new PopupVirtualScroll(popupBody, {
-    itemHeight: 30, // 각 섹션 간격 (top 값 간격과 동일)
-    scrollbarWidth: 6,
-    scrollbarColor: "#666",
-    scrollbarTrackColor: "rgba(0,0,0,0.1)",
-    scrollbarThumbColor: "#999",
-    scrollbarRadius: 3,
-    enableTouchScroll: true,
-    touchSensitivity: 1.2,
-    maxScrollSpeed: 30,
-    scrollMargin: 28, // 패딩 12px + 추가 여백 4px
-    containerClass: "setting-virtual-scroll-container",
-    scrollbarClass: "setting-virtual-scrollbar",
-    scrollbarThumbClass: "setting-virtual-scrollbar-thumb",
-  });
-
-  // 스크롤바 thumb 가시성 감지 설정
-  setupScrollbarThumbVisibilityObserver("setting-virtual-scrollbar-thumb");
-
-  // 설정 아이템들을 가상 스크롤에 추가
-  addSettingItems();
-}
-
-function initializeHelpVirtualScroll(): void {
-  const popupBody = document.querySelector(".popup.help .popup-body") as HTMLElement;
-
-  if (!popupBody) {
-    console.error("설정 팝업 요소를 찾을 수 없습니다.");
-    return;
-  }
-
-  // 기존 가상 스크롤이 있다면 정리
-  if (helpVirtualScroll) {
-    helpVirtualScroll.destroy();
-  }
-
-  // 팝업 바디 스타일 설정 (chat div와 동일한 방식)
-  popupBody.style.position = "relative";
-  popupBody.style.overflow = "hidden";
-  popupBody.style.height = "400px"; // 설정팝업 높이 조정
-
-  // 팝업 바디에 가상 스크롤 적용
-  helpVirtualScroll = new PopupVirtualScroll(popupBody, {
-    itemHeight: 30, // 각 섹션 간격 (top 값 간격과 동일)
-    scrollbarWidth: 6,
-    scrollbarColor: "#666",
-    scrollbarTrackColor: "rgba(0,0,0,0.1)",
-    scrollbarThumbColor: "#999",
-    scrollbarRadius: 3,
-    enableTouchScroll: true,
-    touchSensitivity: 1.2,
-    maxScrollSpeed: 30,
-    scrollMargin: 28, // 패딩 12px + 추가 여백 4px
-    containerClass: "help-virtual-scroll-container",
-    scrollbarClass: "help-virtual-scrollbar",
-    scrollbarThumbClass: "help-virtual-scrollbar-thumb",
-  });
-
-  // 스크롤바 thumb 가시성 감지 설정
-  setupScrollbarThumbVisibilityObserver("help-virtual-scrollbar-thumb");
-
-  // 설정 아이템들을 가상 스크롤에 추가
-  addHelpItems();
-}
-
-// 설정 아이템들을 가상 스크롤에 추가
-function addSettingItems(): void {
-  if (!settingVirtualScroll) return;
-
-  // 기존 아이템들 제거
-  settingVirtualScroll.clearItems();
-
-  // 사운드 설정 섹션 HTML (chat div처럼 각 섹션을 개별적으로 처리)
-  const soundSectionHTML = sceneHtml.settings;
-
-  // 임시 컨테이너를 생성하여 HTML을 파싱
-  const tempContainer = document.createElement("div");
-  tempContainer.innerHTML = soundSectionHTML;
-
-  // 각 섹션을 개별적으로 가상 스크롤에 추가 (chat div와 동일한 방식)
-  const sections = tempContainer.querySelectorAll(".popup-section");
-  sections.forEach((section, index) => {
-    const sectionElement = section as HTMLElement;
-    if (settingVirtualScroll) {
-      settingVirtualScroll.addItem(sectionElement);
-      // 각 섹션의 top 값을 개별적으로 설정 (0, 30, 60...)
-      sectionElement.style.top = `${index * 30}px`;
-    }
-  });
-
-  // 가상스크롤의 totalHeight를 각 섹션의 실제 높이를 계산하여 조정
-  if (settingVirtualScroll) {
-    let totalHeight = 0;
-
-    // 각 섹션의 실제 높이를 계산하여 총 높이 구하기
-    sections.forEach((section, index) => {
-      const sectionElement = section as HTMLElement;
-      const sectionHeight = sectionElement.offsetHeight || sectionElement.clientHeight || 105; // 기본값 105
-      totalHeight += sectionHeight;
-
-      // 마지막 섹션이 아닌 경우 간격 추가
-      if (index < sections.length - 1) {
-        totalHeight += 30; // 섹션 간 간격
-      }
-    });
-
-    // 가상스크롤의 totalHeight를 수동으로 설정
-    (settingVirtualScroll as any).totalHeight = totalHeight;
-
-    // 스크롤 컨테이너 높이 업데이트
-    const scrollContainer = document.querySelector(".setting-virtual-scroll-container") as HTMLElement;
-    if (scrollContainer) {
-      scrollContainer.style.height = `${totalHeight + 28}px`; // scrollMargin 추가 (패딩 12px + 여백 4px)
-    }
-
-    // 볼륨 컨트롤 초기화 (HTML이 DOM에 추가된 후)
-    setTimeout(() => {
-      import("./volumeControls")
-        .then(({ initializeVolumeControls }) => {
-          if (initializeVolumeControls) {
-            initializeVolumeControls();
-          }
-        })
-        .catch((error) => {
-          console.warn("볼륨 컨트롤 초기화 실패:", error);
-        });
-    }, 100);
-
-    // 스크롤바 업데이트
-    (settingVirtualScroll as any).updateScrollbarThumb();
-  }
-}
-
-function addHelpItems(): void {
-  if (!helpVirtualScroll) return;
-
-  // 기존 아이템들 제거
-  helpVirtualScroll.clearItems();
-
-  // 사운드 설정 섹션 HTML (chat div처럼 각 섹션을 개별적으로 처리)
-  const soundSectionHTML = sceneHtml.help;
-
-  // 임시 컨테이너를 생성하여 HTML을 파싱
-  const tempContainer = document.createElement("div");
-  tempContainer.innerHTML = soundSectionHTML;
-
-  // 각 섹션을 개별적으로 가상 스크롤에 추가 (chat div와 동일한 방식)
-  const sections = tempContainer.querySelectorAll(".popup-section");
-  sections.forEach((section, index) => {
-    const sectionElement = section as HTMLElement;
-    if (helpVirtualScroll) {
-      helpVirtualScroll.addItem(sectionElement);
-      // 각 섹션의 top 값을 개별적으로 설정 (0, 30, 60...)
-      sectionElement.style.top = `${index * 30}px`;
-    }
-  });
-
-  // 가상스크롤의 totalHeight를 각 섹션의 실제 높이를 계산하여 조정
-  if (helpVirtualScroll) {
-    let totalHeight = 0;
-
-    // 각 섹션의 실제 높이를 계산하여 총 높이 구하기
-    sections.forEach((section, index) => {
-      const sectionElement = section as HTMLElement;
-      const sectionHeight = sectionElement.offsetHeight || sectionElement.clientHeight || 105; // 기본값 105
-      totalHeight += sectionHeight;
-
-      // 마지막 섹션이 아닌 경우 간격 추가
-      if (index < sections.length - 1) {
-        totalHeight += 30; // 섹션 간 간격
-      }
-    });
-
-    // 가상스크롤의 totalHeight를 수동으로 설정
-    (helpVirtualScroll as any).totalHeight = totalHeight;
-
-    // 스크롤 컨테이너 높이 업데이트
-    const scrollContainer = document.querySelector(".help-virtual-scroll-container") as HTMLElement;
-    if (scrollContainer) {
-      scrollContainer.style.height = `${totalHeight + 28}px`; // scrollMargin 추가 (패딩 12px + 여백 4px)
-    }
-
-    // 스크롤바 업데이트
-    (helpVirtualScroll as any).updateScrollbarThumb();
-  }
-}
-
 // 실시간 사용자 목록 업데이트 함수
 function updateUserListRealTime(): void {
   // 사용자 목록 팝업이 열려있을 때만 업데이트
@@ -525,85 +165,31 @@ function updateUserListRealTime(): void {
 // 사용자 목록 렌더링 함수 (분리) - 가상 스크롤 적용
 function renderUserList(users: Array<{ nickname?: string }>): void {
   const chatSystem = (window as any).chatSystem;
+  const popupBody = document.querySelector(".popup.user-list .popup-body") as HTMLElement;
 
-  // 가상 스크롤이 있다면 기존 아이템들 제거
-  if (userListVirtualScroll) {
-    userListVirtualScroll.clearItems();
+  if (!popupBody) {
+    console.error("popup-body 요소를 찾을 수 없습니다.");
+    return;
   }
+
+  // 기존 내용 초기화
+  popupBody.innerHTML = "";
 
   if (users && users.length > 0) {
     // 사용자 목록 렌더링 (현재 사용자 강조 표시)
-    users.forEach((user: { nickname?: string }, index: number) => {
+    users.forEach((user: { nickname?: string }) => {
       const isCurrentUser = user.nickname === chatSystem?.currentUser;
       const userClass = isCurrentUser ? "world-user-list-item current-user" : "world-user-list-item";
 
-      const userElement = document.createElement("div");
+      const userElement = document.createElement("span");
       userElement.className = userClass;
       userElement.textContent = user.nickname || "Unknown User";
 
-      // 가상 스크롤에 아이템 추가
-      if (userListVirtualScroll) {
-        userListVirtualScroll.addItem(userElement);
-        // 각 사용자 아이템의 top 값을 개별적으로 설정 (0, 30, 60...)
-        userElement.style.top = `${index * 30}px`;
-      }
+      // DOM에 요소 추가
+      popupBody.appendChild(userElement);
     });
-
-    // 가상스크롤의 totalHeight를 각 사용자 아이템의 실제 높이를 계산하여 조정
-    if (userListVirtualScroll) {
-      let totalHeight = 0;
-
-      // 각 사용자 아이템의 실제 높이를 계산하여 총 높이 구하기
-      users.forEach((user: { nickname?: string }, index: number) => {
-        const userElement = document.querySelector(`.world-user-list-item:nth-child(${index + 1})`) as HTMLElement;
-        const itemHeight = userElement ? userElement.offsetHeight || userElement.clientHeight || 294 : 294; // 기본값 294
-        totalHeight += itemHeight;
-
-        // 마지막 아이템이 아닌 경우 간격 추가
-        if (index < users.length - 1) {
-          totalHeight += 30; // 아이템 간 간격
-        }
-      });
-
-      // 가상스크롤의 totalHeight를 수동으로 설정
-      (userListVirtualScroll as any).totalHeight = totalHeight;
-
-      // 스크롤 컨테이너 높이 업데이트
-      const scrollContainer = document.querySelector(".user-list-virtual-scroll-container") as HTMLElement;
-      if (scrollContainer) {
-        scrollContainer.style.height = `${totalHeight + 28}px`; // scrollMargin 추가 (패딩 12px + 여백 4px)
-      }
-
-      // 스크롤바 업데이트
-      (userListVirtualScroll as any).updateScrollbarThumb();
-    }
   } else {
-    const noUserElement = document.createElement("div");
-    noUserElement.className = "world-user-list-item";
-    noUserElement.textContent = "접속한 사용자가 없습니다.";
-
-    if (userListVirtualScroll) {
-      userListVirtualScroll.addItem(noUserElement);
-      // "접속한 사용자가 없습니다" 메시지의 top 값 설정
-      noUserElement.style.top = "0px";
-
-      // 가상스크롤의 totalHeight를 실제 아이템 높이로 조정
-      const noUserElementInDOM = document.querySelector(".world-user-list-item") as HTMLElement;
-      const itemHeight = noUserElementInDOM ? noUserElementInDOM.offsetHeight || noUserElementInDOM.clientHeight || 32 : 32;
-      const totalHeight = itemHeight;
-
-      // 가상스크롤의 totalHeight를 수동으로 설정
-      (userListVirtualScroll as any).totalHeight = totalHeight;
-
-      // 스크롤 컨테이너 높이 업데이트
-      const scrollContainer = document.querySelector(".user-list-virtual-scroll-container") as HTMLElement;
-      if (scrollContainer) {
-        scrollContainer.style.height = `${totalHeight + 28}px`; // scrollMargin 추가 (패딩 12px + 여백 4px)
-      }
-
-      // 스크롤바 업데이트
-      (userListVirtualScroll as any).updateScrollbarThumb();
-    }
+    showErrorState(popupBody, "userList");
   }
 }
 
@@ -721,10 +307,6 @@ function setupPopupClose(): void {
 
           // 팝업 종류에 따라 가상 스크롤 정리
           if (button.classList.contains("user-list")) {
-            if (userListVirtualScroll) {
-              userListVirtualScroll.destroy();
-              userListVirtualScroll = null;
-            }
             isUserListButtonActive = false;
             // 사용자 목록 팝업이 닫힐 때 타임아웃 제거
             if (userListLoadTimeout) {
@@ -732,10 +314,6 @@ function setupPopupClose(): void {
               userListLoadTimeout = null;
             }
           } else if (button.classList.contains("setting")) {
-            if (settingVirtualScroll) {
-              settingVirtualScroll.destroy();
-              settingVirtualScroll = null;
-            }
           }
         });
       }

@@ -3,6 +3,7 @@ import { authHtml } from "../data/authHtml";
 import { handleGoogleLogin, handleKakaoLogin, handleLogout, handleGuestLogin, handleGuestLogout, isGuestUser } from "./auth-core";
 import { renderMyPageProfileImage, reconnectMyPageEventListeners, loadMyPageFormData } from "../ui/modules/myPage";
 import { closeSidebar } from "../utils/sidebar";
+import { sceneHtml } from "../data/sceneHtml";
 
 const userInfoDiv = document.getElementById("user-info") as HTMLDivElement | null;
 
@@ -161,6 +162,26 @@ export function renderUser(user: User | null): void {
         sidebarCloseButton?.addEventListener("click", () => {
           closeSidebar();
         });
+
+        const creditButton = document.getElementById("credits");
+        const creditPopup = document.getElementById("credit-popup");
+
+        if (creditButton) {
+          creditButton.addEventListener("click", () => {
+            console.log("creditButton clicked");
+
+            if (creditPopup) {
+              creditPopup.innerHTML = sceneHtml.credit;
+
+              const creditCloseBtn = document.getElementById("credit-close-button") as HTMLButtonElement;
+              creditCloseBtn?.addEventListener("click", () => {
+                if (creditPopup) {
+                  creditPopup.innerHTML = "";
+                }
+              });
+            }
+          });
+        }
       }
     });
 
@@ -172,6 +193,11 @@ export function renderUser(user: User | null): void {
 
       // 사이드바가 열려있는지 확인
       const isSidebarOpen = main.classList.contains("sidebar-open");
+
+      // credit-close-button 또는 그 자식 요소를 클릭한 경우 사이드바를 닫지 않음
+      if ((e.target as HTMLElement).closest("#credit-close-button")) {
+        return;
+      }
 
       // 사이드바가 열려있고, 클릭된 요소가 사이드바 버튼이나 사이드바 내부 요소가 아닌 경우
       if (isSidebarOpen && e.target !== sidebarButton && !sidebar.contains(e.target as Node)) {

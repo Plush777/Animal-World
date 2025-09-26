@@ -137,7 +137,10 @@ export function appClickEvents() {
       const emojiButton = document.querySelector(".chat-emoji-button") as HTMLElement;
       const chatOpenButton = document.querySelector(".chat-open-button") as HTMLElement;
 
-      e.stopPropagation();
+      // credit-close-button 클릭 시에는 이벤트 전파를 막지 않음
+      if (!target.closest("#credit-close-button")) {
+        e.stopPropagation();
+      }
 
       const chatWrapper = document.querySelector(".chat-wrapper") as HTMLElement;
       if (chatWrapper && target === closeButton) {
