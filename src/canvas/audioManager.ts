@@ -33,8 +33,8 @@ export class AudioManager {
     // 카메라에 오디오 리스너 추가
     camera.add(this.audioListener);
 
-    // 초기 BGM 설정
-    this.setupInitialBGM();
+    // 초기 BGM 설정 (인트로 BGM과 중복 방지를 위해 비활성화)
+    // this.setupInitialBGM();
 
     this.isInitialized = true;
     console.log("AudioManager 초기화 완료");

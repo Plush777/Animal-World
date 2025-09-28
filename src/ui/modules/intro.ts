@@ -33,21 +33,6 @@ function isUserLoggedIn(): boolean {
 }
 
 /**
- * intro-wrapper만 숨기기 (카메라 이동 없음)
- */
-function hideIntroWrapperOnly(): void {
-  const introWrapper = document.querySelector(".intro-wrapper") as HTMLElement;
-  if (introWrapper) {
-    introWrapper.style.transition = "opacity 0.5s ease-out";
-    introWrapper.style.opacity = "0";
-
-    setTimeout(() => {
-      introWrapper.style.display = "none";
-    }, 500);
-  }
-}
-
-/**
  * 카메라 위치 변경 이벤트 발생
  */
 function dispatchCameraChangeEvent(): void {
@@ -83,6 +68,14 @@ async function setupJoinButton(): Promise<void> {
     // 새로운 이벤트 리스너 생성 및 저장
     joinButtonClickListener = async () => {
       console.log("join-button 클릭됨!");
+
+      // 클릭 효과음 재생
+      if ((window as any).playClickSound) {
+        (window as any).playClickSound();
+      }
+
+      // 인트로 BGM은 그대로 유지하여 Canvas BGM과 자연스럽게 전환
+      console.log("인트로 BGM 유지 - Canvas BGM과 자연스러운 전환");
 
       // Canvas 로딩 완료 이벤트 리스너 등록 (참여하기 버튼 클릭 시점에 등록)
       document.addEventListener(
@@ -138,8 +131,6 @@ async function setupJoinButton(): Promise<void> {
 
     // 이벤트 리스너 추가
     joinButton.addEventListener("click", joinButtonClickListener);
-  } else {
-    console.warn("join-button 요소를 찾을 수 없습니다.");
   }
 }
 

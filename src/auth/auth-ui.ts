@@ -80,15 +80,6 @@ export function renderUser(user: User | null): void {
   const userLogoutElement = document.getElementById("user-logout-element") as HTMLDivElement | null;
   const userBoxLogoutElement = document.getElementById("userbox-user-logout-element") as HTMLDivElement | null;
 
-  // DOM 요소들이 존재하지 않으면 잠시 후 다시 시도
-  if (!userLoginElement || !userLogoutElement || !userBoxLogoutElement) {
-    console.log("DOM 요소들이 아직 준비되지 않음, 100ms 후 재시도");
-    setTimeout(() => {
-      renderUser(user);
-    }, 100);
-    return;
-  }
-
   if (!user) {
     // 로그아웃 상태 UI 렌더링
     if (userLoginElement) {
@@ -122,14 +113,6 @@ export function renderUser(user: User | null): void {
   }
 
   if (userLogoutElement) {
-    // // 요소가 이미 존재하는지 확인
-    // const existingDescriptionBox = userLogoutElement.querySelector(".intro-description-box");
-    // const existingJoinButton = userLogoutElement.querySelector("#join-button");
-
-    // // 요소가 존재하지 않을 때만 렌더링
-    // if (!existingDescriptionBox || !existingJoinButton) {
-
-    // }
     userLogoutElement.innerHTML = authHtml.logout.buttons;
     userLogoutElement.style.display = "flex";
   }
@@ -171,12 +154,46 @@ export function renderUser(user: User | null): void {
             console.log("creditButton clicked");
 
             if (creditPopup) {
+              // 기존 BGM 일시정지
+              const globalAudioManager = (window as any).globalAudioManager;
+              const globalIntroAudioManager = (window as any).globalIntroAudioManager;
+
+              // 현재 활성화된 오디오 매니저 확인 및 일시정지
+              let activeAudioManager = null;
+              if (globalAudioManager && globalAudioManager.isBGMPlaying !== undefined) {
+                activeAudioManager = globalAudioManager;
+              } else if (globalIntroAudioManager && globalIntroAudioManager.isBGMPlaying !== undefined) {
+                activeAudioManager = globalIntroAudioManager;
+              }
+
+              if (activeAudioManager && activeAudioManager.isBGMPlaying()) {
+                activeAudioManager.pauseBGM();
+                console.log("기존 BGM 일시정지 (credits 팝업 열기)");
+              }
+
               creditPopup.innerHTML = sceneHtml.credit;
 
               const creditCloseBtn = document.getElementById("credit-close-button") as HTMLButtonElement;
               creditCloseBtn?.addEventListener("click", () => {
                 if (creditPopup) {
                   creditPopup.innerHTML = "";
+
+                  setTimeout(async () => {
+                    if (activeAudioManager) {
+                      // 기존 BGM을 완전히 중지하고 새로 시작
+                      activeAudioManager.stopBGM();
+
+                      // 현재 시간대에 맞는 BGM을 새로 로드하고 재생
+                      if (activeAudioManager.switchBGMForTimeChange) {
+                        await activeAudioManager.switchBGMForTimeChange();
+                        console.log("기존 BGM 새로 시작 (credits 팝업 닫기)");
+                      } else {
+                        // IntroAudioManager의 경우 다른 방식으로 처리
+                        activeAudioManager.playBGM();
+                        console.log("기존 BGM 새로 시작 (credits 팝업 닫기)");
+                      }
+                    }
+                  }, 200);
                 }
               });
             }
@@ -190,12 +207,24 @@ export function renderUser(user: User | null): void {
     app?.addEventListener("click", (e) => {
       const sidebarButton = userBoxLogoutElement.querySelector(".sidebar-hamburger-menu") as HTMLButtonElement;
       const sidebar = document.getElementById("sidebar") as HTMLDivElement;
+      const creditContent = document.querySelector(".credit-content") as HTMLDivElement;
 
       // 사이드바가 열려있는지 확인
       const isSidebarOpen = main.classList.contains("sidebar-open");
 
+      if (creditContent) {
+        creditContent.classList.add("transition-start");
+
+        const creditAudio = document.getElementById("credit-audio") as HTMLAudioElement;
+        creditAudio.volume = 1;
+      }
+
       // credit-close-button 또는 그 자식 요소를 클릭한 경우 사이드바를 닫지 않음
       if ((e.target as HTMLElement).closest("#credit-close-button")) {
+        if (creditContent) {
+          creditContent.classList.remove("transition-start");
+        }
+
         return;
       }
 

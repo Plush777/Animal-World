@@ -1,10 +1,11 @@
-import { initClickSound, setSoundEffectVolume } from "../sound/soundEffect";
+import { initClickSound, setSoundEffectVolume, playClickSound } from "../sound/soundEffect";
 
 export function initSound() {
-  // 클릭 사운드 초기화 (모든 기능이 포함됨)
   initClickSound("/sounds/effect/click/select-click.wav");
 
-  // 저장된 효과음 볼륨 설정 적용
+  // 전역에서 클릭 효과음 재생 함수 사용 가능하도록 노출
+  (window as any).playClickSound = playClickSound;
+
   const savedVolume = localStorage.getItem("scene-sound-effect-volume");
   if (savedVolume) {
     const volume = parseInt(savedVolume, 10) / 100; // 0-1 범위로 변환
@@ -16,5 +17,3 @@ export function initSound() {
     (window as any).soundEffectVolume = 1;
   }
 }
-
-// initSound는 ui.ts에서 호출됨

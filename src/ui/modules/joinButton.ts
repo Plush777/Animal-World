@@ -138,12 +138,9 @@ export class JoinButtonManager {
     };
     hideIntroWrapperOnly();
 
-    // 인트로 오디오 정지 (Three.js 오디오로 전환)
-    const introAudioManager = (window as any).globalIntroAudioManager;
-    if (introAudioManager) {
-      introAudioManager.stopBGM();
-      console.log("인트로 BGM 정지 - Three.js 오디오로 전환");
-    }
+    // 인트로 BGM은 Canvas 오디오 매니저가 준비될 때까지 유지
+    // (Canvas 초기화 완료 후 자동으로 전환됨)
+    console.log("인트로 BGM 유지 - Canvas 오디오 매니저 준비 대기");
 
     // 로딩 화면 표시 및 초기 설정
     console.log("로딩 UI 표시 시작...");

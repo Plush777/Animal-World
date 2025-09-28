@@ -11,11 +11,11 @@ import { isDayTime } from "../../canvas/time";
 export class IntroAudioManager {
   private currentAudio: HTMLAudioElement | null = null;
   private isPlaying: boolean = false;
-  private volume: number = 0.3; // 기본 볼륨 (30%)
+  private volume: number = 1.0; // 기본 볼륨 (100%)
 
   constructor() {
-    // 메인화면에서 자동 오디오 재생 비활성화
-    // this.setupInitialBGM();
+    // 생성자에서는 BGM 설정만 하고 재생은 사용자 상호작용 후에
+    this.setupInitialBGM();
   }
 
   /**
@@ -25,7 +25,7 @@ export class IntroAudioManager {
     const bgmPath = this.getBGMForCurrentTime();
     console.log(`인트로 화면 BGM 설정: ${bgmPath}`);
 
-    this.loadAndPlayBGM(bgmPath);
+    this.loadBGM(bgmPath);
   }
 
   /**
@@ -36,6 +36,41 @@ export class IntroAudioManager {
       return "/sounds/bgm/bgm_afternoon.mp3";
     } else {
       return "/sounds/bgm/bgm_night.mp3";
+    }
+  }
+
+  /**
+   * BGM 로드만 (재생하지 않음)
+   */
+  private loadBGM(bgmPath: string): void {
+    try {
+      // 기존 오디오가 있으면 정리
+      this.stopCurrentAudio();
+
+      console.log(`인트로 BGM 로드 시작: ${bgmPath}`);
+
+      // 새로운 HTML5 오디오 객체 생성
+      const audio = document.createElement("audio");
+      audio.src = bgmPath;
+      audio.loop = true;
+      audio.volume = this.volume;
+
+      // 오디오 로드 완료 이벤트
+      audio.addEventListener("canplaythrough", () => {
+        console.log(`인트로 BGM 로드 성공: ${bgmPath}`);
+        this.currentAudio = audio;
+        // 로드만 하고 재생은 하지 않음
+      });
+
+      // 오디오 로드 오류 이벤트
+      audio.addEventListener("error", (error) => {
+        console.error(`인트로 BGM 로드 실패: ${bgmPath}`, error);
+      });
+
+      // 오디오 로드 시작
+      audio.load();
+    } catch (error) {
+      console.error("인트로 BGM 로드 중 오류 발생:", error);
     }
   }
 
@@ -72,6 +107,19 @@ export class IntroAudioManager {
     } catch (error) {
       console.error("인트로 BGM 로드 중 오류 발생:", error);
     }
+  }
+
+  /**
+   * 사용자 상호작용 후 BGM 재생 시작
+   */
+  public startBGMAfterUserInteraction(): void {
+    if (!this.currentAudio) {
+      console.warn("재생할 인트로 BGM이 로드되지 않았습니다.");
+      return;
+    }
+
+    console.log("사용자 상호작용 후 인트로 BGM 재생 시작");
+    this.playBGM();
   }
 
   /**

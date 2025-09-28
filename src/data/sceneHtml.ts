@@ -385,22 +385,150 @@ export const sceneHtml: { [key: string]: any } = {
 
   credit: `
     <div class="popup credit" role="dialog">
-      <audio src="/sounds/bgm/bgm_credit.mp3" autoplay></audio>
-      <ul class="credit-list">
-        <li class="credit-item">
-          <span class="credit-item-title">3D Model</span>
-          <span class="credit-item-description">
-            <a href="https://www.cgtrader.com/free-3d-models/animal/other/beagle-dog-model-2" target="_blank">Beagle Dog Model</a>
-          </span>
-        </li>
+      <audio id="credit-audio" autoplay>
+        <source src="/sounds/bgm/bgm_credit.mp3" type="audio/mpeg">
+      </audio>
 
-        <li class="credit-item">
-          <span class="credit-item-title">3D Model</span>
-          <span class="credit-item-description">
-            <a href="https://www.cgtrader.com/free-3d-models/animal/other/beagle-dog-model-2" target="_blank">Beagle Dog Model</a>
-          </span>
-        </li>
-      </ul>
+        <div class="credit-content">
+          <div class="credit-content-inner">
+            <img src="/public/images/logo/logo-intro-vertical.svg" alt="logo" />
+          <h2 class="credit-title">Reference</h2>
+
+          <ul class="credit-list">
+            <li class="credit-item">
+              <h3 class="credit-item-title">Color</h3>
+              <span class="credit-item-description">
+                <a href="https://tailwindcss.com/docs/colors" target="_blank">https://tailwindcss.com/docs/colors</a>
+              </span>
+            </li>
+
+            <li class="credit-item">
+              <h3 class="credit-item-title">loading</h3>
+              <span class="credit-item-description">
+                <a href="https://cssloaders.github.io/" target="_blank">https://cssloaders.github.io/</a>
+              </span>
+            </li>
+
+            <li class="credit-item">
+              <h3 class="credit-item-title">Emoji</h3>
+              <span class="credit-item-description">
+                <a href="https://twemoji-cheatsheet.vercel.app/" target="_blank">https://twemoji-cheatsheet.vercel.app/</a>
+              </span>
+            </li>
+          </ul>
+
+          <h2 class="credit-title">3D Models</h2>
+          <ul class="credit-list">
+            <li class="credit-item">
+              <h3 class="credit-item-title">Object</h3>
+              <span class="credit-item-description">
+                <a href="https://skfb.ly/oJYSS" target="_blank">https://skfb.ly/oJYSS - Starry night sky HDRi background photosphere</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://skfb.ly/oIINq" target="_blank">https://skfb.ly/oIINq - FREE - SkyBox In The Cloud</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://skfb.ly/6uNHF" target="_blank">https://skfb.ly/6uNHF - Low Poly Medieval Island</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://skfb.ly/oAJJu" target="_blank">https://skfb.ly/oAJJu - Low-Poly Floating Island</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://skfb.ly/o78uK" target="_blank">https://skfb.ly/o78uK - Floating Fox</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://skfb.ly/oDSIM" target="_blank">https://skfb.ly/oDSIM - FREE Low Poly Game Assets</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://skfb.ly/HIBy" target="_blank">https://skfb.ly/HIBy - Low Poly Trees</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://skfb.ly/6WVnq" target="_blank">https://skfb.ly/6WVnq - Cloud & Sun Lowpoly</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://poly.pizza/m/d4j9R8L8xpE" target="_blank">Lighthouse by Jarlan Perez [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/d4j9R8L8xpE)</a>
+              </span>
+            </li>
+          </ul>
+
+          <h2 class="credit-title">character</h2>
+          <ul class="credit-list">
+            <li class="credit-item">
+              <span class="credit-item-description">
+                <a href="https://skfb.ly/oFEPp" target="_blank">https://skfb.ly/oFEPp - Cat - PS1 Low Poly (Rigged)</a>
+              </span>
+            </li>
+            <li class="credit-item">
+              <span class="credit-item-description">
+                <a href="https://poly.pizza/m/3YtzEQ5TVUP" target="_blank">Hamster by Poly by Google [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/3YtzEQ5TVUP)</a>
+              </span>
+            </li>
+            <li class="credit-item">
+              <span class="credit-item-description">
+                <a href="https://skfb.ly/6UnCF" target="_blank">https://skfb.ly/6UnCF - Low Poly Dog</a>
+              </span>
+            </li>
+            <li class="credit-item">
+              <span class="credit-item-description">
+                <a href="https://skfb.ly/opQpx" target="_blank">https://skfb.ly/opQpx - low poly fox</a>
+              </span>
+            </li>
+            <li class="credit-item">
+              <span class="credit-item-description">
+                <a href="https://poly.pizza/m/2PDe5PSncTC" target="_blank">Wolf by jeremy [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/2PDe5PSncTC)</a>
+              </span>
+            </li>
+          </ul>
+
+          <h2 class="credit-title">BGM</h2>
+          <ul class="credit-list">
+            <li class="credit-item">
+              <span class="credit-item-description">
+                <a href="https://www.youtube.com/watch?v=kmf--E4fchs" target="_blank">Original music channel - Background music produced by Sound Traveler was used.</a>
+              </span>
+            </li>
+          </ul>
+
+          <h2 class="credit-title">Sound effect</h2>
+          <ul class="credit-list">
+            <li class="credit-item">
+              <span class="credit-item-description">
+                <a href="https://mixkit.co/free-sound-effects/click/" target="_blank">https://mixkit.co/free-sound-effects/click/</a>
+              </span>
+            </li>
+          </ul>
+
+          <h2 class="credit-title">Site</h2>
+          <ul class="credit-list">
+            <li class="credit-item">
+              <span class="credit-item-description">
+                <a href="https://zep.us/" target="_blank">https://zep.us/</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://app.gather.town/" target="_blank">https://app.gather.town/</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://choochooworld.com/" target="_blank">https://choochooworld.com/</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://madbox.io/" target="_blank">https://madbox.io/</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://www.kodeclubs.com/" target="_blank">https://www.kodeclubs.com/</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://coastalworld.com/" target="_blank">https://coastalworld.com/</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://www.choonsikdiary.com/" target="_blank">https://www.choonsikdiary.com/</a>
+              </span>
+              <span class="credit-item-description">
+                <a href="https://v0.app/community/habbo-hotel-like-multiplayer-chatroom-using-gpt-5-EYN85i0FdYV" target="_blank">https://v0.app/community/habbo-hotel-like-multiplayer-chatroom-using-gpt-5-EYN85i0FdYV</a>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
 
       <div class="popup-bottom-button-group">
           <button type="button" id="credit-close-button" class="esc-button button button-blue button-size-lg has-short-key">

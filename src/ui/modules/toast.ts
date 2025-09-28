@@ -25,21 +25,5 @@ export function showToastMapExplore() {
       }
     }, 10);
     window.toastTimers.push(timer1);
-
-    // const timer2 = setTimeout(() => {
-    //   const toastWrapper = document.querySelector(".toast-wrapper") as HTMLElement;
-    //   if (toastWrapper) {
-    //     toastWrapper.classList.remove("active");
-
-    //     // transition이 완료된 후 HTML 내용을 비움 (0.5초 후)
-    //     const timer3 = setTimeout(() => {
-    //       toast.innerHTML = "";
-    //     }, 500);
-    //     if (window.toastTimers) {
-    //       window.toastTimers.push(timer3);
-    //     }
-    //   }
-    // }, 3000);
-    // window.toastTimers.push(timer2);
   }
 }

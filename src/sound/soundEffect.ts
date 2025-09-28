@@ -11,6 +11,15 @@ export function setSoundEffectVolume(volume: number): void {
   }
 }
 
+/**
+ * 클릭 효과음 수동 재생
+ */
+export function playClickSound(): void {
+  if (clickSound) {
+    clickSound.play();
+  }
+}
+
 export function initClickSound(src: string, volume: number = 1, selector: string = 'button, input[type="checkbox"], a') {
   // 기존 사운드가 있다면 해제
   if (clickSound) {
@@ -23,17 +32,33 @@ export function initClickSound(src: string, volume: number = 1, selector: string
     volume: volume,
   });
 
+  let soundEffectCount = -1;
+
   // 모든 버튼 요소에 이벤트 리스너 추가
   document.querySelectorAll(selector).forEach((element) => {
     // 이미 이벤트 리스너가 있는지 확인
     if (!element.hasAttribute("data-click-sound-added")) {
       element.addEventListener("click", () => {
-        if (clickSound) {
-          clickSound.play();
-        }
+        soundEffectCount = 1;
+        playClickSound();
       });
+
       element.setAttribute("data-click-sound-added", "true");
     }
+  });
+
+  document.addEventListener("keydown", () => {
+    if (soundEffectCount === 1) {
+      return;
+    }
+
+    soundEffectCount++;
+
+    if (soundEffectCount === 0) {
+      playClickSound();
+    }
+
+    console.log(soundEffectCount);
   });
 
   // 동적으로 추가되는 버튼들을 위한 MutationObserver

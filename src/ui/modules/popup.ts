@@ -34,7 +34,7 @@ function commonInitPopup(popupType: string, e: Event): void {
       }
     }
 
-    settingButton.classList.toggle("active");
+    settingButton && settingButton.classList.toggle("active");
   }
 
   if (popupType === "user-list") {
@@ -103,7 +103,7 @@ function commonInitPopup(popupType: string, e: Event): void {
         }
       }
 
-      helpButton.classList.toggle("active");
+      helpButton && helpButton.classList.toggle("active");
     }
 
     if (!isKeyboardEvent && helpButton?.classList.contains("active") && target !== helpButton && !target.closest(".popup.help")) {

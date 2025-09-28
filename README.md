@@ -47,6 +47,14 @@
 - https://dimorin.tistory.com/entry/Raycaster
 - https://velog.io/@thdrldud369/RayCaster%EB%A0%88%EC%9D%B4%EC%BA%90%EC%8A%A4%ED%84%B0
 
+#### 🎶 BGM
+
+- https://www.youtube.com/watch?v=kmf--E4fchs (음악 원곡 채널 - 사운드 트래블러 (Sound Traveler) 에서 제작한 배경음악을 사용하였습니다.)
+
+#### 🥁 Sound effect
+
+- https://mixkit.co/free-sound-effects/click/
+
 #### 🔗 site
 
 - https://zep.us/

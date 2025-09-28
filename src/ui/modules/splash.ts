@@ -13,10 +13,8 @@ import { appMouseoverEvent } from "./appMouseoverEvent.ts";
 import { applyShortKeyDisabledToAllElements } from "./functions.ts";
 import { handleShortKeySettingChange, handleShortKeyState } from "./shortKeyToggle.ts";
 import { getCurrentLoggedInUser, renderUser } from "../../auth/auth-ui.ts";
+import { initializeIntroAudioManager } from "./introAudio.ts";
 
-/**
- * 스플래시 화면과 인트로 전환 관리
- */
 function initSplashToIntroTransition(): void {
   const splashWrapper = document.querySelector(".splash-wrapper") as HTMLElement;
   const introContainer = document.getElementById("intro") as HTMLElement;
@@ -26,35 +24,41 @@ function initSplashToIntroTransition(): void {
     return;
   }
 
-  // 세션 스토리지에서 스플래시 표시 여부 확인
-  const hasShownSplash = sessionStorage.getItem("splashShown") === "true";
+  const pressStartButton = document.querySelector(".press-start-button") as HTMLButtonElement;
 
-  if (hasShownSplash) {
-    // 이미 스플래시를 보여준 경우 바로 인트로 표시
-    splashWrapper.style.display = "none";
-    introContainer.innerHTML = introHtml.intro;
+  pressStartButton.addEventListener("click", () => {
+    // BGM 초기화 및 재생 (사용자 상호작용 직후)
+    const audioManager = initializeIntroAudioManager();
+    audioManager.startBGMAfterUserInteraction();
 
-    // 새로고침 후에도 이벤트 리스너들이 제대로 설정되도록 초기화
-    initializeIntroElements();
-  } else {
-    // 스플래시를 처음 보여주는 경우
-    splashWrapper.style.display = "flex";
+    splashWrapper.style.opacity = "0";
+    splashWrapper.style.visibility = "hidden";
 
-    // 2.5초 후 인트로로 전환
     setTimeout(() => {
-      // 세션 스토리지에 스플래시 표시 완료 저장
-      sessionStorage.setItem("splashShown", "true");
-
-      // 스플래시 숨기기
       splashWrapper.style.display = "none";
+    }, 1000);
 
-      // 인트로 HTML 삽입
+    introContainer.innerHTML = introHtml.intro;
+    initializeIntroElements();
+  });
+
+  document.addEventListener("keydown", () => {
+    if (splashWrapper.style.opacity === "1") {
+      // BGM 초기화 및 재생 (사용자 상호작용 직후)
+      const audioManager = initializeIntroAudioManager();
+      audioManager.startBGMAfterUserInteraction();
+
+      splashWrapper.style.opacity = "0";
+      splashWrapper.style.visibility = "hidden";
+
+      setTimeout(() => {
+        splashWrapper.style.display = "none";
+      }, 1000);
+
       introContainer.innerHTML = introHtml.intro;
-
-      // 인트로 요소들 초기화
       initializeIntroElements();
-    }, 2500);
-  }
+    }
+  });
 }
 
 /**

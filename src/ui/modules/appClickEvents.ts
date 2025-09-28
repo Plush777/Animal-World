@@ -123,8 +123,8 @@ export function emojiToggle(e: Event) {
   const emojiButton = document.querySelector(".chat-emoji-button") as HTMLElement;
   e.stopPropagation();
 
-  emojiWrapper.classList.toggle("active");
-  emojiButton.setAttribute("aria-expanded", emojiWrapper.classList.contains("active") ? "true" : "false");
+  emojiWrapper && emojiWrapper.classList.toggle("active");
+  emojiButton && emojiButton.setAttribute("aria-expanded", emojiWrapper.classList.contains("active") ? "true" : "false");
 }
 
 export function appClickEvents() {
@@ -197,7 +197,6 @@ export function appClickEvents() {
       if (toast && target === toastCloseButton) {
         toast.classList.remove("active");
         toast.innerHTML = "";
-        sessionStorage.setItem("toast-mapExplore-close", "true");
       }
     });
   }

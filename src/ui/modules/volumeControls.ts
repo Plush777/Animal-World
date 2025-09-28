@@ -118,8 +118,6 @@ export function initializeVolumeControls(): void {
     }
 
     console.log(`BGM 볼륨 초기화: ${savedBGMVolume}%`);
-  } else {
-    console.warn("BGM 볼륨 컨트롤 요소를 찾을 수 없습니다.");
   }
 
   // 효과음 볼륨 컨트롤 설정
@@ -145,8 +143,6 @@ export function initializeVolumeControls(): void {
     setClickSoundVolume(normalizedSoundEffectVolume);
 
     console.log(`효과음 볼륨 초기화: ${savedSoundEffectVolume}%`);
-  } else {
-    console.warn("효과음 볼륨 컨트롤 요소를 찾을 수 없습니다.");
   }
 
   console.log("볼륨 컨트롤 초기화 완료");

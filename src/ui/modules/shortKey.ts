@@ -25,6 +25,11 @@ function handleEmojiShortcut(emojiText: string) {
 function handleJoinRoom(): void {
   console.log("J키 눌림 - 방 참여 시도");
 
+  // 클릭 효과음 재생
+  if ((window as any).playClickSound) {
+    (window as any).playClickSound();
+  }
+
   // 현재 인트로 화면인지 확인
   const introWrapper = document.querySelector(".intro-wrapper") as HTMLElement;
   const isIntroVisible = introWrapper && introWrapper.style.display !== "none" && introWrapper.style.opacity !== "0";
@@ -157,10 +162,10 @@ function questionKey() {
       e.preventDefault();
 
       const worldHeader = document.getElementById("world-header") as HTMLElement;
-      worldHeader.classList.toggle("ui-visible");
+      worldHeader && worldHeader.classList.toggle("ui-visible");
 
       const main = document.querySelector(".main") as HTMLElement;
-      main.classList.toggle("ui-visible");
+      main && main.classList.toggle("ui-visible");
     }
 
     // C키 중복 방지 (해당 단축키는 개발자 도구 단축키임)
